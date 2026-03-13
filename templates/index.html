@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Стилометричний аналіз</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header class="app-header">
+  <div class="header-inner">
+    <div class="header-title">
+      <span class="header-icon">🔍</span>
+      <div>
+        <h1>Стилометричний аналіз</h1>
+        <p>Виявлення координованих інформаційних операцій</p>
+      </div>
+    </div>
+    <button class="btn btn-ghost" id="btnClearAll" title="Видалити всі джерела">
+      🗑 Очистити все
+    </button>
+  </div>
+</header>
+
+<main class="app-main">
+
+  <!-- ══════════════════ INPUT SECTION ══════════════════ -->
+  <section class="card" id="sectionInput">
+    <h2 class="section-title">📥 Додати джерела</h2>
+    <p class="section-hint">
+      Додайте текстові матеріали для аналізу — завантажте файли, вкажіть посилання або вставте текст вручну.
+      Потрібно мінімум <strong>2 джерела</strong>.
+    </p>
+
+    <div class="input-tabs">
+      <!-- TAB BUTTONS -->
+      <div class="tab-buttons" role="tablist">
+        <button class="tab-btn active" data-tab="files" role="tab">📁 Файли</button>
+        <button class="tab-btn"        data-tab="url"   role="tab">🌐 URL</button>
+        <button class="tab-btn"        data-tab="text"  role="tab">✏️ Текст</button>
+        <button class="tab-btn"        data-tab="html"  role="tab">🧩 HTML</button>
+      </div>
+
+      <!-- TAB: FILES -->
+      <div class="tab-panel active" id="tab-files">
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-content">
+            <span class="dropzone-icon">📂</span>
+            <p>Перетягніть файли сюди</p>
+            <p class="hint">або</p>
+            <label class="btn btn-secondary">
+              Вибрати файли
+              <input type="file" id="fileInput" multiple
+                     accept=".txt,.pdf,.docx,.rtf,.html,.htm,.md"
+                     style="display:none" />
+            </label>
+            <p class="hint">Підтримувані формати: TXT, PDF, DOCX, RTF, HTML</p>
+          </div>
+        </div>
+        <div id="uploadProgress" class="progress-bar" style="display:none">
+          <div class="progress-fill" id="uploadProgressFill"></div>
+        </div>
+      </div>
+
+      <!-- TAB: URL -->
+      <div class="tab-panel" id="tab-url">
+        <div class="url-form">
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="urlInput">Посилання на статтю</label>
+              <input type="url" id="urlInput" class="form-control"
+                     placeholder="https://www.pravda.com.ua/articles/..." />
+            </div>
+            <div class="form-group">
+              <label for="urlLabel">Назва джерела (необов'язково)</label>
+              <input type="text" id="urlLabel" class="form-control"
+                     placeholder="напр. pravda.com.ua" />
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btnAddUrl">
+            <span class="btn-icon">🌐</span> Додати статтю
+          </button>
+          <p class="hint">Текст статті буде автоматично витягнутий без реклами та навігації.</p>
+        </div>
+      </div>
+
+      <!-- TAB: TEXT -->
+      <div class="tab-panel" id="tab-text">
+        <div class="text-form">
+          <div class="form-group">
+            <label for="textLabel">Назва джерела</label>
+            <input type="text" id="textLabel" class="form-control"
+                   placeholder="напр. Джерело А" />
+          </div>
+          <div class="form-group">
+            <label for="textInput">Текст</label>
+            <textarea id="textInput" class="form-control textarea-large"
+                      placeholder="Вставте текст статті тут..."></textarea>
+          </div>
+          <button class="btn btn-primary" id="btnAddText">
+            <span class="btn-icon">✏️</span> Додати текст
+          </button>
+        </div>
+      </div>
+
+      <!-- TAB: HTML -->
+      <div class="tab-panel" id="tab-html">
+        <div class="text-form">
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="htmlLabel">Назва джерела</label>
+              <input type="text" id="htmlLabel" class="form-control"
+                     placeholder="напр. TASS вручну" />
+            </div>
+            <div class="form-group flex-1">
+              <label for="htmlUrl">Оригінальний URL (необов'язково)</label>
+              <input type="url" id="htmlUrl" class="form-control"
+                     placeholder="https://tass.ru/politika/..." />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="htmlInput">Сирий HTML сторінки</label>
+            <textarea id="htmlInput" class="form-control textarea-large textarea-code"
+                      placeholder="Вставте сюди HTML-код сторінки..."></textarea>
+          </div>
+          <button class="btn btn-primary" id="btnAddHtml">
+            <span class="btn-icon">🧩</span> Додати HTML
+          </button>
+          <p class="hint">Зручно для сайтів, які не вдається завантажити напряму. Система сама очистить HTML до plain text.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ SOURCES LIST ══════════════════ -->
+  <section class="card" id="sectionSources">
+    <div class="sources-header">
+      <h2 class="section-title" style="margin:0">
+        📋 Додані джерела
+        <span class="badge" id="sourcesCount">0</span>
+      </h2>
+    </div>
+
+    <div id="sourcesList" class="sources-list">
+      <div class="sources-empty" id="sourcesEmpty">
+        <span>📭</span>
+        <p>Ще немає доданих джерел</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════ PARAMETERS + RUN ══════════════════ -->
+  <section class="card" id="sectionParams">
+    <h2 class="section-title">⚙️ Параметри аналізу</h2>
+    <div class="params-grid">
+      <div class="param-group">
+        <label for="mfwInput">
+          Кількість найчастіших слів (MFW)
+          <span class="param-hint" title="Більше слів → точніший аналіз, але потрібні довші тексти">ℹ</span>
+        </label>
+        <div class="param-row">
+          <input type="range" id="mfwSlider" min="20" max="500" value="100" step="10" />
+          <input type="number" id="mfwInput" class="form-control param-number"
+                 min="20" max="500" value="100" />
+        </div>
+        <p class="hint">Рекомендовано: 50–200. Для коротких текстів (<500 слів) — 50.</p>
+      </div>
+
+      <div class="param-group">
+        <label for="thresholdInput">
+          Поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span> для <span class="math-inline">&Delta;<sub>Burrows</sub></span>
+          <span class="param-hint" title="Пари з ΔBurrows нижче порогу θΔ позначаються як підозрілі">ℹ</span>
+        </label>
+        <div class="param-row">
+          <input type="range" id="thresholdSlider" min="0.1" max="2.0" value="0.8" step="0.05" />
+          <input type="number" id="thresholdInput" class="form-control param-number"
+                 min="0.1" max="2.0" step="0.05" value="0.8" />
+        </div>
+        <p class="hint">Менше <span class="math-inline">&Delta;<sub>Burrows</sub></span> = більша подібність. Рекомендовано: <span class="math-inline">&theta;<sub>&Delta;</sub></span> = 0.6–1.0.</p>
+      </div>
+    </div>
+
+    <div class="run-section">
+      <button class="btn btn-run" id="btnAnalyze" disabled>
+        <span id="btnAnalyzeIcon">🚀</span>
+        <span id="btnAnalyzeText">Запустити аналіз</span>
+      </button>
+      <p class="hint" id="runHint">Додайте мінімум 2 джерела для запуску</p>
+    </div>
+  </section>
+
+  <!-- ══════════════════ RESULTS ══════════════════ -->
+  <section class="card hidden" id="sectionResults">
+    <h2 class="section-title">📊 Результати аналізу</h2>
+
+    <!-- Quick stats -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- Flagged pairs quick view -->
+    <div id="flaggedQuick"></div>
+
+    <!-- CTA -->
+    <div class="results-cta">
+      <a href="/report" target="_blank" class="btn btn-primary btn-large">
+        📄 Відкрити звіт для керівника
+      </a>
+      <a href="/output/distance_matrix.csv" class="btn btn-secondary">
+        ⬇ Завантажити CSV
+      </a>
+    </div>
+  </section>
+
+  <!-- ══════════════════ TOAST / SPINNER ══════════════════ -->
+  <div id="toast" class="toast hidden"></div>
+  <div id="overlay" class="overlay hidden">
+    <div class="spinner-box">
+      <div class="spinner"></div>
+      <p id="overlayText">Аналіз...</p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="app-footer">
+  Метод: <span class="math-inline">&Delta;<sub>Burrows</sub></span> &bull; Burrows (2002) &bull;
+  Розроблено для PhD-дисертації з систем підтримки прийняття рішень
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

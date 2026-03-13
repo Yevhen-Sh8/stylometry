@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Аналітичний звіт — DIMS та стилометричний аналіз</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DejaVu Sans", "Segoe UI", Arial, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    a { color: #2563eb; }
+
+    /* ── Page wrapper ── */
+    .page { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+    /* ── Report header ── */
+    .report-header {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 36px 40px;
+      margin-bottom: 32px;
+    }
+    .report-header h1 { font-size: 24px; margin-bottom: 6px; }
+    .report-header .subtitle { opacity: .85; font-size: 14px; }
+    .report-meta {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      margin-top: 20px; font-size: 13px; opacity: .9;
+    }
+    .report-meta span::before { content: "● "; font-size: 9px; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 36px; }
+    .section-title {
+      font-size: 18px; font-weight: 700;
+      border-left: 4px solid #2563eb;
+      padding-left: 12px; margin-bottom: 16px;
+    }
+    .section-body { color: #334155; }
+
+    /* ── Cards row ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px; margin-bottom: 8px;
+    }
+    .kpi-card {
+      background: #fff; border-radius: 10px;
+      padding: 20px; text-align: center;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .kpi-value {
+      font-size: 32px; font-weight: 800;
+      line-height: 1; margin-bottom: 4px;
+    }
+    .kpi-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+    .kpi-card.danger .kpi-value { color: #dc2626; }
+    .kpi-card.warn   .kpi-value { color: #ca8a04; }
+    .kpi-card.ok     .kpi-value { color: #16a34a; }
+    .kpi-card.info   .kpi-value { color: #2563eb; }
+
+    /* ── Executive summary ── */
+    .exec-summary {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-size: 15px; line-height: 1.7;
+    }
+
+    /* ── Charts ── */
+    .chart-block {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .chart-block img { width: 100%; height: auto; border-radius: 6px; }
+    .chart-caption {
+      margin-top: 12px; font-size: 13px; color: #64748b;
+      background: #f8fafc; padding: 10px 14px;
+      border-radius: 6px; border-left: 3px solid #94a3b8;
+    }
+
+    /* ── Distance matrix ── */
+    .matrix-wrap { overflow-x: auto; }
+    table.matrix {
+      border-collapse: collapse; width: 100%;
+      font-size: 11px;
+    }
+    table.matrix th, table.matrix td {
+      padding: 6px 8px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      white-space: nowrap;
+    }
+    table.matrix th { background: #1e3a5f; color: #fff; font-weight: 600; }
+    table.matrix td.self { background: #e2e8f0; color: #94a3b8; }
+    /* Heatmap colouring applied via inline style from Jinja */
+
+    /* ── Flagged pairs ── */
+    .pair-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      border-left: 5px solid #e2e8f0;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .pair-card.critical { border-left-color: #dc2626; }
+    .pair-card.high     { border-left-color: #ea580c; }
+    .pair-card.moderate { border-left-color: #ca8a04; }
+    .pair-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .pair-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: .04em;
+      padding: 3px 10px; border-radius: 20px; text-transform: uppercase;
+    }
+    .pair-badge.critical { background: #fee2e2; color: #991b1b; }
+    .pair-badge.high     { background: #ffedd5; color: #9a3412; }
+    .pair-badge.moderate { background: #fef9c3; color: #854d0e; }
+    .pair-sources { font-size: 15px; font-weight: 600; }
+    .pair-sources .arrow { color: #64748b; margin: 0 6px; }
+    .pair-delta { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+    .pair-interp { font-size: 13px; color: #475569; }
+    .pair-meta { font-size: 12px; color: #64748b; margin-bottom: 8px; line-height: 1.45; }
+    .source-ref { color: #1d4ed8; text-decoration: none; }
+    .source-ref:hover { text-decoration: underline; }
+    .source-subref { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+    /* ── Delta stats ── */
+    .stats-table {
+      width: 100%; border-collapse: collapse; font-size: 13px;
+    }
+    .stats-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+    .stats-table td:first-child { color: #64748b; font-weight: 500; }
+    .stats-table td:last-child { font-weight: 600; }
+
+    /* ── MFW table ── */
+    .mfw-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .mfw-item {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+      padding: 6px 10px; font-size: 12px;
+    }
+    .mfw-item .mfw-rank { color: #94a3b8; margin-right: 6px; }
+    .mfw-item .mfw-freq { float: right; color: #2563eb; font-weight: 600; }
+
+    /* ── Corpus stats ── */
+    .corpus-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .corpus-table th { background: #f1f5f9; text-align: left; padding: 8px 12px;
+                       border-bottom: 2px solid #e2e8f0; }
+    .corpus-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
+    .corpus-table tr:hover td { background: #f8fafc; }
+    .warn-badge { color: #ca8a04; font-size: 11px; }
+    .alias-pill {
+      display: inline-block;
+      min-width: 34px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-weight: 700;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    /* ── Methodology ── */
+    .method-box {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 20px 24px;
+    }
+    .method-formula {
+      font-family: "Cambria Math", "Times New Roman", serif;
+      background: #1e293b; color: #a5f3fc;
+      padding: 12px 18px; border-radius: 6px; font-size: 14px;
+      margin: 12px 0;
+    }
+    .method-formula.multi-line div + div { margin-top: 6px; }
+    .math-inline {
+      font-family: "Cambria Math", "Times New Roman", serif;
+      white-space: nowrap;
+    }
+    .math-inline sub, .math-inline sup, .method-formula sub, .method-formula sup {
+      font-size: 75%;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+    .math-inline sub, .method-formula sub { bottom: -0.25em; }
+    .math-inline sup, .method-formula sup { top: -0.5em; }
+
+    /* ── Recommendations ── */
+    .rec-list { list-style: none; }
+    .rec-list li {
+      padding: 10px 14px; margin-bottom: 8px;
+      background: #fff; border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      padding-left: 36px; position: relative;
+    }
+    .rec-list li::before {
+      content: "→"; position: absolute; left: 12px; color: #2563eb; font-weight: 700;
+    }
+
+    /* ── Print button ── */
+    .print-bar {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; gap: 10px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 8px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-ghost   { background: #fff; color: #1e293b; border: 1px solid #e2e8f0; }
+
+    /* ── Print styles ── */
+    @media print {
+      .print-bar { display: none; }
+      body { background: #fff; }
+      .page { padding: 16px; }
+      .report-header { background: #1e3a5f !important; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ══════════════════ HEADER ══════════════════ -->
+  <div class="report-header">
+    <h1>🔍 Аналітичний звіт DIMS-оцінювання</h1>
+    <p class="subtitle">Удосконалена методика моніторингу з інтеграцією <span class="math-inline">&Delta;<sub>Burrows</sub></span></p>
+    <div class="report-meta">
+      <span>Дата: {{ timestamp }}</span>
+      <span>Джерел проаналізовано: {{ n_docs }}</span>
+      <span>MFW (N): {{ mfw_n }}</span>
+      <span>Поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span>: {{ threshold }}</span>
+      <span>Порівняно пар: {{ n_pairs }}</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════ KEY INDICATORS ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Ключові показники</h2>
+    <div class="kpi-grid">
+      <div class="kpi-card info">
+        <div class="kpi-value">{{ n_docs }}</div>
+        <div class="kpi-label">Джерел</div>
+      </div>
+      <div class="kpi-card info">
+        <div class="kpi-value">{{ n_pairs }}</div>
+        <div class="kpi-label">Пар порівняно</div>
+      </div>
+      <div class="kpi-card {% if n_flagged > 0 %}danger{% else %}ok{% endif %}">
+        <div class="kpi-value">{{ n_flagged }}</div>
+        <div class="kpi-label">Підозрілих пар</div>
+      </div>
+      <div class="kpi-card {% if delta_stats.min < 0.3 %}danger{% elif delta_stats.min < 0.6 %}warn{% else %}ok{% endif %}">
+        <div class="kpi-value">{{ "%.3f"|format(delta_stats.min) }}</div>
+        <div class="kpi-label">Мін. <span class="math-inline">&Delta;<sub>Burrows</sub></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Інтегральна оцінка DIMS</h2>
+    <div class="kpi-grid">
+      <div class="kpi-card info">
+        <div class="kpi-value">{{ "%.3f"|format(dims_assessment.r_dims) }}</div>
+        <div class="kpi-label"><span class="math-inline">R<sub>DIMS</sub></span></div>
+      </div>
+      <div class="kpi-card {% if dims_assessment.grade.grade in ['SS', 'SSS'] %}danger{% elif dims_assessment.grade.grade == 'S' %}warn{% else %}ok{% endif %}">
+        <div class="kpi-value">{{ dims_assessment.grade.grade }}</div>
+        <div class="kpi-label">{{ dims_assessment.grade.label }}</div>
+      </div>
+      <div class="kpi-card info">
+        <div class="kpi-value">{{ "%.2f"|format(dims_assessment.indicators.I_content) }}</div>
+        <div class="kpi-label"><span class="math-inline">I<sub>content</sub></span></div>
+      </div>
+      <div class="kpi-card info">
+        <div class="kpi-value">{{ "%.2f"|format(dims_assessment.indicators.I_coord) }}</div>
+        <div class="kpi-label"><span class="math-inline">I<sub>coord</sub></span></div>
+      </div>
+      <div class="kpi-card info">
+        <div class="kpi-value">{{ "%.2f"|format(dims_assessment.indicators.I_source) }}</div>
+        <div class="kpi-label"><span class="math-inline">I<sub>source</sub></span></div>
+      </div>
+    </div>
+    <table class="stats-table">
+      <tr><td><span class="math-inline">I<sub>content</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_content) }}</td></tr>
+      <tr><td><span class="math-inline">I<sub>coord</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_coord) }}</td></tr>
+      <tr><td><span class="math-inline">I<sub>dynamics</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_dynamics) }}</td></tr>
+      <tr><td><span class="math-inline">I<sub>impact</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_impact) }}</td></tr>
+      <tr><td><span class="math-inline">I<sub>source</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_source) }}</td></tr>
+      <tr><td>Рекомендований грейд</td><td>{{ dims_assessment.grade.grade }} ({{ dims_assessment.grade.label }})</td></tr>
+    </table>
+    {% if source_breakdown_rows %}
+    <table class="corpus-table" style="margin-top:14px">
+      <thead>
+        <tr>
+          <th>Джерело</th>
+          <th>Домен</th>
+          <th><span class="math-inline">I<sub>source</sub></span> contribution</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in source_breakdown_rows %}
+        <tr>
+          <td>
+            <a class="source-ref" href="{{ row.source.url or row.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ row.source.display_title }}</a>
+          </td>
+          <td>{{ row.source.domain or row.label }}</td>
+          <td>{{ "%.4f"|format(row.score) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  <!-- ══════════════════ EXECUTIVE SUMMARY ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Виконавче резюме</h2>
+    <div class="exec-summary">
+      {% if dims_assessment.grade.grade in ['SS', 'SSS'] %}
+        <strong>Виявлено підвищений DIMS-ризик.</strong>
+        Інтегральна оцінка становить <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong>,
+        що відповідає грейду <strong>{{ dims_assessment.grade.grade }}</strong>.
+        Найбільший внесок у підсумковий висновок роблять індикатори змістового та координаційного аналізу.
+        Рекомендується пріоритетне експертне опрацювання та перевірка потенційно скоординованих джерел.
+      {% elif dims_assessment.grade.grade == 'S' %}
+        <strong>Виявлено значущий рівень інтересу.</strong>
+        Інтегральна оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> вказує на наявність
+        достатніх ознак інформаційної загрози для повного аналітичного опрацювання.
+        Стилометричні та змістові індикатори потребують додаткової верифікації.
+      {% else %}
+        <strong>Виявлено низький або локальний рівень DIMS-ризику.</strong>
+        Інтегральна оцінка становить <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong>,
+        що відповідає грейду <strong>{{ dims_assessment.grade.grade }}</strong>.
+        Підстав для пріоритетного реагування не виявлено, однак результати слід інтерпретувати
+        разом із контекстом події та експертним аналізом.
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ══════════════════ DENDROGRAM ══════════════════ -->
+  {% if dendrogram_b64 %}
+  <div class="section">
+    <h2 class="section-title">Дендрограма кластеризації</h2>
+    <div class="chart-block">
+      <img src="data:image/png;base64,{{ dendrogram_b64 }}" alt="Дендрограма" />
+      <div class="chart-caption">
+        <strong>Як читати дендрограму:</strong>
+        Горизонтальна вісь — компактні ідентифікатори джерел; вертикальна — стилістична відстань <span class="math-inline">&Delta;<sub>Burrows</sub></span> при об'єднанні груп.
+        Джерела, що з'єднуються <em>нижче</em>, мають більш схожий стиль.
+        Дуже низьке злиття (майже біля нуля) — сигнал координації або спільного авторства.
+        Пунктирна лінія показує поріг кластеризації. Великі «стрибки» у висоті означають суттєві стилістичні відмінності між групами.
+      </div>
+      <table class="corpus-table" style="margin-top:14px">
+        <thead>
+          <tr>
+            <th>Код</th>
+            <th>Джерело</th>
+            <th>Контекст</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in source_aliases %}
+          <tr>
+            <td><span class="alias-pill">{{ item.alias }}</span></td>
+            <td>
+              <a class="source-ref" href="{{ item.source.url or item.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ item.source.display_title }}</a>
+            </td>
+            <td>{{ item.source.domain or item.source.original_name or item.source.label }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ══════════════════ PCA ══════════════════ -->
+  {% if pca_b64 %}
+  <div class="section">
+    <h2 class="section-title">PCA-карта джерел</h2>
+    <div class="chart-block">
+      <img src="data:image/png;base64,{{ pca_b64 }}" alt="PCA-проєкція" />
+      <div class="chart-caption">
+        <strong>Як читати PCA-карту:</strong>
+        Кожна точка — одне джерело. <em>Близькі точки = схожий стиль.</em>
+        Кольори відповідають кластерам на дендрограмі.
+        Джерела, що кластеризуються разом — кандидати на координацію.
+        Відсотки на осях показують, яку частку стилістичної варіативності пояснює кожна вісь.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ══════════════════ FLAGGED PAIRS ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">
+      Підозрілі пари джерел
+      {% if n_flagged > 0 %}
+        <span style="font-size:14px; color:#64748b; font-weight:400">
+          ({{ n_flagged }} із {{ n_pairs }} пар мають <span class="math-inline">&Delta;<sub>Burrows</sub></span> &lt; <span class="math-inline">&theta;<sub>&Delta;</sub></span> = {{ threshold }})
+        </span>
+      {% endif %}
+    </h2>
+
+    {% if flagged %}
+      {% for item in flagged %}
+      <div class="pair-card {{ item.severity.css }}">
+        <div class="pair-header">
+          <span class="pair-badge {{ item.severity.css }}">{{ item.severity.icon }} {{ item.severity.label }}</span>
+          <span class="pair-sources">
+            <a class="source-ref" href="{{ item.a_source.url or item.a_source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ item.a_source.display_title }}</a><span class="arrow">↔</span><a class="source-ref" href="{{ item.b_source.url or item.b_source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ item.b_source.display_title }}</a>
+          </span>
+        </div>
+        <div class="pair-meta">
+          {{ item.a_source.domain or item.a_source.original_name or item.a_source.label }}
+          <span class="arrow">•</span>
+          {{ item.b_source.domain or item.b_source.original_name or item.b_source.label }}
+        </div>
+        <div class="pair-delta">
+          <strong><span class="math-inline">&Delta;<sub>Burrows</sub></span> = {{ "%.4f"|format(item.delta) }}</strong>
+          &nbsp;|&nbsp; Поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span> = {{ threshold }}
+          &nbsp;|&nbsp; Нижче порогу на {{ "%.1f"|format((1 - item.delta/threshold)*100) }}%
+        </div>
+        <div class="pair-interp">
+          {% if item.severity.css == 'critical' %}
+            <strong>Висока ймовірність координації або спільного авторства.</strong>
+            Стилістична відстань аномально низька — тексти демонструють практично ідентичні
+            паттерни вживання функціональних слів. Потребує першочергової перевірки.
+          {% elif item.severity.css == 'high' %}
+            <strong>Значна стилістична подібність.</strong>
+            Ймовірна координація або схожа редакційна політика. Рекомендується порівняльний
+            контент-аналіз цих двох джерел.
+          {% else %}
+            <strong>Помітна подібність стилю.</strong>
+            Може бути зумовлена жанровою специфікою або ситуативним збігом.
+            Рекомендується додаткова перевірка.
+          {% endif %}
+        </div>
+        <div class="source-subref">
+          {% if item.a_source.url %}
+            <a class="source-ref" href="{{ item.a_source.url }}" target="_blank" rel="noopener noreferrer">Відкрити джерело A</a>
+          {% else %}
+            <a class="source-ref" href="{{ item.a_source.local_text_url }}" target="_blank" rel="noopener noreferrer">Відкрити текст A</a>
+          {% endif %}
+          &nbsp;|&nbsp;
+          {% if item.b_source.url %}
+            <a class="source-ref" href="{{ item.b_source.url }}" target="_blank" rel="noopener noreferrer">Відкрити джерело B</a>
+          {% else %}
+            <a class="source-ref" href="{{ item.b_source.local_text_url }}" target="_blank" rel="noopener noreferrer">Відкрити текст B</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div style="padding:24px; text-align:center; color:#64748b; background:#f8fafc;
+                  border-radius:10px; border:1px solid #e2e8f0;">
+        ✅ Жодна пара не перевищила поріг підозрілості ({{ threshold }}).
+        Ознак стилістичної координації не виявлено.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ══════════════════ DISTANCE MATRIX ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Матриця відстаней <span class="math-inline">&Delta;<sub>Burrows</sub></span></h2>
+    <p class="section-body" style="margin-bottom:12px">
+      Менше значення <span class="math-inline">&Delta;<sub>Burrows</sub></span> = більша стилістична схожість. Діагональ = 0 (документ порівнюється сам із собою).
+      <strong style="color:#dc2626">Червоніші клітинки</strong> — більш подібні пари.
+    </p>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th></th>
+            {% for lbl in labels %}
+            <th>{{ source_lookup[lbl].display_title }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in matrix_rows %}
+          <tr>
+            <th style="text-align:left">{{ row.source.display_title }}</th>
+            {% for cell in row.cells %}
+            {% if cell.col == row.label %}
+              <td class="self">—</td>
+            {% else %}
+              {% set ratio = 1 - (cell.val / max_delta) %}
+              {% set r = (255 * ratio) | int %}
+              {% set g = (255 * (1 - ratio * 0.5)) | int %}
+              <td style="background:rgba({{ r }},{{ g }},180,{{ ratio * 0.6 + 0.1 }})">
+                {{ "%.3f"|format(cell.val) }}
+              </td>
+            {% endif %}
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════ DELTA STATISTICS ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Статистика розподілу <span class="math-inline">&Delta;<sub>Burrows</sub></span></h2>
+    <table class="stats-table">
+      <tr><td>Мінімальна <span class="math-inline">&Delta;<sub>Burrows</sub></span></td><td>{{ "%.4f"|format(delta_stats.min) }}</td></tr>
+      <tr><td>Максимальна <span class="math-inline">&Delta;<sub>Burrows</sub></span></td><td>{{ "%.4f"|format(delta_stats.max) }}</td></tr>
+      <tr><td>Середня (Mean)</td><td>{{ "%.4f"|format(delta_stats.mean) }}</td></tr>
+      <tr><td>Медіана (Median)</td><td>{{ "%.4f"|format(delta_stats.median) }}</td></tr>
+      <tr><td><span class="math-inline">&sigma;<sub>&Delta;</sub></span></td><td>{{ "%.4f"|format(delta_stats.std) }}</td></tr>
+    </table>
+  </div>
+
+  <!-- ══════════════════ CORPUS STATS ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Статистика корпусу</h2>
+    <table class="corpus-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Джерело</th>
+          <th>Токенів</th>
+          <th>Примітка</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ts in token_stats %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>
+            <a class="source-ref" href="{{ ts.source.url or ts.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ ts.source.display_title }}</a>
+            <div class="source-subref">{{ ts.source.domain or ts.source.original_name or ts.label }}</div>
+          </td>
+          <td>{{ "{:,}".format(ts.tokens) }}</td>
+          <td>{% if ts.warn %}<span class="warn-badge">⚠ &lt;500 токенів</span>{% else %}—{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════ TOP MFW ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Топ-20 найчастіших слів (MFW)</h2>
+    <p class="section-body" style="margin-bottom:12px">
+      Саме ці слова використано як стилометричні ознаки. Переважають функціональні слова
+      (прийменники, сполучники, частки) — найбільш діагностичні для стилю.
+    </p>
+    <div class="mfw-grid">
+      {% for item in mfw_table %}
+      <div class="mfw-item">
+        <span class="mfw-rank">{{ item.rank }}.</span>
+        <strong>{{ item.word }}</strong>
+        <span class="mfw-freq">{{ item.freq }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- ══════════════════ METHODOLOGY ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Методологія</h2>
+    <div class="method-box">
+      <p><strong>Методика:</strong> інтегроване DIMS-оцінювання з використанням стилометричного методу <span class="math-inline">&Delta;<sub>Burrows</sub></span>.</p>
+      <div class="method-formula">
+        R<sub>DIMS</sub> = w<sub>1</sub>I<sub>content</sub> + w<sub>2</sub>I<sub>coord</sub> + w<sub>3</sub>I<sub>dynamics</sub> + w<sub>4</sub>I<sub>impact</sub> + w<sub>5</sub>I<sub>source</sub>
+      </div>
+      <p>де <span class="math-inline">I<sub>content</sub></span>, <span class="math-inline">I<sub>coord</sub></span>, <span class="math-inline">I<sub>dynamics</sub></span>, <span class="math-inline">I<sub>impact</sub></span>, <span class="math-inline">I<sub>source</sub></span> —
+      часткові індикатори загрози, а <span class="math-inline">w<sub>1</sub> ... w<sub>5</sub></span> — вагові коефіцієнти.</p>
+      <div class="method-formula multi-line">
+        <div>G<sub>DIMS</sub> = F,&nbsp;&nbsp; R<sub>DIMS</sub> &lt; &theta;<sub>1</sub></div>
+        <div>G<sub>DIMS</sub> = B,&nbsp;&nbsp; &theta;<sub>1</sub> &le; R<sub>DIMS</sub> &lt; &theta;<sub>2</sub></div>
+        <div>G<sub>DIMS</sub> = S,&nbsp;&nbsp; &theta;<sub>2</sub> &le; R<sub>DIMS</sub> &lt; &theta;<sub>3</sub></div>
+        <div>G<sub>DIMS</sub> = SS,&nbsp; &theta;<sub>3</sub> &le; R<sub>DIMS</sub> &lt; &theta;<sub>4</sub></div>
+        <div>G<sub>DIMS</sub> = SSS, R<sub>DIMS</sub> &ge; &theta;<sub>4</sub></div>
+      </div>
+      <p>де <span class="math-inline">&theta;<sub>1</sub> ... &theta;<sub>4</sub></span> — порогові значення для класифікації рівня інтересу.</p>
+      <br>
+      <p><strong>Логіка методики:</strong> змістові, координаційні, динамічні та впливові ознаки
+      поєднуються в єдину інтегральну оцінку. <span class="math-inline">&Delta;<sub>Burrows</sub></span> використовується як частина
+      індикатора координації між джерелами.</p>
+      <br>
+      <p><strong>Кластеризація:</strong> average linkage використовується для групування джерел за
+      попередньо обчисленою матрицею <span class="math-inline">&Delta;<sub>Burrows</sub></span>.</p>
+      <br>
+      <p><strong>Обмеження:</strong> Метод є стилометричним індикатором, а не доказом. Жанрова схожість
+      або спільна тематика можуть підвищувати подібність незалежних текстів. Результати потребують
+      доповнення контент-аналізом та OSINT-верифікацією.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════ RECOMMENDATIONS ══════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Рекомендації</h2>
+    <ul class="rec-list">
+      {% if n_flagged > 0 %}
+      <li>Провести детальний контент-аналіз пар із рівнем <strong>Критичний</strong> та
+          <strong>Високий</strong> для підтвердження координації.</li>
+      <li>Порівняти часові мітки публікацій підозрілих джерел (синхронність публікацій
+          посилює аргумент координації).</li>
+      <li>Встановити юридичних власників та адміністраторів підозрілих ресурсів через
+          OSINT-методи (WHOIS, MediaOwnership тощо).</li>
+      {% endif %}
+      <li>Повторити аналіз із різними значеннями MFW (50, 100, 200, 500) для перевірки
+          стабільності результатів.</li>
+      <li>Розширити корпус — аналіз на текстах обсягом від 1000–2000 слів на документ
+          дає більш надійні результати.</li>
+      <li>Аналізувати тексти лише однією мовою в рамках одного запуску для уникнення
+          міжмовних артефактів.</li>
+      <li>Результати є індикативними — рекомендується інтерпретувати в комплексі
+          з іншими методами (контент-аналіз, мережевий аналіз, метадані).</li>
+    </ul>
+  </div>
+
+  <!-- ══════════════════ FOOTER ══════════════════ -->
+  <div style="text-align:center; color:#94a3b8; font-size:12px; margin-top:40px;
+              padding-top:20px; border-top:1px solid #e2e8f0">
+    Звіт згенеровано: {{ timestamp }} &bull;
+    Метод: <span class="math-inline">&Delta;<sub>Burrows</sub></span> Stylometric Analysis &bull;
+    PhD-дисертація: Системи підтримки прийняття рішень
+  </div>
+
+</div><!-- .page -->
+
+<!-- Fixed print bar -->
+<div class="print-bar">
+  <button class="btn btn-ghost" onclick="window.close(); if(!window.closed) window.location.href='/'">← Назад</button>
+  <button class="btn btn-primary" onclick="window.print()">🖨 Друкувати / PDF</button>
+</div>
+
+</body>
+</html>

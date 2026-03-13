@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Стилометрія (Flask)",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd '/Users/odin/Desktop/Стилометрія' && .venv/bin/python app.py"],
+      "port": 5001
+    }
+  ]
+}

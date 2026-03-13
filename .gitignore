@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# Generated output (charts, reports, cleaned texts)
+output/
+
+# Temp files
+_tmp_*
