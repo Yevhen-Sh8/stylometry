@@ -92,8 +92,9 @@ def extract_text_from_rtf(filepath: Path) -> str:
 
 def _strip_html_tags(text: str) -> str:
     """Remove HTML/XML tags and decode entities."""
-    text = re.sub(r"<script[^>]*>.*?</script>", " ", text, flags=re.S | re.I)
-    text = re.sub(r"<style[^>]*>.*?</style>",  " ", text, flags=re.S | re.I)
+    # Use [^<]* instead of .*? to avoid catastrophic backtracking (ReDoS)
+    text = re.sub(r"<script[^>]*>[^<]*(?:<(?!/script>)[^<]*)*</script>", " ", text, flags=re.S | re.I)
+    text = re.sub(r"<style[^>]*>[^<]*(?:<(?!/style>)[^<]*)*</style>",   " ", text, flags=re.S | re.I)
     text = re.sub(r"<[^>]+>", " ", text)
     return html_module.unescape(text)
 

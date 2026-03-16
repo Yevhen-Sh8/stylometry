@@ -42,6 +42,7 @@ from core.analysis import run_pipeline
 # ─────────────────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB upload limit
 
 BASE_DIR   = Path(__file__).parent
 OUTPUT_DIR = BASE_DIR / "output"
@@ -380,8 +381,10 @@ def remove_source():
 
 @app.post("/api/clear")
 def clear_sources():
+    global LAST_RESULTS
     SOURCES.clear()
     SOURCE_META.clear()
+    LAST_RESULTS = {}
     return _ok()
 
 
@@ -551,6 +554,10 @@ def report():
 
 @app.get("/output/<path:filename>")
 def output_file(filename):
+    # Prevent path traversal: resolve and verify the file is inside OUTPUT_DIR
+    resolved = (OUTPUT_DIR / filename).resolve()
+    if not str(resolved).startswith(str(OUTPUT_DIR.resolve())):
+        return _err("Недопустимий шлях.", 403)
     return send_from_directory(OUTPUT_DIR, filename)
 
 
@@ -559,7 +566,7 @@ if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     CLEAN_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 60)
-    print("  Стилометричний аналіз — веб-інтерфейс")
+    print("  DIMS — Моніторинг інформаційних загроз")
     print("  Відкрийте у браузері: http://localhost:5001")
     print("=" * 60)
-    app.run(debug=True, port=5001)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1", port=5001)

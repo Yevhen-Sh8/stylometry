@@ -116,9 +116,12 @@ function sourcePrimaryText(source) {
 function sourceLinkHtml(source, className = "source-link") {
   const href = source.url || source.local_text_url || "";
   const text = sourcePrimaryText(source);
-  if (!href) return `<span class="${className}">${text}</span>`;
+  const safeCls = escHtml(className);
+  if (!href) return `<span class="${safeCls}">${text}</span>`;
   const safeHref = escHtml(href);
-  return `<a class="${className}" href="${safeHref}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  // Block javascript: URIs
+  if (/^\s*javascript:/i.test(href)) return `<span class="${safeCls}">${text}</span>`;
+  return `<a class="${safeCls}" href="${safeHref}" target="_blank" rel="noopener noreferrer">${text}</a>`;
 }
 
 function sourceContextHtml(source) {
@@ -458,11 +461,11 @@ function renderResults(data) {
         Підозрілі пари (${MATH.delta} &lt; ${MATH.thetaDelta} = ${data.flagged[0]?.delta !== undefined ? parseFloat(els.thrInput.value) : "?"})
       </h3>
       ${data.flagged.map(f => `
-        <div class="flagged-item ${f.severity.css}">
-          <span class="flagged-icon">${f.severity.icon}</span>
+        <div class="flagged-item ${escHtml(f.severity.css || "")}">
+          <span class="flagged-icon">${escHtml(f.severity.icon || "")}</span>
           <div class="flagged-info">
             <div class="flagged-names">${sourceLinkHtml(f.a_meta, "flagged-link")} ↔ ${sourceLinkHtml(f.b_meta, "flagged-link")}</div>
-            <div class="flagged-delta">${MATH.delta} = ${f.delta.toFixed(4)} &bull; ${f.severity.label}</div>
+            <div class="flagged-delta">${MATH.delta} = ${f.delta.toFixed(4)} &bull; ${escHtml(f.severity.label || "")}</div>
             <div class="flagged-context">${sourceContextHtml(f.a_meta)}<br>${sourceContextHtml(f.b_meta)}</div>
           </div>
         </div>
