@@ -163,14 +163,19 @@ def _source_lookup(label: str) -> dict:
     return _build_source_meta(label, text)
 
 
-def _source_breakdown_rows(source_breakdown: dict[str, float]) -> list[dict]:
+def _source_breakdown_rows(
+    source_breakdown: dict[str, float],
+    source_details: dict[str, dict] | None = None,
+) -> list[dict]:
     rows = []
     for label, score in sorted(source_breakdown.items(), key=lambda item: item[1], reverse=True):
         source = _source_lookup(label)
+        details = (source_details or {}).get(label, {})
         rows.append({
             "label": label,
             "score": score,
             "source": source,
+            "components": details,
         })
     return rows
 
@@ -455,7 +460,10 @@ def analyze():
         top5_similar=top5,
         delta_stats=results["delta_stats"],
         dims_assessment=results["dims_assessment"],
-        source_breakdown=_source_breakdown_rows(results["dims_assessment"].get("source_breakdown", {})),
+        source_breakdown=_source_breakdown_rows(
+            results["dims_assessment"].get("source_breakdown", {}),
+            results["dims_assessment"].get("source_details", {}),
+        ),
         mfw_n=mfw_n,
         threshold=threshold,
     )
@@ -544,7 +552,10 @@ def report():
         token_stats=token_stats,
         mfw_table=mfw_table,
         source_aliases=source_aliases,
-        source_breakdown_rows=_source_breakdown_rows(r["dims_assessment"].get("source_breakdown", {})),
+        source_breakdown_rows=_source_breakdown_rows(
+            r["dims_assessment"].get("source_breakdown", {}),
+            r["dims_assessment"].get("source_details", {}),
+        ),
         max_delta=max_delta,
         dims_assessment=r["dims_assessment"],
         dendrogram_b64=r.get("dendrogram_b64", ""),

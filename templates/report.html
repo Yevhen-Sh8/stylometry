@@ -411,18 +411,38 @@
         <tr><td><span class="math-inline">I<sub>coord</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_coord) }}</td><td>Координаційні ознаки (вкл. <span class="math-inline">&Delta;<sub>Burrows</sub></span>)</td></tr>
         <tr><td><span class="math-inline">I<sub>dynamics</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_dynamics) }}</td><td>Динаміка поширення</td></tr>
         <tr><td><span class="math-inline">I<sub>impact</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_impact) }}</td><td>Потенційний вплив</td></tr>
-        <tr><td><span class="math-inline">I<sub>source</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_source) }}</td><td>Ризик джерела</td></tr>
+        <tr><td><span class="math-inline">I<sub>source</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_source) }}</td><td>Ризик джерела: домен, прозорість, редакційні та джерельні ознаки</td></tr>
         <tr><td><span class="math-inline">R<sub>DIMS</sub></span></td><td>{{ "%.4f"|format(dims_assessment.r_dims) }}</td><td>Інтегральна оцінка → грейд <strong>{{ dims_assessment.grade.grade }}</strong> ({{ dims_assessment.grade.label }})</td></tr>
       </tbody>
     </table>
+    {% if dims_assessment.source_components %}
+    <table class="corpus-table" style="margin-top:10px">
+      <thead><tr><th>Складова</th><th>Значення</th><th>Вага</th><th>Опис</th></tr></thead>
+      <tbody>
+        {% for label, item in dims_assessment.source_components.items() %}
+        <tr>
+          <td><span class="math-inline">{{ label }}</span></td>
+          <td>{{ "%.4f"|format(item.score) }}</td>
+          <td>{{ "%.2f"|format(item.weight) }}</td>
+          <td>{{ item.description }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
     {% if source_breakdown_rows %}
     <table class="corpus-table" style="margin-top:10px">
-      <thead><tr><th>Джерело</th><th>Домен</th><th><span class="math-inline">I<sub>source</sub></span></th></tr></thead>
+      <thead><tr><th>Джерело</th><th>Домен</th><th>Профіль ризику</th><th><span class="math-inline">I<sub>source</sub></span></th></tr></thead>
       <tbody>
         {% for row in source_breakdown_rows %}
         <tr>
           <td><a href="{{ row.source.url or row.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ row.source.display_title }}</a></td>
           <td>{{ row.source.domain or row.label }}</td>
+          <td>
+            <span class="math-inline">R<sub>domain</sub></span>={{ "%.2f"|format(row.components.domain or 0) }},
+            <span class="math-inline">R<sub>owner</sub></span>={{ "%.2f"|format(row.components.owner or 0) }},
+            <span class="math-inline">R<sub>cred</sub></span>={{ "%.2f"|format(row.components.cred or 0) }}
+          </td>
           <td>{{ "%.4f"|format(row.score) }}</td>
         </tr>
         {% endfor %}

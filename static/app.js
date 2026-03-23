@@ -143,8 +143,31 @@ function sourceBreakdownHtml(rows) {
           <div style="min-width:0">
             ${sourceLinkHtml(row.source, "flagged-link")}<br>
             <span style="color:#64748b">${escHtml(row.source.domain || row.source.label)}</span>
+            ${row.components ? `<br><span style="color:#94a3b8">R_domain=${(row.components.domain || 0).toFixed(2)} · R_owner=${(row.components.owner || 0).toFixed(2)} · R_cred=${(row.components.cred || 0).toFixed(2)}</span>` : ""}
           </div>
           <div style="font-weight:700; color:${row.score >= 0.85 ? "#b91c1c" : row.score >= 0.55 ? "#c2410c" : "#2563eb"}">${row.score.toFixed(3)}</div>
+        </div>
+      `).join("")}
+    </div>`;
+}
+
+function sourceComponentHtml(components) {
+  if (!components) return "";
+  const rows = Object.entries(components);
+  if (!rows.length) return "";
+  return `
+    <div style="margin-top:12px; background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden">
+      <div style="padding:10px 14px; background:#f8fafc; color:#334155; font-weight:700">Складові ${MATH.iSource}</div>
+      ${rows.map(([label, item]) => `
+        <div style="display:flex; justify-content:space-between; gap:12px; padding:10px 14px; border-top:1px solid #e5e7eb; font-size:12px">
+          <div style="min-width:0">
+            <div style="font-weight:600">${escHtml(label)}</div>
+            <div style="color:#64748b">${escHtml(item.description || "")}</div>
+          </div>
+          <div style="text-align:right; white-space:nowrap">
+            <div style="font-weight:700">${Number(item.score || 0).toFixed(3)}</div>
+            <div style="color:#94a3b8">w = ${Number(item.weight || 0).toFixed(2)}</div>
+          </div>
         </div>
       `).join("")}
     </div>`;
@@ -445,6 +468,7 @@ function renderResults(data) {
       ${MATH.iSource} = ${dims.indicators.I_source.toFixed(3)} &bull;
       Грейд = ${dims.grade.grade} (${escHtml(dims.grade.label)})
     </div>
+    ${sourceComponentHtml(dims.source_components)}
     ${sourceBreakdownHtml(data.source_breakdown)}`;
 
   if (data.flagged.length === 0) {

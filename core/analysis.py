@@ -12,6 +12,8 @@ write files.  The top-level run_pipeline() orchestrates the full analysis.
 from __future__ import annotations
 
 import base64
+import json
+import re
 import string
 from collections import Counter
 from itertools import combinations
@@ -99,6 +101,47 @@ MEDIUM_RISK_DOMAIN_TOKENS = {
 }
 BASE_DIR = Path(__file__).resolve().parent.parent
 HIGH_RISK_DOMAINS_FILE = BASE_DIR / "Data" / "high_risk_domains_case1.txt"
+SOURCE_QUALITY_FILE = BASE_DIR / "Data" / "source_quality_overrides.json"
+SOURCE_COMPONENT_WEIGHTS = {
+    "domain": 0.45,
+    "owner": 0.15,
+    "policy": 0.10,
+    "finance": 0.10,
+    "original": 0.08,
+    "cred": 0.12,
+}
+SOURCE_COMPONENT_LABELS = {
+    "domain": "R_domain",
+    "owner": "R_owner",
+    "policy": "R_policy",
+    "finance": "R_finance",
+    "original": "R_original",
+    "cred": "R_cred",
+}
+SOURCE_COMPONENT_DESCRIPTIONS = {
+    "domain": "Доменний ризик джерела та належність до ризикових медіа.",
+    "owner": "Непрозорість власності, контактів або походження джерела.",
+    "policy": "Відсутність або сумнівність редакційних політик джерела.",
+    "finance": "Непрозорість фінансування або інституційної підзвітності.",
+    "original": "Низька частка власного контенту або ознаки компілятивності.",
+    "cred": "Ознаки використання анонімних, ненадійних чи неперевірюваних джерел.",
+}
+ANONYMOUS_SOURCE_PATTERNS = (
+    "анонімне джерело", "анонімні джерела", "неназване джерело", "неназвані джерела",
+    "джерело повідомило", "джерела повідомили", "за словами джерела",
+    "анонимный источник", "анонимные источники", "неназванный источник",
+    "неназванные источники", "по словам источника", "источник сообщил", "источники сообщили",
+    "anonymous source", "anonymous sources", "unnamed source", "unnamed sources",
+    "sources said", "according to sources", "source said",
+    "anonyme quelle", "sources anonymes", "selon des sources",
+    "anonyme quelle", "anonyme quellen", "laut quellen", "anonyme quelle",
+)
+REPRINT_PATTERNS = (
+    "передрук", "передруковано", "передрук з", "за матеріалами", "за матеріалами видання",
+    "републікація", "reprint", "republished", "adapted from", "based on materials from",
+    "по материалам", "перепечатка", "перепечатано", "adapté de",
+    "selon ", "d'après ", "nach material", "übernommen von",
+)
 
 
 def _normalise_domain(value: str) -> str:
@@ -126,6 +169,31 @@ def _load_high_risk_domains(path: Path) -> set[str]:
 
 
 HIGH_RISK_DOMAINS = _load_high_risk_domains(HIGH_RISK_DOMAINS_FILE)
+
+
+def _load_source_quality_profiles(path: Path) -> dict[str, dict[str, float]]:
+    if not path.exists():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    profiles: dict[str, dict[str, float]] = {}
+    if not isinstance(raw, dict):
+        return profiles
+    for domain, profile in raw.items():
+        norm = _normalise_domain(domain)
+        if not norm or not isinstance(profile, dict):
+            continue
+        profiles[norm] = {
+            key: float(np.clip(profile.get(key, 0.0), 0.0, 1.0))
+            for key in SOURCE_COMPONENT_WEIGHTS
+            if key != "domain"
+        }
+    return profiles
+
+
+SOURCE_QUALITY_PROFILES = _load_source_quality_profiles(SOURCE_QUALITY_FILE)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -370,16 +438,93 @@ def _domain_risk_score(domain: str) -> float:
     return 0.0
 
 
-def _source_score(source_meta: dict[str, dict] | None) -> tuple[float, dict[str, float]]:
-    if not source_meta:
-        return 0.0, {}
-    per_source = {
-        label: _domain_risk_score((meta or {}).get("domain", ""))
-        for label, meta in source_meta.items()
+def _domain_profile(domain: str) -> dict[str, float]:
+    norm = _normalise_domain(domain)
+    if not norm:
+        return {}
+    if norm in SOURCE_QUALITY_PROFILES:
+        return SOURCE_QUALITY_PROFILES[norm]
+    for candidate, profile in SOURCE_QUALITY_PROFILES.items():
+        if norm.endswith(f".{candidate}"):
+            return profile
+    return {}
+
+
+def _pattern_risk(text: str, patterns: tuple[str, ...], weight: float) -> float:
+    if not text:
+        return 0.0
+    lower = text.lower()
+    hits = sum(1 for pattern in patterns if pattern and pattern in lower)
+    return float(np.clip(hits * weight, 0.0, 1.0))
+
+
+def _source_component_scores(meta: dict | None, text: str) -> dict[str, float]:
+    meta = meta or {}
+    domain = (meta.get("domain") or "").strip()
+    source_type = (meta.get("type") or "").strip().lower()
+    domain_score = _domain_risk_score(domain)
+    profile = _domain_profile(domain)
+
+    owner_score = profile.get("owner", 0.0)
+    policy_score = profile.get("policy", 0.0)
+    finance_score = profile.get("finance", 0.0)
+    original_score = profile.get("original", 0.0)
+    cred_score = profile.get("cred", 0.0)
+
+    if not domain:
+        owner_score = max(owner_score, 0.35 if source_type in {"text", "html"} else 0.20)
+    elif domain_score >= 0.85:
+        owner_score = max(owner_score, 0.45)
+        policy_score = max(policy_score, 0.35)
+        finance_score = max(finance_score, 0.35)
+    elif domain_score >= 0.55:
+        owner_score = max(owner_score, 0.25)
+
+    original_score = max(original_score, _pattern_risk(text, REPRINT_PATTERNS, 0.20))
+    cred_score = max(cred_score, _pattern_risk(text, ANONYMOUS_SOURCE_PATTERNS, 0.28))
+
+    components = {
+        "domain": float(np.clip(domain_score, 0.0, 1.0)),
+        "owner": float(np.clip(owner_score, 0.0, 1.0)),
+        "policy": float(np.clip(policy_score, 0.0, 1.0)),
+        "finance": float(np.clip(finance_score, 0.0, 1.0)),
+        "original": float(np.clip(original_score, 0.0, 1.0)),
+        "cred": float(np.clip(cred_score, 0.0, 1.0)),
     }
+    total = float(np.clip(sum(components[key] * SOURCE_COMPONENT_WEIGHTS[key] for key in SOURCE_COMPONENT_WEIGHTS), 0.0, 1.0))
+    components["total"] = total
+    return components
+
+
+def _source_score(
+    source_meta: dict[str, dict] | None,
+    corpus: dict[str, str] | None = None,
+) -> tuple[float, dict[str, float], dict[str, dict[str, float]], dict[str, float]]:
+    if not source_meta:
+        return 0.0, {}, {}, {}
+
+    per_source: dict[str, float] = {}
+    source_details: dict[str, dict[str, float]] = {}
+    component_lists = {key: [] for key in SOURCE_COMPONENT_WEIGHTS}
+
+    for label, meta in source_meta.items():
+        text = (corpus or {}).get(label, "")
+        components = _source_component_scores(meta, text)
+        per_source[label] = components["total"]
+        source_details[label] = components
+        for key in SOURCE_COMPONENT_WEIGHTS:
+            component_lists[key].append(components[key])
+
     if not per_source:
-        return 0.0, {}
-    return float(np.mean(list(per_source.values()))), per_source
+        return 0.0, {}, {}, {}
+
+    component_breakdown = {
+        key: float(np.mean(values))
+        for key, values in component_lists.items()
+        if values
+    }
+    overall = float(np.mean(list(per_source.values())))
+    return overall, per_source, source_details, component_breakdown
 
 
 def _coordination_score(dist_df: pd.DataFrame, threshold: float) -> float:
@@ -420,13 +565,14 @@ def build_dims_assessment(
     flagged_pairs: int,
     n_pairs: int,
     source_meta: dict[str, dict] | None = None,
+    corpus: dict[str, str] | None = None,
 ) -> dict:
     doc_scores = _document_signal_scores(tokenised)
     content_score = float(np.mean([v["content"] for v in doc_scores.values()])) if doc_scores else 0.0
     impact_score = float(np.mean([v["impact"] for v in doc_scores.values()])) if doc_scores else 0.0
     coord_score = _coordination_score(dist_df, threshold)
     dynamics_score = _dynamics_score(len(tokenised), flagged_pairs, n_pairs)
-    source_score, source_breakdown = _source_score(source_meta)
+    source_score, source_breakdown, source_details, source_components = _source_score(source_meta, corpus)
     r_dims = (
         DEFAULT_WEIGHTS["content"] * content_score
         + DEFAULT_WEIGHTS["coord"] * coord_score
@@ -448,12 +594,25 @@ def build_dims_assessment(
         "grade": grade,
         "document_signals": doc_scores,
         "source_breakdown": {k: round(v, 4) for k, v in source_breakdown.items()},
+        "source_details": {
+            label: {k: round(v, 4) for k, v in values.items()}
+            for label, values in source_details.items()
+        },
+        "source_components": {
+            SOURCE_COMPONENT_LABELS[key]: {
+                "key": key,
+                "score": round(value, 4),
+                "weight": round(SOURCE_COMPONENT_WEIGHTS[key], 4),
+                "description": SOURCE_COMPONENT_DESCRIPTIONS[key],
+            }
+            for key, value in source_components.items()
+        },
         "notes": [
             "I_content: маркери маніпулятивного змісту у корпусі.",
             "I_coord: стилометрична близькість і щільність підозрілих пар.",
             "I_dynamics: інтенсивність корпусу та щільність координаційних збігів.",
             "I_impact: маркери потенційного впливу на безпекове середовище.",
-            "I_source: доменний ризик джерела та належність до ризикових медіа.",
+            "I_source: доменний ризик джерела, прозорість, редакційні ознаки та якість роботи з джерелами.",
         ],
     }
 
@@ -533,6 +692,7 @@ def run_pipeline(
         flagged_pairs=len(flagged),
         n_pairs=len(all_pairs),
         source_meta=source_meta,
+        corpus=corpus,
     )
 
     # ── Base64-encode chart images for HTML embedding ─────────────────────

@@ -1,0 +1,72 @@
+{
+  "ria.ru": {
+    "owner": 0.95,
+    "policy": 0.70,
+    "finance": 0.85,
+    "original": 0.15,
+    "cred": 0.55
+  },
+  "tass.ru": {
+    "owner": 0.90,
+    "policy": 0.65,
+    "finance": 0.80,
+    "original": 0.10,
+    "cred": 0.45
+  },
+  "de.rt.com": {
+    "owner": 0.95,
+    "policy": 0.75,
+    "finance": 0.85,
+    "original": 0.20,
+    "cred": 0.60
+  },
+  "russian.rt.com": {
+    "owner": 0.95,
+    "policy": 0.75,
+    "finance": 0.85,
+    "original": 0.20,
+    "cred": 0.60
+  },
+  "francais.rt.com": {
+    "owner": 0.95,
+    "policy": 0.75,
+    "finance": 0.85,
+    "original": 0.20,
+    "cred": 0.60
+  },
+  "actualidad-rt.com": {
+    "owner": 0.95,
+    "policy": 0.75,
+    "finance": 0.85,
+    "original": 0.20,
+    "cred": 0.60
+  },
+  "fr.sputniknews.africa": {
+    "owner": 0.90,
+    "policy": 0.70,
+    "finance": 0.80,
+    "original": 0.15,
+    "cred": 0.55
+  },
+  "sputniknews.ru": {
+    "owner": 0.90,
+    "policy": 0.70,
+    "finance": 0.80,
+    "original": 0.15,
+    "cred": 0.55
+  },
+  "tvzvezda.ru": {
+    "owner": 0.90,
+    "policy": 0.70,
+    "finance": 0.80,
+    "original": 0.15,
+    "cred": 0.55
+  },
+  "smotrim.ru": {
+    "owner": 0.85,
+    "policy": 0.65,
+    "finance": 0.75,
+    "original": 0.10,
+    "cred": 0.40
+  }
+}
