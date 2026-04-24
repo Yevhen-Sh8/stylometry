@@ -153,3 +153,51 @@ lenta.ru
 kp.ru
 aif.ru
 sputniknews.ru
+
+# ─────────────────────────────────────────────────────────────────────
+# Secondary backlinkers — domains that link to ≥3 distinct pro-Russia
+# network nodes OR have ≥50 backlinks total.
+# Source: Insight News, "ProRussia Website Network" (Flourish viz 16896198,
+# published 2024-03-08). Extracted 2026-04-23.
+# Review note: being a backlinker is a weaker signal than primary
+# classification — verify manually before treating as confirmed propaganda.
+# ─────────────────────────────────────────────────────────────────────
+123ru.net
+actualidad.rt.com
+africando.org
+alnas.fr
+atheisten-info.at
+callways.fr
+contre-info.com
+dreuz.info
+epochtimes.com.br
+europeanconservative.com
+focus.de
+foreignpolicy.com
+fr.sputniknews.com
+freiewelt.ne
+gaullistelibre.com
+generationfrexit.fr
+guerredefrance.fr
+infomeduse.ch
+inosmi.ru
+libertepolitique.com
+mai68.org
+medias-presse.info
+moderndiplomacy.eu
+nashagazeta.ch
+neviditelnypes.lidovky.cz
+ostexperte.de
+ouvrir-la-politique.org
+piensachile.com
+qoshe.com
+quebecnouvelles.com
+radiocourtoisie.fr
+russiancouncil.ru
+rutube.ru
+taz.de
+terreetpeuple.com
+thesaker.is
+ukraina.ru
+vava.be
+visegradpost.com

@@ -3,32 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DIMS — Моніторинг інформаційних загроз</title>
+  <title>DIMS — Інтегральна оцінка дезінформаційних ризиків за стилометричними ознаками</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
+
+<a class="skip-link" href="#main-content">Перейти до основного вмісту</a>
 
 <!-- ═══════════════════════ HEADER ═══════════════════════ -->
 <header class="app-header">
   <div class="header-inner">
     <div class="header-title">
-      <span class="header-icon">🔍</span>
+      <span class="header-icon" aria-hidden="true">🔍</span>
       <div>
-        <h1>DIMS — Моніторинг інформаційних загроз</h1>
-        <p>Програмна апробація удосконаленої методики моніторингу інформації у відкритих джерелах</p>
+        <h1>DIMS — Інтегральна оцінка дезінформаційних ризиків</h1>
+        <p>за стилометричними ознаками · програмна апробація удосконаленої методики моніторингу відкритих джерел</p>
       </div>
     </div>
-    <button class="btn btn-ghost" id="btnClearAll" title="Видалити всі джерела">
-      🗑 Очистити все
-    </button>
+    <div class="header-actions">
+      <div class="theme-toggle" role="group" aria-label="Тема інтерфейсу">
+        <button type="button" data-theme-value="auto" aria-pressed="false" title="Авто (системна)">
+          <span aria-hidden="true">⌬</span> Авто
+        </button>
+        <button type="button" data-theme-value="light" aria-pressed="false" title="Світла тема">
+          <span aria-hidden="true">☀</span> Світла
+        </button>
+        <button type="button" data-theme-value="dark" aria-pressed="false" title="Темна тема">
+          <span aria-hidden="true">☾</span> Темна
+        </button>
+      </div>
+      <button class="btn btn-ghost" id="btnOpenLog" type="button"
+              aria-label="Відкрити журнал моніторингу"
+              aria-controls="logDrawer" aria-expanded="false">
+        <span aria-hidden="true">📔</span> Журнал моніторингу
+      </button>
+      <button class="btn btn-ghost" id="btnClearAll" type="button"
+              aria-label="Видалити всі джерела">
+        <span aria-hidden="true">🗑</span> Очистити все
+      </button>
+    </div>
   </div>
 </header>
 
-<main class="app-main">
+<main class="app-main" id="main-content" tabindex="-1">
 
   <!-- ══════════════════ INPUT SECTION ══════════════════ -->
-  <section class="card" id="sectionInput">
-    <h2 class="section-title">📥 Додати джерела</h2>
+  <section class="card" id="sectionInput" aria-labelledby="inputHeading">
+    <h2 class="section-title" id="inputHeading">📥 Додати джерела</h2>
     <p class="section-hint">
       Додайте текстові матеріали для аналізу — завантажте файли, вкажіть посилання або вставте текст вручну.
       Потрібно мінімум <strong>2 джерела</strong>.
@@ -36,18 +57,25 @@
 
     <div class="input-tabs">
       <!-- TAB BUTTONS -->
-      <div class="tab-buttons" role="tablist">
-        <button class="tab-btn active" data-tab="files" role="tab">📁 Файли</button>
-        <button class="tab-btn"        data-tab="url"   role="tab">🌐 URL</button>
-        <button class="tab-btn"        data-tab="text"  role="tab">✏️ Текст</button>
-        <button class="tab-btn"        data-tab="html"  role="tab">🧩 HTML</button>
+      <div class="tab-buttons" role="tablist" aria-label="Спосіб додавання джерел">
+        <button class="tab-btn active" data-tab="files" role="tab" type="button"
+                id="tabbtn-files" aria-selected="true" aria-controls="tab-files" tabindex="0">📁 Файли</button>
+        <button class="tab-btn" data-tab="url" role="tab" type="button"
+                id="tabbtn-url" aria-selected="false" aria-controls="tab-url" tabindex="-1">🌐 URL</button>
+        <button class="tab-btn" data-tab="text" role="tab" type="button"
+                id="tabbtn-text" aria-selected="false" aria-controls="tab-text" tabindex="-1">✏️ Текст</button>
+        <button class="tab-btn" data-tab="html" role="tab" type="button"
+                id="tabbtn-html" aria-selected="false" aria-controls="tab-html" tabindex="-1">🧩 HTML</button>
+        <button class="tab-btn" data-tab="search" role="tab" type="button"
+                id="tabbtn-search" aria-selected="false" aria-controls="tab-search" tabindex="-1">🔎 Пошук новин</button>
       </div>
 
       <!-- TAB: FILES -->
-      <div class="tab-panel active" id="tab-files">
-        <div class="dropzone" id="dropzone">
+      <div class="tab-panel active" id="tab-files" role="tabpanel" aria-labelledby="tabbtn-files">
+        <div class="dropzone" id="dropzone" role="button" tabindex="0"
+             aria-label="Перетягніть файли сюди або натисніть для вибору">
           <div class="dropzone-content">
-            <span class="dropzone-icon">📂</span>
+            <span class="dropzone-icon" aria-hidden="true">📂</span>
             <p>Перетягніть файли сюди</p>
             <p class="hint">або</p>
             <label class="btn btn-secondary">
@@ -59,13 +87,15 @@
             <p class="hint">Підтримувані формати: TXT, PDF, DOCX, RTF, HTML</p>
           </div>
         </div>
-        <div id="uploadProgress" class="progress-bar" style="display:none">
+        <div id="uploadProgress" class="progress-bar" style="display:none"
+             role="progressbar" aria-label="Прогрес завантаження"
+             aria-valuemin="0" aria-valuemax="100">
           <div class="progress-fill" id="uploadProgressFill"></div>
         </div>
       </div>
 
       <!-- TAB: URL -->
-      <div class="tab-panel" id="tab-url">
+      <div class="tab-panel" id="tab-url" role="tabpanel" aria-labelledby="tabbtn-url" hidden>
         <div class="url-form">
           <div class="form-row">
             <div class="form-group flex-1">
@@ -79,15 +109,15 @@
                      placeholder="напр. pravda.com.ua" />
             </div>
           </div>
-          <button class="btn btn-primary" id="btnAddUrl">
-            <span class="btn-icon">🌐</span> Додати статтю
+          <button class="btn btn-primary" id="btnAddUrl" type="button">
+            <span class="btn-icon" aria-hidden="true">🌐</span> Додати статтю
           </button>
           <p class="hint">Текст статті буде автоматично витягнутий без реклами та навігації.</p>
         </div>
       </div>
 
       <!-- TAB: TEXT -->
-      <div class="tab-panel" id="tab-text">
+      <div class="tab-panel" id="tab-text" role="tabpanel" aria-labelledby="tabbtn-text" hidden>
         <div class="text-form">
           <div class="form-group">
             <label for="textLabel">Назва джерела</label>
@@ -99,14 +129,14 @@
             <textarea id="textInput" class="form-control textarea-large"
                       placeholder="Вставте текст статті тут..."></textarea>
           </div>
-          <button class="btn btn-primary" id="btnAddText">
-            <span class="btn-icon">✏️</span> Додати текст
+          <button class="btn btn-primary" id="btnAddText" type="button">
+            <span class="btn-icon" aria-hidden="true">✏️</span> Додати текст
           </button>
         </div>
       </div>
 
       <!-- TAB: HTML -->
-      <div class="tab-panel" id="tab-html">
+      <div class="tab-panel" id="tab-html" role="tabpanel" aria-labelledby="tabbtn-html" hidden>
         <div class="text-form">
           <div class="form-row">
             <div class="form-group flex-1">
@@ -125,66 +155,196 @@
             <textarea id="htmlInput" class="form-control textarea-large textarea-code"
                       placeholder="Вставте сюди HTML-код сторінки..."></textarea>
           </div>
-          <button class="btn btn-primary" id="btnAddHtml">
-            <span class="btn-icon">🧩</span> Додати HTML
+          <button class="btn btn-primary" id="btnAddHtml" type="button">
+            <span class="btn-icon" aria-hidden="true">🧩</span> Додати HTML
           </button>
           <p class="hint">Зручно для сайтів, які не вдається завантажити напряму. Система сама очистить HTML до plain text.</p>
+        </div>
+      </div>
+
+      <!-- TAB: SEARCH -->
+      <div class="tab-panel" id="tab-search" role="tabpanel" aria-labelledby="tabbtn-search" hidden>
+        <div class="search-form">
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="searchQuery">Пошуковий запит</label>
+              <input type="text" id="searchQuery" class="form-control"
+                     placeholder="напр. Конфлікт Зеленського з Будановим" />
+            </div>
+            <div class="form-group">
+              <label>Мови</label>
+              <div class="search-lang-row">
+                <label class="chk-inline"><input type="checkbox" value="uk" checked> UK</label>
+                <label class="chk-inline"><input type="checkbox" value="ru" checked> RU</label>
+                <label class="chk-inline"><input type="checkbox" value="en" checked> EN</label>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btnSearchNews" type="button">
+            <span class="btn-icon" aria-hidden="true">🔎</span> Шукати
+          </button>
+          <p class="hint">Багатомовний пошук через Google News. Мова кожного джерела зберігається в метаданих — переклад не застосовується (інакше стилометрія спотворюється).</p>
+
+          <div id="searchResults" class="search-results" aria-live="polite" hidden>
+            <div class="search-results-header">
+              <span id="searchResultsCount" class="search-results-count"></span>
+              <div class="search-results-actions">
+                <button class="btn btn-ghost btn-sm" id="btnSelectAllResults" type="button">Обрати всі</button>
+                <button class="btn btn-primary btn-sm" id="btnImportSelected" type="button" disabled>
+                  Імпортувати обране <span id="importSelectedCount"></span>
+                </button>
+              </div>
+            </div>
+            <div id="searchResultsList" class="search-results-list"></div>
+          </div>
+          <div id="searchStatus" class="search-status" role="status" aria-live="polite"></div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ══════════════════ SOURCES LIST ══════════════════ -->
-  <section class="card" id="sectionSources">
+  <section class="card" id="sectionSources" aria-labelledby="sourcesHeading">
     <div class="sources-header">
-      <h2 class="section-title" style="margin:0">
+      <h2 class="section-title" id="sourcesHeading" style="margin:0">
         📋 Додані джерела
-        <span class="badge" id="sourcesCount">0</span>
+        <span class="badge" id="sourcesCount" aria-label="Кількість джерел">0</span>
       </h2>
     </div>
 
-    <div id="sourcesList" class="sources-list">
+    <div id="sourcesList" class="sources-list" role="list" aria-live="polite">
       <div class="sources-empty" id="sourcesEmpty">
-        <span>📭</span>
+        <span aria-hidden="true">📭</span>
         <p>Ще немає доданих джерел</p>
       </div>
     </div>
   </section>
 
   <!-- ══════════════════ PARAMETERS + RUN ══════════════════ -->
-  <section class="card" id="sectionParams">
-    <h2 class="section-title">⚙️ Параметри аналізу</h2>
+  <section class="card" id="sectionParams" aria-labelledby="paramsHeading">
+    <h2 class="section-title" id="paramsHeading">⚙️ Параметри аналізу</h2>
+
     <div class="params-grid">
+      <!-- MFW -->
       <div class="param-group">
         <label for="mfwInput">
           Кількість найчастіших слів (MFW)
-          <span class="param-hint" title="Більше слів → точніший аналіз, але потрібні довші тексти">ℹ</span>
         </label>
         <div class="param-row">
-          <input type="range" id="mfwSlider" min="20" max="500" value="100" step="10" />
+          <input type="range" id="mfwSlider" min="20" max="500" value="100" step="10"
+                 aria-label="MFW повзунок" />
           <input type="number" id="mfwInput" class="form-control param-number"
                  min="20" max="500" value="100" />
         </div>
-        <p class="hint">Рекомендовано: 50–200. Для коротких текстів (<500 слів) — 50.</p>
+        <p class="hint">Рекомендовано: 50–200. Для коротких текстів (&lt;500 слів) — 50.</p>
+        <details class="param-help">
+          <summary>Що це таке?</summary>
+          <p>MFW (Most Frequent Words) — N найчастіших лексем у корпусі. На цьому наборі обчислюється
+             <span class="math-inline">&Delta;<sub>Burrows</sub></span> — середнє абсолютне відхилення z-оцінок частот.
+             Burrows (2002), Eder (2012).</p>
+        </details>
       </div>
 
+      <!-- Threshold -->
       <div class="param-group">
         <label for="thresholdInput">
-          Поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span> для <span class="math-inline">&Delta;<sub>Burrows</sub></span>
-          <span class="param-hint" title="Пари з ΔBurrows нижче порогу θΔ позначаються як підозрілі">ℹ</span>
+          Поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span>
         </label>
         <div class="param-row">
-          <input type="range" id="thresholdSlider" min="0.1" max="2.0" value="0.8" step="0.05" />
+          <input type="range" id="thresholdSlider" min="0.1" max="2.0" value="0.8" step="0.05"
+                 aria-label="Поріг θΔ повзунок" />
           <input type="number" id="thresholdInput" class="form-control param-number"
                  min="0.1" max="2.0" step="0.05" value="0.8" />
         </div>
-        <p class="hint">Менше <span class="math-inline">&Delta;<sub>Burrows</sub></span> = більша подібність. Рекомендовано: <span class="math-inline">&theta;<sub>&Delta;</sub></span> = 0.6–1.0.</p>
+        <p class="hint">Менше <span class="math-inline">&Delta;<sub>Burrows</sub></span> = більша подібність. Рекомендовано: 0.6–1.0.</p>
+        <details class="param-help">
+          <summary>Як обрати поріг?</summary>
+          <p>Пари з <span class="math-inline">&Delta;<sub>Burrows</sub></span> &lt; <span class="math-inline">&theta;<sub>&Delta;</sub></span>
+             позначаються як підозріло подібні. На коротких або шумних текстах використовуйте нижчі значення (0.6–0.7);
+             на академічних — до 1.0.</p>
+        </details>
+      </div>
+
+      <!-- Feature type -->
+      <div class="param-group">
+        <label for="featureType">Тип ознак</label>
+        <select id="featureType" class="form-control">
+          <option value="word" selected>Слова (word tokens)</option>
+          <option value="char">Символьні n-грами</option>
+        </select>
+        <div class="param-row" id="charNRow" style="display:none; margin-top:8px">
+          <label for="charN" class="sr-only">Довжина n-грами</label>
+          <input type="range" id="charNSlider" min="2" max="6" value="3" step="1"
+                 aria-label="Довжина n-грами повзунок" />
+          <input type="number" id="charN" class="form-control param-number"
+                 min="2" max="6" value="3" />
+        </div>
+        <p class="hint">Char n-грами (3–4) стійкіші до шуму та перекладу — Kestemont (2014).</p>
+        <details class="param-help">
+          <summary>Коли використовувати char n-грами?</summary>
+          <p>Коли тексти короткі, мають помилки OCR, або порівнюються переклади. Для стандартної атрибуції
+             українських/російських новин — слова, n=100.</p>
+        </details>
+      </div>
+
+      <!-- Culling -->
+      <div class="param-group">
+        <label for="minDocFreq">
+          Culling (мін. документів для слова)
+        </label>
+        <div class="param-row">
+          <input type="range" id="minDocFreqSlider" min="1" max="20" value="2" step="1"
+                 aria-label="Culling повзунок" />
+          <input type="number" id="minDocFreq" class="form-control param-number"
+                 min="1" max="20" value="2" />
+        </div>
+        <p class="hint">Виключає слова, що зустрічаються менше ніж у заданій кількості джерел.</p>
+        <details class="param-help">
+          <summary>Навіщо це потрібно?</summary>
+          <p>Culling прибирає імена власні та теми-одноразки, які спотворюють <span class="math-inline">&Delta;<sub>Burrows</sub></span>.
+             Рекомендовано: 2 для 3–10 джерел, 3–5 для більших корпусів. Eder (2013).</p>
+        </details>
+      </div>
+
+      <!-- Projection method -->
+      <div class="param-group">
+        <label for="projectionMethod">Метод проєкції</label>
+        <select id="projectionMethod" class="form-control">
+          <option value="pca" selected>PCA (лінійна)</option>
+          <option value="mds">MDS (зберігає відстані)</option>
+          <option value="tsne">t-SNE (нелінійна)</option>
+        </select>
+        <p class="hint">MDS найкраще відображає <span class="math-inline">&Delta;</span>-відстані; t-SNE — для візуалізації кластерів.</p>
+        <details class="param-help">
+          <summary>Який метод обрати?</summary>
+          <p><strong>PCA</strong> — швидкий, лінійний. <strong>MDS</strong> — зберігає парні відстані, найточніший для <span class="math-inline">&Delta;</span>.
+             <strong>t-SNE</strong> — підкреслює локальні кластери, але може спотворювати загальну структуру.</p>
+        </details>
+      </div>
+
+      <!-- Вид прояву DIMs (Методика НУЗРКС МОУ № 46 від 28.11.2022) -->
+      <div class="param-group">
+        <label for="manifestationSelect">Вид прояву DIMs</label>
+        <select id="manifestationSelect" class="form-control">
+          <option value="" selected>— не визначено —</option>
+          <!-- Варіанти заповнюються з /api/manifestation-types -->
+        </select>
+        <p class="hint">Класифікація виду прояву DIMs за Методикою.
+           На бали не впливає, окрім виду «Табу», якому
+           автоматично призначається грейд SS.</p>
+        <details class="param-help">
+          <summary>Перелік видів прояву</summary>
+          <p>Маніпуляція, фейк, інформаційний сендвіч, конспірологія,
+             інсайд, чутлива тема, табу. Якщо вид не встановлено — грейд
+             обчислюється виключно за значенням R<sub>DIMS</sub>.</p>
+        </details>
       </div>
     </div>
 
     <div class="run-section">
-      <button class="btn btn-run" id="btnAnalyze" disabled>
-        <span id="btnAnalyzeIcon">🚀</span>
+      <button class="btn btn-run" id="btnAnalyze" type="button" disabled
+              aria-describedby="runHint">
+        <span id="btnAnalyzeIcon" aria-hidden="true">🚀</span>
         <span id="btnAnalyzeText">Запустити аналіз</span>
       </button>
       <p class="hint" id="runHint">Додайте мінімум 2 джерела для запуску</p>
@@ -192,8 +352,15 @@
   </section>
 
   <!-- ══════════════════ RESULTS ══════════════════ -->
-  <section class="card hidden" id="sectionResults">
-    <h2 class="section-title">📊 Результати аналізу</h2>
+  <section class="card hidden" id="sectionResults" aria-labelledby="resultsHeading"
+           aria-live="polite">
+    <h2 class="section-title" id="resultsHeading">📊 Результати аналізу</h2>
+
+    <!-- Language / data warnings -->
+    <div id="languageAlert"></div>
+
+    <!-- Critical alert (sticky, SS/SSS/taboo only) -->
+    <div id="criticalAlert"></div>
 
     <!-- Quick stats -->
     <div class="stats-grid" id="statsGrid"></div>
@@ -203,7 +370,7 @@
 
     <!-- CTA -->
     <div class="results-cta">
-      <a href="/report" target="_blank" class="btn btn-primary btn-large">
+      <a href="/report" target="_blank" rel="noopener" class="btn btn-primary btn-large">
         📄 Відкрити звіт для керівника
       </a>
       <a href="/output/distance_matrix.csv" class="btn btn-secondary">
@@ -212,11 +379,28 @@
     </div>
   </section>
 
+  <!-- ══════════════════ MONITORING LOG DRAWER ══════════════════ -->
+  <div class="log-drawer-backdrop" id="logDrawerBackdrop" hidden></div>
+  <aside class="log-drawer" id="logDrawer" role="dialog" aria-modal="true"
+         aria-labelledby="logDrawerTitle" aria-hidden="true" hidden>
+    <div class="log-drawer-head">
+      <div>
+        <h3 id="logDrawerTitle">📔 Журнал моніторингу</h3>
+        <p class="hint">Протокол опрацьованих джерел — Методика НУЗРКС МОУ № 46 від 28.11.2022.</p>
+      </div>
+      <button class="log-drawer-close" id="logDrawerClose" type="button" aria-label="Закрити">✕</button>
+    </div>
+    <div id="logTimelineStrip"></div>
+    <div class="log-drawer-body" id="logDrawerBody">
+      <p class="log-drawer-empty">Завантаження…</p>
+    </div>
+  </aside>
+
   <!-- ══════════════════ TOAST / SPINNER ══════════════════ -->
-  <div id="toast" class="toast hidden"></div>
-  <div id="overlay" class="overlay hidden">
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <div id="overlay" class="overlay hidden" role="alert" aria-busy="true">
     <div class="spinner-box">
-      <div class="spinner"></div>
+      <div class="spinner" aria-hidden="true"></div>
       <p id="overlayText">Аналіз...</p>
     </div>
   </div>

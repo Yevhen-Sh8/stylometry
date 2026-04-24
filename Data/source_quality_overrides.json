@@ -1,72 +1,67 @@
 {
+  "_comment": "Per-domain quality overrides for _source_component_scores. Keys: owner, policy, finance, original, cred, ethics. Values 0..1 where higher = worse. Missing keys default to 0.0. Entries below the comment line 'IMI White List' are trusted Ukrainian media per https://imi.org.ua",
+
   "ria.ru": {
-    "owner": 0.95,
-    "policy": 0.70,
-    "finance": 0.85,
-    "original": 0.15,
-    "cred": 0.55
+    "owner": 0.95, "policy": 0.70, "finance": 0.85, "original": 0.15, "cred": 0.55, "ethics": 0.75
   },
   "tass.ru": {
-    "owner": 0.90,
-    "policy": 0.65,
-    "finance": 0.80,
-    "original": 0.10,
-    "cred": 0.45
+    "owner": 0.90, "policy": 0.65, "finance": 0.80, "original": 0.10, "cred": 0.45, "ethics": 0.65
   },
   "de.rt.com": {
-    "owner": 0.95,
-    "policy": 0.75,
-    "finance": 0.85,
-    "original": 0.20,
-    "cred": 0.60
+    "owner": 0.95, "policy": 0.75, "finance": 0.85, "original": 0.20, "cred": 0.60, "ethics": 0.75
   },
   "russian.rt.com": {
-    "owner": 0.95,
-    "policy": 0.75,
-    "finance": 0.85,
-    "original": 0.20,
-    "cred": 0.60
+    "owner": 0.95, "policy": 0.75, "finance": 0.85, "original": 0.20, "cred": 0.60, "ethics": 0.75
   },
   "francais.rt.com": {
-    "owner": 0.95,
-    "policy": 0.75,
-    "finance": 0.85,
-    "original": 0.20,
-    "cred": 0.60
+    "owner": 0.95, "policy": 0.75, "finance": 0.85, "original": 0.20, "cred": 0.60, "ethics": 0.75
   },
   "actualidad-rt.com": {
-    "owner": 0.95,
-    "policy": 0.75,
-    "finance": 0.85,
-    "original": 0.20,
-    "cred": 0.60
+    "owner": 0.95, "policy": 0.75, "finance": 0.85, "original": 0.20, "cred": 0.60, "ethics": 0.75
   },
   "fr.sputniknews.africa": {
-    "owner": 0.90,
-    "policy": 0.70,
-    "finance": 0.80,
-    "original": 0.15,
-    "cred": 0.55
+    "owner": 0.90, "policy": 0.70, "finance": 0.80, "original": 0.15, "cred": 0.55, "ethics": 0.70
   },
   "sputniknews.ru": {
-    "owner": 0.90,
-    "policy": 0.70,
-    "finance": 0.80,
-    "original": 0.15,
-    "cred": 0.55
+    "owner": 0.90, "policy": 0.70, "finance": 0.80, "original": 0.15, "cred": 0.55, "ethics": 0.70
   },
   "tvzvezda.ru": {
-    "owner": 0.90,
-    "policy": 0.70,
-    "finance": 0.80,
-    "original": 0.15,
-    "cred": 0.55
+    "owner": 0.90, "policy": 0.70, "finance": 0.80, "original": 0.15, "cred": 0.55, "ethics": 0.70
   },
   "smotrim.ru": {
-    "owner": 0.85,
-    "policy": 0.65,
-    "finance": 0.75,
-    "original": 0.10,
-    "cred": 0.40
+    "owner": 0.85, "policy": 0.65, "finance": 0.75, "original": 0.10, "cred": 0.40, "ethics": 0.65
+  },
+
+  "_imi_whitelist_note": "IMI Білий список онлайн-медіа (https://imi.org.ua/monitorings) — українські видання, що стабільно демонструють професійні стандарти. Оцінка рейтингу 'прозорості/професійності/етики' інвертується у низькі значення R_*.",
+
+  "suspilne.media": {
+    "owner": 0.05, "policy": 0.05, "finance": 0.10, "original": 0.10, "cred": 0.10, "ethics": 0.05
+  },
+  "hromadske.ua": {
+    "owner": 0.08, "policy": 0.08, "finance": 0.15, "original": 0.12, "cred": 0.12, "ethics": 0.08
+  },
+  "liga.net": {
+    "owner": 0.10, "policy": 0.10, "finance": 0.20, "original": 0.15, "cred": 0.15, "ethics": 0.10
+  },
+  "pravda.com.ua": {
+    "owner": 0.15, "policy": 0.12, "finance": 0.20, "original": 0.18, "cred": 0.15, "ethics": 0.15
+  },
+  "ukrinform.ua": {
+    "owner": 0.10, "policy": 0.08, "finance": 0.15, "original": 0.15, "cred": 0.12, "ethics": 0.10
+  },
+  "radiosvoboda.org": {
+    "owner": 0.08, "policy": 0.08, "finance": 0.10, "original": 0.12, "cred": 0.10, "ethics": 0.08
+  },
+  "dt.ua": {
+    "owner": 0.12, "policy": 0.10, "finance": 0.18, "original": 0.15, "cred": 0.12, "ethics": 0.10
+  },
+  "nv.ua": {
+    "owner": 0.12, "policy": 0.10, "finance": 0.20, "original": 0.15, "cred": 0.12, "ethics": 0.12
+  },
+  "espreso.tv": {
+    "owner": 0.15, "policy": 0.15, "finance": 0.25, "original": 0.20, "cred": 0.15, "ethics": 0.15
+  },
+  "babel.ua": {
+    "owner": 0.10, "policy": 0.10, "finance": 0.18, "original": 0.12, "cred": 0.10, "ethics": 0.10
   }
 }

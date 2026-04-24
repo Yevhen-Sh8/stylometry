@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "Стилометрія (Flask)",
-      "runtimeExecutable": "/tmp/stylometry_preview/.venv/bin/python3",
+      "runtimeExecutable": "/usr/bin/python3",
       "runtimeArgs": ["/tmp/stylometry_preview/run.py"],
       "port": 5001
     }

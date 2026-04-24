@@ -37,7 +37,11 @@ from flask import (Flask, jsonify, render_template, request,
 from core.extractors import (SUPPORTED_EXTENSIONS, clean_extracted_text,
                               extract_from_file)
 from core.scraper import scrape_url_payload
-from core.analysis import run_pipeline
+from core.analysis import (DIMS_MANIFESTATION_TYPES, detect_script,
+                            run_pipeline)
+from core.monitoring_log import (append_record, find_duplicate, load_records,
+                                  text_fingerprint)
+from core.monitoring_forms import build_daily_monitoring_form
 
 # ─────────────────────────────────────────────────────────────────────────────
 app = Flask(__name__)
@@ -140,6 +144,7 @@ def _register_source(
     display_title: str = "",
     original_name: str = "",
     url: str = "",
+    extractor: str = "",
 ) -> dict:
     SOURCES[label] = clean_text
     _save_clean_text(label, clean_text)
@@ -152,15 +157,54 @@ def _register_source(
         url=url,
     )
     SOURCE_META[label] = meta
+
+    # Запис у протокол моніторингу (Результат №1, логічне завершення).
+    try:
+        fingerprint = text_fingerprint(clean_text)
+        meta["fingerprint"] = fingerprint
+        append_record(
+            label=label,
+            source_type=source_type,
+            url=url,
+            domain=meta.get("domain", ""),
+            extractor=extractor,
+            language=detect_script(clean_text),
+            words=meta.get("tokens", 0),
+            fingerprint=fingerprint,
+            original_name=original_name,
+            display_title=meta.get("display_title", ""),
+        )
+    except Exception:
+        # Протокол не повинен переривати імпорт джерела.
+        traceback.print_exc()
     return meta
+
+
+def _check_duplicate(clean_text: str) -> dict | None:
+    """Повертає попередній запис протоколу з тим самим відбитком, якщо є."""
+    if not clean_text:
+        return None
+    fingerprint = text_fingerprint(clean_text)
+    record = find_duplicate(fingerprint)
+    if not record:
+        return None
+    # Запис вважається дублікатом лише тоді, коли відповідне джерело
+    # досі присутнє у поточній сесії (тобто не було видалене).
+    previous_label = record.get("label")
+    if previous_label and previous_label in SOURCES:
+        return record
+    return None
 
 
 def _source_lookup(label: str) -> dict:
     meta = SOURCE_META.get(label)
     if meta:
-        return meta
-    text = SOURCES.get(label, "")
-    return _build_source_meta(label, text)
+        out = dict(meta)
+    else:
+        out = _build_source_meta(label, SOURCES.get(label, ""))
+    keys = list(SOURCES.keys())
+    out["alias"] = f"S{keys.index(label) + 1}" if label in keys else ""
+    return out
 
 
 def _source_breakdown_rows(
@@ -188,10 +232,14 @@ def _ok(**kwargs):
     return jsonify({"ok": True, **kwargs})
 
 
-def _parse_analysis_params(data: dict) -> tuple[int, float]:
+def _parse_analysis_params(data: dict) -> tuple[int, float, int, str, int, str]:
     try:
         mfw_n = int(data.get("mfw", 100))
         threshold = float(data.get("threshold", 0.8))
+        min_doc_freq = int(data.get("min_doc_freq", 2))
+        feature_type = str(data.get("feature_type", "word")).lower()
+        char_n = int(data.get("char_n", 3))
+        projection_method = str(data.get("projection", "pca")).lower()
     except (TypeError, ValueError) as exc:
         raise ValueError("Некоректні параметри аналізу.") from exc
 
@@ -199,7 +247,15 @@ def _parse_analysis_params(data: dict) -> tuple[int, float]:
         raise ValueError("Параметр MFW має бути в діапазоні 20-500.")
     if not 0.1 <= threshold <= 2.0:
         raise ValueError("Поріг Delta має бути в діапазоні 0.1-2.0.")
-    return mfw_n, threshold
+    if not 1 <= min_doc_freq <= 20:
+        raise ValueError("Параметр culling (min_doc_freq) має бути 1-20.")
+    if feature_type not in {"word", "char"}:
+        raise ValueError("feature_type має бути 'word' або 'char'.")
+    if not 2 <= char_n <= 6:
+        raise ValueError("char_n має бути в діапазоні 2-6.")
+    if projection_method not in {"pca", "mds", "tsne"}:
+        raise ValueError("projection має бути 'pca', 'mds' або 'tsne'.")
+    return mfw_n, threshold, min_doc_freq, feature_type, char_n, projection_method
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -254,6 +310,14 @@ def upload():
             skipped.append(f"{f.filename} (порожній текст після очищення)")
             continue
 
+        duplicate = _check_duplicate(clean)
+        if duplicate:
+            skipped.append(
+                f"{f.filename} (дублікат джерела «{duplicate.get('label')}» — "
+                "ідентичний текст уже присутній у корпусі)"
+            )
+            continue
+
         label = fpath.stem
         # De-duplicate labels
         base, n = label, 1
@@ -268,6 +332,7 @@ def upload():
                 ext.lstrip("."),
                 display_title=fpath.stem,
                 original_name=f.filename,
+                extractor="extract_from_file",
             )
         )
 
@@ -294,6 +359,15 @@ def add_url():
     except Exception as exc:
         return _err(f"Помилка при завантаженні: {exc}")
 
+    duplicate = _check_duplicate(clean)
+    if duplicate:
+        return _err(
+            "Текст цієї сторінки ідентичний джерелу "
+            f"«{duplicate.get('label')}», яке вже присутнє у корпусі. "
+            "Повторний імпорт було заблоковано для недопущення "
+            "штучного завищення координаційного індикатора."
+        )
+
     if not label:
         label = payload["domain"] or urlparse(url).netloc.replace("www.", "")
 
@@ -308,6 +382,7 @@ def add_url():
         "url",
         display_title=payload["title"] or label,
         url=payload["url"],
+        extractor="scrape_url_payload",
     ))
 
 
@@ -327,6 +402,13 @@ def add_text():
     if not clean:
         return _err("Текст порожній після очищення.")
 
+    duplicate = _check_duplicate(clean)
+    if duplicate:
+        return _err(
+            "Введений текст є дублікатом джерела "
+            f"«{duplicate.get('label')}», уже присутнього у корпусі."
+        )
+
     base, n = label, 1
     while label in SOURCES:
         label = f"{base}_{n}"
@@ -337,6 +419,7 @@ def add_text():
         clean,
         "text",
         display_title=label,
+        extractor="manual_paste",
     ))
 
 
@@ -357,6 +440,13 @@ def add_html():
     if not clean:
         return _err("Після очищення HTML не містить придатного тексту.")
 
+    duplicate = _check_duplicate(clean)
+    if duplicate:
+        return _err(
+            "Вміст HTML ідентичний джерелу "
+            f"«{duplicate.get('label')}», уже присутньому у корпусі."
+        )
+
     html_title = _derive_title_from_html(html)
     if not label:
         label = html_title or (urlparse(url).netloc.replace("www.", "") if url else f"html_{len(SOURCES) + 1}")
@@ -372,6 +462,7 @@ def add_html():
         "html",
         display_title=html_title or label,
         url=url,
+        extractor="manual_html",
     ))
 
 
@@ -400,6 +491,190 @@ def list_sources():
     ])
 
 
+@app.get("/api/manifestation-types")
+def manifestation_types():
+    """Повертає перелік видів прояву DIMs відповідно до Методики НУЗРКС МОУ
+    № 46 від 28.11.2022 (розділ 1). Виклик інтерфейсом для формування
+    випадаючого списку при запуску аналізу."""
+    return _ok(
+        types=[
+            {"key": key, "label": label}
+            for key, label in DIMS_MANIFESTATION_TYPES.items()
+        ],
+        taboo_key="taboo",
+    )
+
+
+@app.get("/api/monitoring-log")
+def monitoring_log_view():
+    """Повертає повний протокол моніторингу (JSON Lines → JSON масив).
+
+    Використовується для експорту протоколу в інтерфейсі та формування
+    додатків до дисертації відповідно до вимог Методики НУЗРКС МОУ
+    № 46 від 28.11.2022.
+    """
+    records = load_records()
+    return _ok(records=records, count=len(records))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  NEWS SEARCH (Google News RSS, multi-language)
+# ─────────────────────────────────────────────────────────────────────────────
+_GN_LOCALES = {
+    "uk": {"hl": "uk",    "gl": "UA", "ceid": "UA:uk"},
+    "ru": {"hl": "ru",    "gl": "RU", "ceid": "RU:ru"},
+    "en": {"hl": "en-US", "gl": "US", "ceid": "US:en"},
+}
+
+
+def _resolve_gn_url(gn_url: str, session) -> str | None:
+    """Decode Google News redirect URL → real article URL via batch-execute."""
+    import re, json
+
+    m = re.search(r'/articles/([^?/]+)', gn_url)
+    if not m:
+        return None
+    article_id = m.group(1)
+
+    try:
+        page = session.get(gn_url, timeout=10,
+                           headers={"User-Agent": "Mozilla/5.0"})
+        html = page.text
+    except Exception:
+        return None
+
+    sig_m = re.search(r'data-n-a-sg="([^"]+)"', html)
+    ts_m  = re.search(r'data-n-a-ts="(\d+)"', html)
+    if not sig_m or not ts_m:
+        return None
+    sig, ts = sig_m.group(1), ts_m.group(1)
+
+    inner = json.dumps([
+        "garturlreq",
+        [["X","X",["X","X"],None,None,1,1,"US:en",None,1,None,None,None,None,None,0,1],
+         "X","X",1,[1,1,1],1,1,None,0,0,None,0],
+        article_id, int(ts), sig
+    ])
+    outer = json.dumps([[["Fbv4je", inner, None, "generic"]]])
+    try:
+        resp = session.post(
+            "https://news.google.com/_/DotsSplashUi/data/batchexecute",
+            data={"f.req": outer},
+            headers={"User-Agent": "Mozilla/5.0",
+                     "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+            timeout=10,
+        )
+    except Exception:
+        return None
+
+    url_m = re.search(r'garturlres\\?",\\?"(https?://[^"\\]+)', resp.text)
+    if url_m:
+        return url_m.group(1)
+    return None
+
+
+def _fetch_google_news(query: str, lang: str, limit: int = 15) -> list[dict]:
+    import urllib.parse
+    import xml.etree.ElementTree as ET
+    import requests as _rq
+
+    loc = _GN_LOCALES.get(lang)
+    if not loc:
+        return []
+    url = (
+        "https://news.google.com/rss/search?"
+        + urllib.parse.urlencode({
+            "q": query,
+            **loc,
+        })
+    )
+    try:
+        resp = _rq.get(
+            url,
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0 (DIMS research tool)"},
+        )
+        resp.raise_for_status()
+    except Exception:
+        return []
+
+    try:
+        root = ET.fromstring(resp.content)
+    except ET.ParseError:
+        return []
+
+    raw_items = []
+    for item in list(root.iterfind(".//item"))[:limit]:
+        title = (item.findtext("title") or "").strip()
+        link = (item.findtext("link") or "").strip()
+        pub = (item.findtext("pubDate") or "").strip()
+        desc = (item.findtext("description") or "").strip()
+        source_el = item.find("source")
+        source_name = source_el.text.strip() if source_el is not None and source_el.text else ""
+        if title and link:
+            raw_items.append((title, link, pub, desc, source_name))
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    items: list[dict] = []
+    with _rq.Session() as session:
+        session.headers.update({"User-Agent": "Mozilla/5.0 (DIMS)"})
+
+        def _build(row):
+            title, link, pub, desc, src = row
+            real = _resolve_gn_url(link, session) or link
+            return {
+                "title": title,
+                "url": real,
+                "source": src,
+                "published": pub,
+                "snippet": desc,
+                "lang": lang,
+            }
+
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for entry in ex.map(_build, raw_items):
+                items.append(entry)
+    return items
+
+
+@app.post("/api/search-news")
+def search_news():
+    """Multi-language news search via Google News RSS."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    data = request.get_json(silent=True) or {}
+    query = (data.get("query") or "").strip()
+    langs = data.get("languages") or ["uk", "ru", "en"]
+    limit = int(data.get("limit") or 15)
+
+    if not query:
+        return _err("Пошуковий запит порожній.")
+    langs = [l for l in langs if l in _GN_LOCALES]
+    if not langs:
+        return _err("Не обрано жодної мови пошуку.")
+
+    results: list[dict] = []
+    with ThreadPoolExecutor(max_workers=len(langs)) as ex:
+        futures = {ex.submit(_fetch_google_news, query, l, limit): l for l in langs}
+        for fut in futures:
+            try:
+                results.extend(fut.result() or [])
+            except Exception:
+                pass
+
+    seen = set()
+    deduped = []
+    for r in results:
+        key = r["url"]
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(r)
+
+    return _ok(results=deduped, query=query, languages=langs, count=len(deduped))
+
+
 @app.post("/api/analyze")
 def analyze():
     """Run the full Burrows' Delta pipeline on the current SOURCES."""
@@ -410,9 +685,14 @@ def analyze():
 
     data = request.get_json(silent=True) or {}
     try:
-        mfw_n, threshold = _parse_analysis_params(data)
+        mfw_n, threshold, min_doc_freq, feature_type, char_n, projection_method = (
+            _parse_analysis_params(data)
+        )
     except ValueError as exc:
         return _err(str(exc))
+
+    manifestation_raw = (data.get("manifestation") or "").strip().lower()
+    manifestation = manifestation_raw if manifestation_raw in DIMS_MANIFESTATION_TYPES else None
 
     try:
         results = run_pipeline(
@@ -421,6 +701,11 @@ def analyze():
             mfw_n=mfw_n,
             threshold=threshold,
             source_meta=dict(SOURCE_META),
+            min_doc_freq=min_doc_freq,
+            feature_type=feature_type,
+            char_n=char_n,
+            projection_method=projection_method,
+            manifestation=manifestation,
         )
     except Exception as exc:
         traceback.print_exc()
@@ -429,6 +714,15 @@ def analyze():
     # Store for /report
     LAST_RESULTS = results
     LAST_RESULTS["timestamp"] = datetime.now().strftime("%d.%m.%Y %H:%M")
+    LAST_RESULTS["manifestation"] = manifestation
+
+    pair_ci = results.get("pair_ci", {})
+
+    def _ci(a: str, b: str):
+        ci = pair_ci.get(f"{a}||{b}") or pair_ci.get(f"{b}||{a}")
+        if not ci:
+            return None
+        return {k: round(v, 4) for k, v in ci.items()}
 
     # Build JSON-serialisable summary
     flagged_summary = [
@@ -438,6 +732,7 @@ def analyze():
             "b_meta": _source_lookup(b),
             "delta": round(d, 4),
             "severity": sev,
+            "ci": _ci(a, b),
         }
         for a, b, d, sev in results["flagged"]
     ]
@@ -448,6 +743,7 @@ def analyze():
             "a_meta": _source_lookup(a),
             "b_meta": _source_lookup(b),
             "delta": round(d, 4),
+            "ci": _ci(a, b),
         }
         for a, b, d in results["all_pairs"][:5]
     ]
@@ -466,6 +762,13 @@ def analyze():
         ),
         mfw_n=mfw_n,
         threshold=threshold,
+        min_doc_freq=min_doc_freq,
+        feature_type=feature_type,
+        char_n=char_n,
+        projection_method=projection_method,
+        projection_meta=results.get("projection_meta", {}),
+        branch_support=results.get("branch_support", {}),
+        language_report=results.get("language_report", {}),
     )
 
 
@@ -520,6 +823,11 @@ def report():
         for i, lbl in enumerate(labels)
     ]
 
+    pair_ci = r.get("pair_ci", {}) or {}
+
+    def _ci_for(a, b):
+        return pair_ci.get((a, b)) or pair_ci.get((b, a))
+
     flagged_details = [
         {
             "a": a,
@@ -528,6 +836,7 @@ def report():
             "b_source": _source_lookup(b),
             "delta": delta,
             "severity": sev,
+            "ci": _ci_for(a, b),
         }
         for a, b, delta, sev in r["flagged"]
     ]
@@ -560,6 +869,81 @@ def report():
         dims_assessment=r["dims_assessment"],
         dendrogram_b64=r.get("dendrogram_b64", ""),
         pca_b64=r.get("pca_b64", ""),
+        heatmap_b64=r.get("heatmap_b64", ""),
+        projection_meta=r.get("projection_meta", {}),
+        language_report=r.get("language_report", {}),
+        branch_support=r.get("branch_support", {}),
+        feature_type=r.get("feature_type", "word"),
+        char_n=r.get("char_n", 3),
+        min_doc_freq=r.get("min_doc_freq", 2),
+        bootstrap_iterations=r.get("bootstrap_iterations", 0),
+    )
+
+
+@app.get("/api/export/daily-form")
+def export_daily_form():
+    """Експорт Анкети добового моніторингу (Додаток 1 Методики НУЗРКС
+    МОУ № 46 від 28.11.2022) у форматі .docx.
+
+    Використовує результати останнього аналізу, збережені у
+    ``LAST_RESULTS``. Якщо аналіз ще не запускався — повертає помилку.
+    """
+    from flask import send_file
+
+    if not LAST_RESULTS or "dims_assessment" not in LAST_RESULTS:
+        return _err(
+            "Немає результатів аналізу для формування Анкети. "
+            "Спочатку запустіть аналіз.",
+            code=409,
+        )
+
+    dims   = LAST_RESULTS["dims_assessment"]
+    labels = list(LAST_RESULTS.get("tokenised", {}).keys() or SOURCES.keys())
+    sources_payload = [_source_lookup(lbl) for lbl in labels]
+
+    direction            = (request.args.get("direction")      or "").strip()
+    custom_recommendation = (request.args.get("recommendation") or "").strip()
+    organization         = (request.args.get("organization")   or "").strip()
+
+    # Розклад ризику за джерелами (перетворюємо у список dict для форми)
+    raw_breakdown = LAST_RESULTS.get("source_breakdown") or []
+    source_breakdown_list: list[dict] = []
+    for item in raw_breakdown:
+        src  = item.get("source") or {}
+        lbl  = item.get("label") or src.get("label") or src.get("alias") or ""
+        score = item.get("score")
+        if lbl and score is not None:
+            source_breakdown_list.append({"label": lbl, "score": float(score)})
+
+    # Підозрілі стилометричні пари
+    flagged_raw = LAST_RESULTS.get("flagged") or []
+
+    buffer = build_daily_monitoring_form(
+        grade_info=dims.get("grade") or {},
+        r_dims=float(dims.get("r_dims") or 0.0),
+        manifestation=dims.get("manifestation") or {},
+        indicators=dims.get("indicators") or {},
+        sources=sources_payload,
+        source_breakdown=source_breakdown_list,
+        flagged_pairs=flagged_raw,
+        direction=direction,
+        organization=organization or "УПРАВЛІННЯ ЗАБЕЗПЕЧЕННЯ РЕАГУВАННЯ НА КРИЗОВІ СИТУАЦІЇ",
+        custom_recommendation=custom_recommendation,
+    )
+
+    filename = (
+        "anketa_dobovogo_monitoryngu_"
+        + datetime.now().strftime("%Y%m%d_%H%M")
+        + ".docx"
+    )
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=filename,
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "wordprocessingml.document"
+        ),
     )
 
 
@@ -577,7 +961,7 @@ if __name__ == "__main__":
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     CLEAN_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 60)
-    print("  DIMS — Моніторинг інформаційних загроз")
+    print("  DIMS — Інтегральна оцінка дезінформаційних ризиків за стилометричними ознаками")
     print("  Відкрийте у браузері: http://localhost:5001")
     print("=" * 60)
     app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1", port=5001)

@@ -3,370 +3,624 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Аналітичний звіт — DIMS: Моніторинг інформаційних загроз</title>
+  <title>Аналітичний звіт — DIMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* ── Design tokens (mirror style.css) ── */
+    /* ═══════════════════════════════════════════════════════════════
+       DIMS — Editorial Report
+       Aesthetic: FT/Economist long-form + scientific journal
+       ═══════════════════════════════════════════════════════════════ */
+
     :root {
-      --cream:       #F6F4EE;
-      --cream-dark:  #EDEBE3;
-      --ink:         #1A1917;
-      --ink-soft:    #3D3B37;
-      --muted:       #7A786E;
-      --coral:       #C96A45;
-      --coral-light: #F0DDD5;
-      --teal:        #2A6B74;
-      --teal-light:  #D0E9EC;
-      --green:       #2D6E4E;
-      --green-light: #D0EAD9;
-      --red:         #A83232;
-      --red-light:   #F5DADA;
-      --amber:       #9A6A10;
-      --amber-light: #F5E9CC;
-      --surface:     #FFFFFF;
-      --border:      #D4D1C5;
-      --px-shadow:   3px 3px 0px #1A1917;
-      --px-shadow-sm:2px 2px 0px #1A1917;
-      --font-ui:     "Segoe UI", system-ui, -apple-system, sans-serif;
-      --font-mono:   "SFMono-Regular", "Cascadia Code", Consolas, monospace;
-      --font-math:   "Cambria Math", "Times New Roman", serif;
+      /* Neutrals — warm paper */
+      --paper:     #FDFDF8;
+      --paper-alt: #F6F2EA;
+      --paper-dim: #EEE8DB;
+      --ink:       #14110F;
+      --ink-soft:  #2F2A24;
+      --body:      #3B3530;
+      --muted:     #6E665C;
+      --subtle:    #9B9285;
+      --rule:      #D9D2C2;
+      --rule-soft: #E8E2D2;
+
+      /* Editorial accents */
+      --navy:      #0F2A4A;
+      --navy-soft: #DAE2EE;
+      --crimson:   #9B1B1B;
+      --crimson-soft:#F0D8D8;
+      --amber:     #9A6A10;
+      --amber-soft:#F3E6C7;
+      --forest:    #2F5E3A;
+      --forest-soft:#D8E6D9;
+      --teal:      #175863;
+      --teal-soft: #D2E2E4;
+
+      --font-serif: 'Source Serif 4', 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+      --font-sans:  'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --font-mono:  'JetBrains Mono', ui-monospace, Consolas, monospace;
+      --font-math:  'Cambria Math', 'Source Serif 4', Georgia, serif;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: var(--font-ui);
-      background: var(--cream);
-      background-image: radial-gradient(circle, #C8C4B4 1px, transparent 1px);
-      background-size: 24px 24px;
-      color: var(--ink);
-      font-size: 13px;
-      line-height: 1.6;
+      font-family: var(--font-serif);
+      background: var(--paper);
+      color: var(--body);
+      font-size: 15px;
+      line-height: 1.65;
+      font-feature-settings: "lnum", "kern", "onum";
+      -webkit-font-smoothing: antialiased;
     }
 
-    a { color: var(--coral); text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    /* Tabular figures on data */
+    .num, td, th, .kpi-value, .stats-table, .matrix, .mfw-freq {
+      font-variant-numeric: tabular-nums lining-nums;
+    }
 
-    .math-inline { font-family: var(--font-math); white-space: nowrap; }
-    .math-inline sub { font-size: 72%; vertical-align: sub; line-height: 0; }
-    .math-inline sup { font-size: 72%; vertical-align: super; line-height: 0; }
+    a { color: var(--navy); text-decoration: none; border-bottom: 1px solid var(--rule); }
+    a:hover { border-bottom-color: var(--navy); }
 
-    /* ── Page ── */
-    .page { max-width: 980px; margin: 0 auto; padding: 28px 20px 80px; }
+    strong, b { color: var(--ink); font-weight: 700; }
+    em, i { color: var(--ink-soft); }
 
-    /* ── Report header ── */
+    .math-inline { font-family: var(--font-math); font-style: italic; white-space: nowrap; }
+    .math-inline sub, .math-inline sup { font-size: 72%; line-height: 0; }
+    .math-inline sub { vertical-align: sub; }
+    .math-inline sup { vertical-align: super; }
+
+    /* ── Page layout ── */
+    .page {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 48px 40px 96px;
+    }
+
+    /* ═══════════════ MASTHEAD ═══════════════ */
     .report-header {
-      background: var(--ink);
-      color: var(--cream);
-      border-bottom: 3px solid var(--coral);
-      padding: 28px 32px;
-      margin-bottom: 28px;
+      border-top: 3px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+      padding: 32px 0 24px;
+      margin-bottom: 36px;
+      position: relative;
     }
-    .report-header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
-    .report-header .subtitle { font-size: 12px; color: #9A9890; margin-top: 4px; }
+    .report-header::before {
+      content: "DIMS · АНАЛІТИЧНИЙ ЗВІТ"; display: block;
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.22em;
+      color: var(--crimson);
+      margin-bottom: 12px;
+    }
+    .report-header h1 {
+      font-family: var(--font-serif);
+      font-size: 40px; font-weight: 800;
+      line-height: 1.05;
+      color: var(--ink);
+      letter-spacing: -0.015em;
+      margin-bottom: 12px;
+    }
+    .report-header .subtitle {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 17px; color: var(--muted);
+      line-height: 1.5;
+      max-width: 640px;
+    }
     .report-meta {
-      display: flex; gap: 20px; flex-wrap: wrap;
-      margin-top: 16px; font-size: 11px; color: #9A9890;
-      font-family: var(--font-mono);
+      display: flex; flex-wrap: wrap; gap: 18px;
+      margin-top: 22px; padding-top: 16px;
+      border-top: 1px solid var(--rule);
+      font-family: var(--font-sans);
+      font-size: 11px; color: var(--muted);
+      letter-spacing: 0.03em;
     }
-    .report-meta span { display: flex; align-items: center; gap: 5px; }
-    .report-meta span::before { content: "▸"; color: var(--coral); }
+    .report-meta span { display: inline-flex; align-items: center; }
+    .report-meta span + span::before {
+      content: "·"; margin-right: 18px; color: var(--subtle);
+    }
 
-    /* ── Section ── */
-    .section { margin-bottom: 28px; }
+    /* ═══════════════ SECTION ═══════════════ */
+    .section { margin-bottom: 44px; }
     .section-title {
-      font-size: 11px; font-weight: 700; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--ink-soft);
-      border-bottom: 1.5px solid var(--ink);
-      padding-bottom: 8px; margin-bottom: 14px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .section-body { color: var(--ink-soft); font-size: 13px; }
-
-    /* ── Card ── */
-    .card {
-      background: var(--surface);
-      border: 1.5px solid var(--ink);
-      box-shadow: var(--px-shadow);
-      padding: 20px;
+      font-family: var(--font-sans);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--crimson);
       margin-bottom: 14px;
+      display: flex; align-items: baseline; gap: 8px;
     }
+    .section-title::before {
+      content: ""; width: 18px; height: 2px;
+      background: var(--crimson);
+      display: inline-block;
+    }
+    .section-body { color: var(--body); font-size: 15px; }
 
-    /* ── KPI grid ── */
+    /* ═══════════════ KPI GRID ═══════════════ */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px; margin-bottom: 12px;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
+      margin-bottom: 14px;
     }
     .kpi-card {
-      background: var(--cream); border: 1.5px solid var(--ink);
-      box-shadow: var(--px-shadow-sm);
-      padding: 14px 10px; text-align: center;
+      padding: 20px 18px 20px 0;
+      border-right: 1px solid var(--rule);
+      background: transparent;
     }
+    .kpi-card:last-child { border-right: 0; }
     .kpi-value {
-      font-size: 26px; font-weight: 800; line-height: 1;
-      margin-bottom: 4px; font-family: var(--font-mono);
+      font-family: var(--font-serif);
+      font-size: 34px; font-weight: 700;
+      line-height: 1; color: var(--ink);
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
     }
     .kpi-label {
+      font-family: var(--font-sans);
       font-size: 10px; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .05em;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      font-weight: 600;
     }
-    .kpi-card.danger { border-top: 3px solid var(--red); }
-    .kpi-card.danger .kpi-value { color: var(--red); }
-    .kpi-card.warn   { border-top: 3px solid var(--amber); }
+    .kpi-card.danger .kpi-value { color: var(--crimson); }
     .kpi-card.warn   .kpi-value { color: var(--amber); }
-    .kpi-card.ok     { border-top: 3px solid var(--green); }
-    .kpi-card.ok     .kpi-value { color: var(--green); }
-    .kpi-card.info   { border-top: 3px solid var(--teal); }
-    .kpi-card.info   .kpi-value { color: var(--teal); }
+    .kpi-card.ok     .kpi-value { color: var(--forest); }
+    .kpi-card.info   .kpi-value { color: var(--navy); }
 
-    /* ── Executive summary ── */
+    /* ═══════════════ EXECUTIVE SUMMARY — pull-quote style ═══════════════ */
     .exec-summary {
-      background: var(--teal-light);
-      border: 1.5px solid var(--teal);
-      border-left: 4px solid var(--teal);
-      padding: 16px 20px;
-      font-size: 13px; line-height: 1.65;
+      font-family: var(--font-serif);
+      font-size: 18px; line-height: 1.55;
+      color: var(--ink-soft);
+      padding: 28px 36px;
+      border-top: 3px double var(--ink);
+      border-bottom: 3px double var(--ink);
+      font-style: italic;
+      position: relative;
+    }
+    .exec-summary::before {
+      content: "Резюме"; position: absolute;
+      top: -10px; left: 28px;
+      background: var(--paper);
+      padding: 0 10px;
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--crimson);
+      font-style: normal;
+    }
+    .exec-summary strong { color: var(--ink); font-style: normal; }
+
+    /* ═══════════════ ALERTS (language, etc.) ═══════════════ */
+    .alert {
+      padding: 16px 22px;
+      border-left: 3px solid;
+      background: var(--paper-alt);
+      margin-bottom: 20px;
+      font-family: var(--font-sans);
+      font-size: 13px; line-height: 1.6;
       color: var(--ink-soft);
     }
-    .exec-summary strong { color: var(--ink); }
+    .alert-critical { border-left-color: var(--crimson); background: var(--crimson-soft); }
+    .alert-critical strong { color: var(--crimson); }
+    .alert-info { border-left-color: var(--navy); background: var(--navy-soft); }
+    .alert-info strong { color: var(--navy); }
 
-    /* ── Charts row — side by side ── */
+    /* ═══════════════ CHARTS ═══════════════ */
     .charts-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 14px;
-      margin-bottom: 4px;
+      gap: 28px;
     }
     @media (max-width: 680px) { .charts-row { grid-template-columns: 1fr; } }
-
     .chart-block {
-      background: var(--surface);
-      border: 1.5px solid var(--ink);
-      box-shadow: var(--px-shadow-sm);
-      padding: 14px;
+      background: var(--paper);
+      border: 1px solid var(--rule);
     }
     .chart-block-title {
-      font-size: 10px; font-weight: 700; letter-spacing: .07em;
-      text-transform: uppercase; color: var(--muted);
-      margin-bottom: 10px; border-bottom: 1px solid var(--border);
-      padding-bottom: 6px;
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--rule);
     }
     .chart-block img {
-      width: 100%;
-      height: 240px;
-      object-fit: contain;
-      object-position: center;
-      background: var(--cream);
+      width: 100%; height: 260px;
+      object-fit: contain; object-position: center;
+      background: var(--paper);
       display: block;
+      padding: 10px;
     }
     .chart-caption {
-      margin-top: 8px; font-size: 11px; color: var(--muted);
-      line-height: 1.5; border-top: 1px dashed var(--border);
-      padding-top: 7px;
+      padding: 12px 16px;
+      font-size: 12px; color: var(--muted);
+      line-height: 1.55;
+      border-top: 1px dashed var(--rule);
+      font-family: var(--font-sans);
     }
 
-    /* ── Alias legend (compact) ── */
+    /* ═══════════════ ALIAS LEGEND ═══════════════ */
     .alias-legend {
-      display: flex; flex-wrap: wrap; gap: 6px;
-      margin-top: 12px;
+      display: flex; flex-wrap: wrap; gap: 14px;
+      margin-top: 22px; padding-top: 16px;
+      border-top: 1px solid var(--rule);
     }
     .alias-row {
-      display: flex; align-items: center; gap: 6px;
-      background: var(--cream); border: 1px solid var(--border);
-      padding: 4px 8px; font-size: 11px;
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-sans); font-size: 12px;
+      color: var(--ink-soft);
     }
     .alias-pill {
       display: inline-flex; align-items: center; justify-content: center;
-      min-width: 28px; padding: 2px 6px;
-      background: var(--ink); color: var(--cream);
-      font-size: 10px; font-weight: 700; font-family: var(--font-mono);
+      min-width: 30px; padding: 3px 8px;
+      background: var(--ink); color: var(--paper);
+      font-family: var(--font-mono);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.04em;
     }
-    .alias-name { color: var(--ink-soft); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .alias-name {
+      max-width: 220px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
 
-    /* ── Flagged pairs ── */
+    /* ═══════════════ FLAGGED PAIRS ═══════════════ */
     .pair-card {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-left: 4px solid var(--border);
-      padding: 14px 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--rule);
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 22px;
+    }
+    .pair-card:last-child { border-bottom: 0; }
+    .pair-severity-col {
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 0.15em;
+    }
+    .pair-badge {
+      display: inline-flex; align-items: center;
+      padding: 5px 10px;
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .pair-badge.critical { background: var(--crimson); color: var(--paper); }
+    .pair-badge.high     { background: var(--amber); color: var(--paper); }
+    .pair-badge.moderate { background: var(--teal); color: var(--paper); }
+    .pair-sources {
+      font-family: var(--font-serif);
+      font-size: 19px; font-weight: 600;
+      color: var(--ink); line-height: 1.3;
       margin-bottom: 10px;
     }
-    .pair-card.critical { border-left-color: var(--red); background: var(--red-light); }
-    .pair-card.high     { border-left-color: var(--amber); background: var(--amber-light); }
-    .pair-card.moderate { border-left-color: var(--teal); background: var(--teal-light); }
-    .pair-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
-    .pair-badge {
-      font-size: 10px; font-weight: 700; letter-spacing: .05em;
-      padding: 3px 9px; text-transform: uppercase;
-      border: 1.5px solid currentColor;
-    }
-    .pair-badge.critical { color: var(--red); }
-    .pair-badge.high     { color: var(--amber); }
-    .pair-badge.moderate { color: var(--teal); }
-    .pair-sources { font-size: 13px; font-weight: 700; }
+    .pair-sources a { color: var(--ink); border-bottom-color: var(--rule); }
+    .pair-sources a:hover { border-bottom-color: var(--ink); }
     .pair-delta {
-      font-size: 11px; color: var(--muted); margin-bottom: 5px;
       font-family: var(--font-mono);
+      font-size: 12px; color: var(--muted);
+      margin-bottom: 10px;
+      padding: 8px 12px;
+      background: var(--paper-alt);
+      border-left: 2px solid var(--ink);
     }
-    .pair-interp { font-size: 12px; color: var(--ink-soft); line-height: 1.5; }
-    .pair-links { font-size: 11px; margin-top: 8px; display: flex; gap: 12px; }
+    .ci-chip {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--navy); margin-left: 8px;
+      padding: 1px 6px;
+      border: 1px solid var(--navy-soft);
+      background: var(--paper);
+    }
+    .pair-interp {
+      font-family: var(--font-serif);
+      font-size: 15px; color: var(--ink-soft);
+      line-height: 1.6;
+    }
+    .pair-links {
+      margin-top: 10px;
+      display: flex; gap: 18px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+    }
+    .no-flagged {
+      padding: 28px;
+      text-align: center;
+      background: var(--forest-soft);
+      color: var(--forest);
+      font-weight: 600;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      border-top: 2px solid var(--forest);
+      border-bottom: 2px solid var(--forest);
+    }
 
-    /* ── Distance matrix — compact ── */
-    .matrix-wrap { overflow-x: auto; }
+    /* ═══════════════ MATRIX ═══════════════ */
+    .matrix-wrap { overflow-x: auto; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
     table.matrix {
       border-collapse: collapse;
-      font-size: 11px; font-family: var(--font-mono);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      width: 100%;
       white-space: nowrap;
     }
     table.matrix th, table.matrix td {
-      padding: 5px 8px;
-      border: 1px solid var(--border);
+      padding: 8px 10px;
+      border-right: 1px solid var(--rule-soft);
+      border-bottom: 1px solid var(--rule-soft);
       text-align: center;
     }
     table.matrix th {
-      background: var(--ink); color: var(--cream);
-      font-size: 10px; letter-spacing: .04em;
+      background: var(--paper-alt);
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+      text-transform: uppercase;
     }
-    table.matrix td.self {
-      background: var(--cream-dark); color: var(--muted);
+    table.matrix td.self { background: var(--paper-dim); color: var(--subtle); }
+
+    /* ═══════════════ GENERIC TABLES ═══════════════ */
+    .ind-table, .stats-table, .corpus-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-serif);
+      font-size: 14px;
     }
-
-    /* ── Stats table ── */
-    .stats-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .stats-table td { padding: 7px 10px; border-bottom: 1px solid var(--cream-dark); }
-    .stats-table td:first-child { color: var(--muted); }
-    .stats-table td:last-child { font-weight: 700; font-family: var(--font-mono); }
-
-    /* ── Indicators table ── */
-    .ind-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .ind-table th {
-      background: var(--ink); color: var(--cream);
-      padding: 6px 10px; text-align: left;
-      font-size: 10px; letter-spacing: .05em; text-transform: uppercase;
+    .ind-table th, .corpus-table th {
+      text-align: left;
+      padding: 10px 12px 10px 0;
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--muted);
+      border-bottom: 1.5px solid var(--ink);
     }
-    .ind-table td { padding: 7px 10px; border-bottom: 1px solid var(--cream-dark); }
-    .ind-table td:last-child { font-family: var(--font-mono); font-weight: 700; }
-    .ind-table tr:hover td { background: var(--cream); }
+    .ind-table td, .corpus-table td, .stats-table td {
+      padding: 10px 12px 10px 0;
+      border-bottom: 1px solid var(--rule);
+      vertical-align: top;
+    }
+    .ind-table tr:last-child td,
+    .corpus-table tr:last-child td,
+    .stats-table tr:last-child td { border-bottom: 1.5px solid var(--ink); }
 
-    /* ── MFW grid ── */
+    .ind-table td:last-child, .corpus-table td:last-child, .stats-table td:last-child {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .stats-table td:first-child { color: var(--muted); font-family: var(--font-sans); font-size: 13px; }
+    .warn-badge { color: var(--amber); font-family: var(--font-sans); font-size: 11px; font-weight: 600; }
+
+    /* ═══════════════ MFW GRID ═══════════════ */
     .mfw-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 6px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--ink);
     }
     .mfw-item {
-      background: var(--cream); border: 1px solid var(--border);
-      padding: 5px 9px; font-size: 12px;
+      padding: 10px 14px;
+      background: var(--paper);
       display: flex; justify-content: space-between; align-items: center;
+      gap: 10px;
     }
-    .mfw-rank { color: var(--muted); font-family: var(--font-mono); font-size: 10px; margin-right: 5px; }
-    .mfw-freq { color: var(--teal); font-family: var(--font-mono); font-weight: 700; font-size: 11px; }
-
-    /* ── Corpus table ── */
-    .corpus-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .corpus-table th {
-      background: var(--ink); color: var(--cream);
-      text-align: left; padding: 6px 10px;
-      font-size: 10px; letter-spacing: .05em; text-transform: uppercase;
+    .mfw-rank {
+      font-family: var(--font-mono);
+      font-size: 10px; color: var(--subtle);
+      margin-right: 6px;
     }
-    .corpus-table td { padding: 7px 10px; border-bottom: 1px solid var(--cream-dark); }
-    .corpus-table tr:hover td { background: var(--cream); }
-    .warn-badge { color: var(--amber); font-size: 10px; font-weight: 700; }
+    .mfw-item strong { font-family: var(--font-serif); font-weight: 600; font-size: 14px; color: var(--ink); }
+    .mfw-freq {
+      font-family: var(--font-mono);
+      font-weight: 700; font-size: 12px;
+      color: var(--navy);
+    }
 
-    /* ── Methodology ── */
+    /* ═══════════════ METHODOLOGY BOX ═══════════════ */
     .method-box {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      padding: 18px 22px;
-      font-size: 12px; line-height: 1.65;
+      background: var(--paper-alt);
+      padding: 24px 28px;
+      font-family: var(--font-serif);
+      font-size: 14px; line-height: 1.7;
+      color: var(--ink-soft);
+      border-left: 3px solid var(--ink);
     }
     .method-formula {
       font-family: var(--font-math);
-      background: var(--ink); color: #86EFAC;
-      padding: 10px 16px; font-size: 13px;
-      margin: 10px 0;
+      background: var(--ink); color: var(--paper);
+      padding: 14px 20px; font-size: 15px;
+      margin: 14px 0;
+      letter-spacing: 0.01em;
     }
     .method-formula sub, .method-formula sup { font-size: 72%; line-height: 0; position: relative; vertical-align: baseline; }
     .method-formula sub { bottom: -.25em; }
     .method-formula sup { top: -.5em; }
-    .method-formula.multi-line div + div { margin-top: 4px; }
-    .method-note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .method-formula.multi-line div + div { margin-top: 5px; }
+    .method-note {
+      color: var(--muted);
+      font-size: 13px; font-family: var(--font-serif);
+      font-style: italic;
+      margin-top: 14px;
+    }
 
-    /* ── Recommendations ── */
-    .rec-list { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    /* ═══════════════ RECOMMENDATIONS ═══════════════ */
+    .rec-list {
+      list-style: none;
+      counter-reset: rec;
+    }
     .rec-list li {
-      padding: 9px 14px 9px 34px; position: relative;
-      background: var(--surface); border: 1.5px solid var(--border);
-      font-size: 12px; line-height: 1.55;
+      padding: 16px 0 16px 52px;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+      counter-increment: rec;
+      font-family: var(--font-serif);
+      font-size: 15px; line-height: 1.6;
+      color: var(--ink-soft);
     }
+    .rec-list li:last-child { border-bottom: 0; }
     .rec-list li::before {
-      content: "▸"; position: absolute; left: 12px;
-      color: var(--coral); font-weight: 700;
+      content: counter(rec, decimal-leading-zero);
+      position: absolute; left: 0; top: 14px;
+      font-family: var(--font-sans);
+      font-size: 20px; font-weight: 800;
+      color: var(--crimson);
+      letter-spacing: -0.02em;
     }
 
-    /* ── No flagged ── */
-    .no-flagged {
-      padding: 20px; text-align: center;
-      background: var(--green-light); border: 1.5px solid var(--green);
-      color: var(--green); font-weight: 700; font-size: 13px;
+    /* ═══════════════ FOOTER ═══════════════ */
+    .report-footer {
+      text-align: center;
+      margin-top: 60px;
+      padding: 20px 0;
+      border-top: 1px solid var(--ink);
+      font-family: var(--font-sans);
+      font-size: 10px; color: var(--subtle);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
-    /* ── Print bar ── */
+    /* ═══════════════ GRADE BADGE (editorial variant) ═══════════════ */
+    :root {
+      --grade-f-bg:#6b7280; --grade-b-bg:#0ea5e9; --grade-s-bg:#9A6A10;
+      --grade-ss-bg:#ef4444; --grade-sss-bg:#7f1d1d;
+    }
+    .grade-badge {
+      display: inline-flex; align-items: baseline; gap: 6px;
+      padding: 2px 8px;
+      font-family: var(--font-sans);
+      font-weight: 700; line-height: 1.3;
+      letter-spacing: 0.05em;
+      color: #fff;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .grade-badge[data-grade="F"]   { background: var(--grade-f-bg); }
+    .grade-badge[data-grade="B"]   { background: var(--grade-b-bg); }
+    .grade-badge[data-grade="S"]   { background: var(--grade-s-bg); }
+    .grade-badge[data-grade="SS"]  { background: var(--grade-ss-bg); }
+    .grade-badge[data-grade="SSS"] { background: var(--grade-sss-bg); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15); }
+    .grade-badge .grade-meta { font-weight: 500; opacity: 0.85; font-size: 0.85em; }
+    .grade-badge.is-sm  { padding: 1px 6px; font-size: 10px; }
+    .grade-badge.is-md  { padding: 2px 9px; font-size: 12px; }
+    .grade-badge.is-lg  { padding: 4px 12px; font-size: 17px; letter-spacing: 0.04em; }
+    .grade-badge.is-taboo { outline: 2px solid currentColor; outline-offset: 2px; }
+    .grade-badge.is-taboo::after { content: " ⚑"; }
+    @media print {
+      .grade-badge { background:#fff !important; color:#000 !important; border:1.5px solid #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    /* ═══════════════ SECTION DIVIDER ═══════════════ */
+    .section-divider {
+      display: flex; align-items: center; gap: 18px;
+      margin: 44px 0 36px;
+    }
+    .section-divider::before,
+    .section-divider::after {
+      content: ""; flex: 1; height: 1px;
+      background: var(--ink);
+    }
+    .section-divider span {
+      font-family: var(--font-sans);
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    @media print { .section-divider { margin: 28px 0 24px; } }
+
+    /* ═══════════════ PRINT BAR ═══════════════ */
     .print-bar {
-      position: fixed; bottom: 20px; right: 20px;
-      display: flex; gap: 8px;
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; gap: 10px;
+      z-index: 100;
     }
     .btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 9px 18px;
-      border: 1.5px solid var(--ink);
-      font-size: 11px; font-weight: 700; letter-spacing: .05em;
-      text-transform: uppercase; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 18px;
+      font-family: var(--font-sans);
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
       text-decoration: none;
-      box-shadow: var(--px-shadow-sm);
-      transition: box-shadow .1s, transform .1s;
+      transition: background 120ms, color 120ms;
     }
-    .btn:hover { box-shadow: 3px 3px 0 var(--ink); transform: translate(-1px,-1px); text-decoration: none; }
-    .btn:active { box-shadow: 1px 1px 0 var(--ink); transform: translate(1px,1px); }
-    .btn-primary { background: var(--ink); color: var(--cream); }
-    .btn-primary:hover { background: var(--coral); border-color: var(--coral); }
-    .btn-ghost { background: var(--surface); color: var(--ink); }
+    .btn:hover { background: var(--ink); color: var(--paper); border-bottom-color: var(--ink); }
+    .btn-primary { background: var(--ink); color: var(--paper); }
+    .btn-primary:hover { background: var(--crimson); border-color: var(--crimson); }
+    .btn-ghost { background: var(--paper); }
 
-    /* ── Footer ── */
-    .report-footer {
-      text-align: center; color: var(--muted); font-size: 11px;
-      margin-top: 36px; padding-top: 16px;
-      border-top: 1.5px solid var(--ink);
-      font-family: var(--font-mono);
-    }
-
-    /* ── Print ── */
+    /* ═══════════════ PRINT ═══════════════ */
     @media print {
+      body { background: #fff; }
+      .page { max-width: 720px; padding: 20px; }
       .print-bar { display: none; }
-      body { background: #fff; background-image: none; }
-      .card, .chart-block, .kpi-card, .pair-card { box-shadow: none; }
+      .report-header, .kpi-grid, .exec-summary, .matrix-wrap { page-break-inside: avoid; }
+      .section { page-break-inside: avoid; }
       .report-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      a { color: var(--ink); }
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 28px 20px 60px; }
+      .report-header h1 { font-size: 30px; }
+      .report-header .subtitle { font-size: 15px; }
+      .kpi-card { padding: 16px 12px 16px 0; }
+      .kpi-value { font-size: 28px; }
+      .exec-summary { font-size: 16px; padding: 22px 24px; }
+      .pair-card { grid-template-columns: 1fr; gap: 12px; }
     }
   </style>
 </head>
 <body>
 <div class="page">
 
-  <!-- HEADER -->
-  <div class="report-header">
-    <h1>DIMS — Аналітичний звіт</h1>
-    <p class="subtitle">Удосконалена методика моніторингу інформації у відкритих джерелах із застосуванням <span class="math-inline">&Delta;<sub>Burrows</sub></span></p>
+  <!-- ═══════════════ MASTHEAD ═══════════════ -->
+  <header class="report-header">
+    <h1>Інтегральна оцінка дезінформаційних ризиків за стилометричними ознаками</h1>
+    <p class="subtitle">Аналітичний звіт за удосконаленою методикою моніторингу інформації у відкритих джерелах із застосуванням <span class="math-inline">&Delta;<sub>Burrows</sub></span> та інтегральної оцінки DIMS.</p>
     <div class="report-meta">
       <span>{{ timestamp }}</span>
-      <span>Джерел: {{ n_docs }}</span>
-      <span>MFW = {{ mfw_n }}</span>
-      <span>&theta;<sub>&Delta;</sub> = {{ threshold }}</span>
-      <span>Пар: {{ n_pairs }}</span>
+      <span>Джерел {{ n_docs }}</span>
+      <span>MFW {{ mfw_n }}</span>
+      <span><span class="math-inline">&theta;<sub>&Delta;</sub></span> {{ threshold }}</span>
+      <span>Пар {{ n_pairs }}</span>
+      <span>{{ 'char-' ~ char_n if feature_type == 'char' else 'word tokens' }}</span>
+      <span>culling &ge; {{ min_doc_freq }}</span>
+      {% if bootstrap_iterations %}<span>bootstrap {{ bootstrap_iterations }}</span>{% endif %}
     </div>
-  </div>
+  </header>
 
-  <!-- KPI -->
-  <div class="section">
-    <h2 class="section-title">Ключові показники</h2>
+  {% if language_report and language_report.is_mixed %}
+  <div class="alert alert-critical" role="alert">
+    <strong>Змішаний мовний корпус.</strong>
+    {{ language_report.warning or "Виявлено документи різними мовами/письмами." }}
+    Виявлені мови: <strong>{{ language_report.scripts | join(", ") }}</strong>.
+    Значення <span class="math-inline">&Delta;<sub>Burrows</sub></span> на такому корпусі відображають мовну різницю, а не стиль — рекомендовано розділити корпус за мовою.
+  </div>
+  {% endif %}
+
+  <!-- ═══════════════════════════════════════════════════════
+       ЧАСТИНА І — ДЛЯ КЕРІВНИКА
+       Все що потребує рішення або реагування
+       ═══════════════════════════════════════════════════════ -->
+
+  <!-- ── KPI ── -->
+  <section class="section">
     <div class="kpi-grid">
       <div class="kpi-card info">
         <div class="kpi-value">{{ n_docs }}</div>
@@ -389,22 +643,125 @@
         <div class="kpi-label"><span class="math-inline">R<sub>DIMS</sub></span></div>
       </div>
       <div class="kpi-card {% if dims_assessment.grade.grade in ['SS','SSS'] %}danger{% elif dims_assessment.grade.grade == 'S' %}warn{% else %}ok{% endif %}">
-        <div class="kpi-value">{{ dims_assessment.grade.grade }}</div>
+        <div class="kpi-value" style="display:flex; align-items:center">
+          <span class="grade-badge is-lg{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}"
+                data-grade="{{ dims_assessment.grade.grade }}"
+                title="{{ dims_assessment.grade.label }}{% if dims_assessment.grade.forced_by_taboo %} — грейд підвищено згідно з правилом «табу»{% endif %}">
+            {{ dims_assessment.grade.grade }}
+          </span>
+        </div>
         <div class="kpi-label">Грейд DIMS</div>
       </div>
     </div>
+  </section>
+
+  <!-- ── Резюме ── -->
+  <section class="section">
+    <div class="exec-summary">
+      {% if dims_assessment.grade.grade in ['SS', 'SSS'] %}
+        <strong>Виявлено підвищений DIMS-ризик.</strong>
+        Інтегральна оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <span class="grade-badge is-md{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span>.
+        Домінуючі індикатори — змістовий та координаційний аналіз. Рекомендується пріоритетне експертне опрацювання та перевірка скоординованих джерел.
+      {% elif dims_assessment.grade.grade == 'S' %}
+        <strong>Значущий рівень інформаційного інтересу.</strong>
+        Оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> вказує на наявність ознак інформаційної загрози. Стилометричні та змістові індикатори потребують додаткової верифікації.
+      {% else %}
+        <strong>Низький DIMS-ризик.</strong>
+        Оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <span class="grade-badge is-md{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span>. Підстав для пріоритетного реагування не виявлено. Результати слід інтерпретувати разом із контекстом та експертним аналізом.
+      {% endif %}
+      {% if dims_assessment.manifestation and dims_assessment.manifestation.label %}
+        <div style="margin-top:10px">
+          <strong>Вид прояву DIMs:</strong> {{ dims_assessment.manifestation.label }}.
+          {% if dims_assessment.grade.forced_by_taboo %}
+            <em>Грейд підвищено до SS згідно з Методикою НУЗРКС МОУ
+            № 46 від 28.11.2022 (правило «табу → автоматичний SS-грейд»).
+            Обчислений за балами грейд — {{ dims_assessment.grade.computed_grade }}.</em>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- ── Рекомендації ── -->
+  <section class="section">
+    <h2 class="section-title">Рекомендації</h2>
+    <ol class="rec-list">
+      {% if n_flagged > 0 %}
+      <li>Провести детальний контент-аналіз пар із рівнем <strong>Критичний</strong> та <strong>Високий</strong> для підтвердження координації.</li>
+      <li>Порівняти часові мітки публікацій підозрілих джерел — синхронність підсилює аргумент координації.</li>
+      <li>Встановити власників підозрілих ресурсів через OSINT (WHOIS, MediaOwnership).</li>
+      {% endif %}
+      <li>Повторити аналіз з різними MFW (50 / 100 / 200 / 500) для перевірки стабільності результатів.</li>
+      <li>Оптимальний обсяг тексту — від 1000 слів на документ.</li>
+      <li>Аналізувати тексти однією мовою для уникнення міжмовних артефактів.</li>
+      <li>Результати є індикативними — інтерпретувати в комплексі з іншими методами.</li>
+    </ol>
+  </section>
+
+  <!-- ── Підозрілі пари (пріоритет: критичні → високі → помірні) ── -->
+  <section class="section">
+    <h2 class="section-title">
+      Підозрілі пари
+      {% if n_flagged > 0 %}&mdash; {{ n_flagged }} із {{ n_pairs }}{% endif %}
+    </h2>
+    {% if flagged %}
+      {% for item in flagged | sort(attribute='severity.css') %}
+      <article class="pair-card">
+        <div class="pair-severity-col">
+          <span class="pair-badge {{ item.severity.css }}">{{ item.severity.icon }} {{ item.severity.label }}</span>
+        </div>
+        <div>
+          <div class="pair-sources">
+            <a href="{{ item.a_source.url or item.a_source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ item.a_source.display_title }}</a>
+            &nbsp;↔&nbsp;
+            <a href="{{ item.b_source.url or item.b_source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ item.b_source.display_title }}</a>
+          </div>
+          <div class="pair-delta">
+            <span class="math-inline">&Delta;<sub>Burrows</sub></span> = {{ "%.4f"|format(item.delta) }}
+            {% if item.ci %}<span class="ci-chip">95% CI [{{ "%.3f"|format(item.ci.lo) }}, {{ "%.3f"|format(item.ci.hi) }}]</span>{% endif %}
+            &nbsp;·&nbsp; <span class="math-inline">&theta;<sub>&Delta;</sub></span> = {{ threshold }}
+            &nbsp;·&nbsp; −{{ "%.1f"|format((1 - item.delta/threshold)*100) }}% від порогу
+          </div>
+          <p class="pair-interp">
+            {% if item.severity.css == 'critical' %}
+              <strong>Висока ймовірність координації або спільного авторства.</strong>
+              Стилістична відстань аномально низька. Потребує першочергової перевірки.
+            {% elif item.severity.css == 'high' %}
+              <strong>Значна стилістична подібність.</strong>
+              Ймовірна координація або схожа редакційна політика.
+            {% else %}
+              <strong>Помітна подібність стилю.</strong>
+              Може бути зумовлена жанровою специфікою. Рекомендується додаткова перевірка.
+            {% endif %}
+          </p>
+          <div class="pair-links">
+            {% if item.a_source.url %}<a href="{{ item.a_source.url }}" target="_blank" rel="noopener noreferrer">Джерело A →</a>
+            {% else %}<a href="{{ item.a_source.local_text_url }}" target="_blank" rel="noopener noreferrer">Текст A →</a>{% endif %}
+            {% if item.b_source.url %}<a href="{{ item.b_source.url }}" target="_blank" rel="noopener noreferrer">Джерело B →</a>
+            {% else %}<a href="{{ item.b_source.local_text_url }}" target="_blank" rel="noopener noreferrer">Текст B →</a>{% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    {% else %}
+      <div class="no-flagged">Жодна пара не перевищила поріг підозрілості ({{ threshold }}). Ознак стилістичної координації не виявлено.</div>
+    {% endif %}
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       ЧАСТИНА ІІ — ДЛЯ АНАЛІТИКА
+       Технічні деталі: індикатори, графіки, матриця
+       ═══════════════════════════════════════════════════════ -->
+  <div class="section-divider">
+    <span>Аналітичний розділ</span>
   </div>
 
-  <!-- DIMS indicators -->
-  <div class="section">
+  <!-- ── Індикатори DIMS ── -->
+  <section class="section">
     <h2 class="section-title">Індикатори DIMS</h2>
     <table class="ind-table">
       <thead>
-        <tr>
-          <th>Індикатор</th>
-          <th>Значення</th>
-          <th>Опис</th>
-        </tr>
+        <tr><th>Індикатор</th><th>Значення</th><th>Опис</th></tr>
       </thead>
       <tbody>
         <tr><td><span class="math-inline">I<sub>content</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_content) }}</td><td>Змістові ознаки дезінформації</td></tr>
@@ -412,92 +769,115 @@
         <tr><td><span class="math-inline">I<sub>dynamics</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_dynamics) }}</td><td>Динаміка поширення</td></tr>
         <tr><td><span class="math-inline">I<sub>impact</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_impact) }}</td><td>Потенційний вплив</td></tr>
         <tr><td><span class="math-inline">I<sub>source</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_source) }}</td><td>Ризик джерела: домен, прозорість, редакційні та джерельні ознаки</td></tr>
-        <tr><td><span class="math-inline">R<sub>DIMS</sub></span></td><td>{{ "%.4f"|format(dims_assessment.r_dims) }}</td><td>Інтегральна оцінка → грейд <strong>{{ dims_assessment.grade.grade }}</strong> ({{ dims_assessment.grade.label }})</td></tr>
+        <tr><td><span class="math-inline">R<sub>DIMS</sub></span></td><td>{{ "%.4f"|format(dims_assessment.r_dims) }}</td><td>Інтегральна оцінка → грейд <span class="grade-badge is-md{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span> ({{ dims_assessment.grade.label }})</td></tr>
       </tbody>
     </table>
-    {% if dims_assessment.source_components %}
-    <table class="corpus-table" style="margin-top:10px">
-      <thead><tr><th>Складова</th><th>Значення</th><th>Вага</th><th>Опис</th></tr></thead>
-      <tbody>
-        {% for label, item in dims_assessment.source_components.items() %}
-        <tr>
-          <td><span class="math-inline">{{ label }}</span></td>
-          <td>{{ "%.4f"|format(item.score) }}</td>
-          <td>{{ "%.2f"|format(item.weight) }}</td>
-          <td>{{ item.description }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-    {% if source_breakdown_rows %}
-    <table class="corpus-table" style="margin-top:10px">
-      <thead><tr><th>Джерело</th><th>Домен</th><th>Профіль ризику</th><th><span class="math-inline">I<sub>source</sub></span></th></tr></thead>
-      <tbody>
-        {% for row in source_breakdown_rows %}
-        <tr>
-          <td><a href="{{ row.source.url or row.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ row.source.display_title }}</a></td>
-          <td>{{ row.source.domain or row.label }}</td>
-          <td>
-            <span class="math-inline">R<sub>domain</sub></span>={{ "%.2f"|format(row.components.domain or 0) }},
-            <span class="math-inline">R<sub>owner</sub></span>={{ "%.2f"|format(row.components.owner or 0) }},
-            <span class="math-inline">R<sub>cred</sub></span>={{ "%.2f"|format(row.components.cred or 0) }}
-          </td>
-          <td>{{ "%.4f"|format(row.score) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-  </div>
 
-  <!-- EXECUTIVE SUMMARY -->
-  <div class="section">
-    <h2 class="section-title">Виконавче резюме</h2>
-    <div class="exec-summary">
-      {% if dims_assessment.grade.grade in ['SS', 'SSS'] %}
-        <strong>Виявлено підвищений DIMS-ризик.</strong>
-        Інтегральна оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <strong>{{ dims_assessment.grade.grade }}</strong>.
-        Домінуючі індикатори: змістовий та координаційний аналіз.
-        Рекомендується пріоритетне експертне опрацювання та перевірка скоординованих джерел.
-      {% elif dims_assessment.grade.grade == 'S' %}
-        <strong>Виявлено значущий рівень інтересу.</strong>
-        Оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> вказує на наявність ознак інформаційної загрози.
-        Стилометричні та змістові індикатори потребують додаткової верифікації.
-      {% else %}
-        <strong>Низький або локальний DIMS-ризик.</strong>
-        Оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <strong>{{ dims_assessment.grade.grade }}</strong>.
-        Підстав для пріоритетного реагування не виявлено.
-        Результати слід інтерпретувати разом із контекстом та експертним аналізом.
-      {% endif %}
+    {% if dims_assessment.sensitivity and dims_assessment.sensitivity.per_indicator %}
+    <div style="margin-top:24px">
+      <h2 class="section-title">Аналіз чутливості (±{{ (dims_assessment.sensitivity.perturbation * 100) | round | int }}% ваги)</h2>
+      <p class="method-note">R<sub>DIMS</sub> baseline = {{ "%.4f"|format(dims_assessment.sensitivity.baseline) }} · діапазон [{{ "%.4f"|format(dims_assessment.sensitivity.min) }}, {{ "%.4f"|format(dims_assessment.sensitivity.max) }}] (Δ = {{ "%.4f"|format(dims_assessment.sensitivity.range) }})</p>
+      <table class="ind-table">
+        <thead>
+          <tr><th>Індикатор</th><th>Внесок</th><th>Мін</th><th>Макс</th><th>Діапазон</th></tr>
+        </thead>
+        <tbody>
+          {% for ind, s in dims_assessment.sensitivity.per_indicator.items() %}
+          <tr>
+            <td><span class="math-inline">I<sub>{{ ind }}</sub></span></td>
+            <td>{{ "%.4f"|format(s.contribution) }}</td>
+            <td>{{ "%.4f"|format(s.min) }}</td>
+            <td>{{ "%.4f"|format(s.max) }}</td>
+            <td>{{ "%.4f"|format(s.range) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="method-note">Малий діапазон (&lt;0.02) — грейд стабільний до збурення ваг; великий — результат чутливий.</p>
     </div>
-  </div>
+    {% endif %}
 
-  <!-- CHARTS: dendrogram + PCA side by side -->
+    {% if dims_assessment.source_components %}
+    <div style="margin-top:24px">
+      <h2 class="section-title">Складові <span class="math-inline">I<sub>source</sub></span></h2>
+      <table class="corpus-table">
+        <thead><tr><th>Складова</th><th>Значення</th><th>Вага</th><th>Опис</th></tr></thead>
+        <tbody>
+          {% for label, item in dims_assessment.source_components.items() %}
+          <tr>
+            <td><span class="math-inline">{{ label }}</span></td>
+            <td>{{ "%.4f"|format(item.score) }}</td>
+            <td>{{ "%.2f"|format(item.weight) }}</td>
+            <td>{{ item.description }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if source_breakdown_rows %}
+    <div style="margin-top:24px">
+      <h2 class="section-title">Розклад за джерелами</h2>
+      <table class="corpus-table">
+        <thead><tr><th>Джерело</th><th>Домен</th><th>Профіль ризику</th><th><span class="math-inline">I<sub>source</sub></span></th></tr></thead>
+        <tbody>
+          {% for row in source_breakdown_rows %}
+          <tr>
+            <td><a href="{{ row.source.url or row.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ row.source.display_title }}</a></td>
+            <td>{{ row.source.domain or row.label }}</td>
+            <td>
+              <span class="math-inline">R<sub>domain</sub></span>={{ "%.2f"|format(row.components.domain or 0) }},
+              <span class="math-inline">R<sub>owner</sub></span>={{ "%.2f"|format(row.components.owner or 0) }},
+              <span class="math-inline">R<sub>cred</sub></span>={{ "%.2f"|format(row.components.cred or 0) }}
+            </td>
+            <td>{{ "%.4f"|format(row.score) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- ── Стилометрична візуалізація ── -->
   {% if dendrogram_b64 or pca_b64 %}
-  <div class="section">
-    <h2 class="section-title">Стилометричний аналіз — візуалізація</h2>
+  <section class="section">
+    <h2 class="section-title">Стилометрична візуалізація</h2>
     <div class="charts-row">
       {% if dendrogram_b64 %}
       <div class="chart-block">
         <div class="chart-block-title">Дендрограма кластеризації</div>
         <img src="data:image/png;base64,{{ dendrogram_b64 }}" alt="Дендрограма" />
         <div class="chart-caption">
-          Вертикальна вісь — стилістична відстань <span class="math-inline">&Delta;<sub>Burrows</sub></span> при злитті груп. Нижче злиття = більша схожість. Пунктир — поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span>.
+          Вертикальна вісь — стилістична відстань <span class="math-inline">&Delta;<sub>Burrows</sub></span> при злитті груп. Нижче злиття — більша схожість. Пунктир — поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span>.
         </div>
       </div>
       {% endif %}
       {% if pca_b64 %}
       <div class="chart-block">
-        <div class="chart-block-title">PCA-карта джерел</div>
-        <img src="data:image/png;base64,{{ pca_b64 }}" alt="PCA" />
+        <div class="chart-block-title">
+          {{ (projection_meta.method | upper) if projection_meta and projection_meta.method else 'PCA' }}-карта джерел
+        </div>
+        <img src="data:image/png;base64,{{ pca_b64 }}" alt="Проєкція джерел" />
         <div class="chart-caption">
-          Кожна точка — джерело. Близькі точки = подібний стиль. Кольори = кластери дендрограми. % на осях — пояснена варіативність.
+          Кожна точка — джерело. Близькі точки — подібний стиль; кольори — кластери дендрограми.
+          {% if projection_meta and projection_meta.subtitle %} {{ projection_meta.subtitle }}{% endif %}
         </div>
       </div>
       {% endif %}
     </div>
-    <!-- Alias legend -->
+
+    {% if heatmap_b64 %}
+    <div class="chart-block" style="margin-top:20px">
+      <div class="chart-block-title">Теплокарта відстаней <span class="math-inline">&Delta;<sub>Burrows</sub></span></div>
+      <img src="data:image/png;base64,{{ heatmap_b64 }}" alt="Теплокарта відстаней" style="height:auto; max-height:420px" />
+      <div class="chart-caption">
+        Комірки, що перетинають поріг <span class="math-inline">&theta;<sub>&Delta;</sub> = {{ threshold }}</span>, обведено червоним.
+      </div>
+    </div>
+    {% endif %}
+
     <div class="alias-legend">
       {% for item in source_aliases %}
       <div class="alias-row">
@@ -506,71 +886,14 @@
       </div>
       {% endfor %}
     </div>
-  </div>
+  </section>
   {% endif %}
 
-  <!-- FLAGGED PAIRS -->
-  <div class="section">
-    <h2 class="section-title">
-      Підозрілі пари
-      {% if n_flagged > 0 %}
-        <span style="font-weight:400; color:var(--muted); text-transform:none; letter-spacing:0; font-size:12px">
-          — {{ n_flagged }} із {{ n_pairs }} пар з <span class="math-inline">&Delta;</span> &lt; {{ threshold }}
-        </span>
-      {% endif %}
-    </h2>
-    {% if flagged %}
-      {% for item in flagged %}
-      <div class="pair-card {{ item.severity.css }}">
-        <div class="pair-header">
-          <span class="pair-badge {{ item.severity.css }}">{{ item.severity.icon }} {{ item.severity.label }}</span>
-          <span class="pair-sources">
-            <a href="{{ item.a_source.url or item.a_source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ item.a_source.display_title }}</a>
-            &nbsp;↔&nbsp;
-            <a href="{{ item.b_source.url or item.b_source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ item.b_source.display_title }}</a>
-          </span>
-        </div>
-        <div class="pair-delta">
-          <span class="math-inline">&Delta;<sub>Burrows</sub></span> = {{ "%.4f"|format(item.delta) }}
-          &nbsp;|&nbsp; &theta;<sub>&Delta;</sub> = {{ threshold }}
-          &nbsp;|&nbsp; -{{ "%.1f"|format((1 - item.delta/threshold)*100) }}% від порогу
-        </div>
-        <div class="pair-interp">
-          {% if item.severity.css == 'critical' %}
-            <strong>Висока ймовірність координації або спільного авторства.</strong>
-            Стилістична відстань аномально низька. Потребує першочергової перевірки.
-          {% elif item.severity.css == 'high' %}
-            <strong>Значна стилістична подібність.</strong>
-            Ймовірна координація або схожа редакційна політика.
-          {% else %}
-            <strong>Помітна подібність стилю.</strong>
-            Може бути зумовлена жанровою специфікою. Рекомендується додаткова перевірка.
-          {% endif %}
-        </div>
-        <div class="pair-links">
-          {% if item.a_source.url %}
-            <a href="{{ item.a_source.url }}" target="_blank" rel="noopener noreferrer">↗ Джерело A</a>
-          {% else %}
-            <a href="{{ item.a_source.local_text_url }}" target="_blank" rel="noopener noreferrer">↗ Текст A</a>
-          {% endif %}
-          {% if item.b_source.url %}
-            <a href="{{ item.b_source.url }}" target="_blank" rel="noopener noreferrer">↗ Джерело B</a>
-          {% else %}
-            <a href="{{ item.b_source.local_text_url }}" target="_blank" rel="noopener noreferrer">↗ Текст B</a>
-          {% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    {% else %}
-      <div class="no-flagged">✓ Жодна пара не перевищила поріг підозрілості ({{ threshold }}). Ознак стилістичної координації не виявлено.</div>
-    {% endif %}
-  </div>
-
-  <!-- DISTANCE MATRIX — compact with aliases -->
-  <div class="section">
+  <!-- ── Матриця відстаней ── -->
+  <section class="section">
     <h2 class="section-title">Матриця відстаней <span class="math-inline">&Delta;<sub>Burrows</sub></span></h2>
-    <p class="section-body" style="margin-bottom:10px; font-size:12px">
-      Менше значення = більша схожість. <span style="color:var(--red); font-weight:700">Червоніші клітинки</span> — більш подібні пари. Аліаси S1…Sn відповідають легенді під графіками.
+    <p class="section-body" style="margin-bottom:14px; font-size:14px; color:var(--muted); font-style:italic">
+      Менше значення — більша схожість. Червоніші клітинки позначають більш подібні пари. Аліаси S1…Sn відповідають легенді під графіками.
     </p>
     <div class="matrix-wrap">
       <table class="matrix">
@@ -585,17 +908,13 @@
         <tbody>
           {% for row in matrix_rows %}
           <tr>
-            <th style="text-align:left; background:var(--ink); color:var(--cream); font-size:10px">
-              {{ source_aliases[loop.index0].alias }}
-            </th>
+            <th style="text-align:left">{{ source_aliases[loop.index0].alias }}</th>
             {% for cell in row.cells %}
             {% if cell.col == row.label %}
               <td class="self">—</td>
             {% else %}
               {% set ratio = 1 - (cell.val / max_delta) %}
-              {% set r = (220 * ratio) | int %}
-              {% set g = (220 * (1 - ratio * 0.7)) | int %}
-              <td style="background:rgba({{ r }},{{ g }},{{ (180 * (1-ratio)) | int }},{{ ratio * 0.55 + 0.05 }})" title="{{ row.source.display_title }} ↔ {{ cell.col_source.display_title }}">
+              <td style="background:rgba(155, 27, 27, {{ (ratio * 0.35 + 0.05) }})" title="{{ row.source.display_title }} ↔ {{ cell.col_source.display_title }}">
                 {{ "%.3f"|format(cell.val) }}
               </td>
             {% endif %}
@@ -605,59 +924,59 @@
         </tbody>
       </table>
     </div>
-  </div>
+  </section>
 
-  <!-- DELTA STATS -->
-  <div class="section">
+  <!-- ── Статистика Δ ── -->
+  <section class="section">
     <h2 class="section-title">Статистика <span class="math-inline">&Delta;<sub>Burrows</sub></span></h2>
     <table class="stats-table">
       <tr><td>Мінімум</td><td>{{ "%.4f"|format(delta_stats.min) }}</td></tr>
       <tr><td>Максимум</td><td>{{ "%.4f"|format(delta_stats.max) }}</td></tr>
-      <tr><td>Середнє (mean)</td><td>{{ "%.4f"|format(delta_stats.mean) }}</td></tr>
+      <tr><td>Середнє</td><td>{{ "%.4f"|format(delta_stats.mean) }}</td></tr>
       <tr><td>Медіана</td><td>{{ "%.4f"|format(delta_stats.median) }}</td></tr>
-      <tr><td><span class="math-inline">&sigma;<sub>&Delta;</sub></span></td><td>{{ "%.4f"|format(delta_stats.std) }}</td></tr>
+      <tr><td>Стандартне відхилення <span class="math-inline">&sigma;<sub>&Delta;</sub></span></td><td>{{ "%.4f"|format(delta_stats.std) }}</td></tr>
     </table>
-  </div>
+  </section>
 
-  <!-- CORPUS STATS -->
-  <div class="section">
-    <h2 class="section-title">Статистика корпусу</h2>
+  <!-- ── Корпус ── -->
+  <section class="section">
+    <h2 class="section-title">Корпус</h2>
     <table class="corpus-table">
-      <thead><tr><th>#</th><th>Джерело</th><th>Токенів</th><th>Примітка</th></tr></thead>
+      <thead><tr><th style="width:32px">#</th><th>Джерело</th><th>Токенів</th><th>Примітка</th></tr></thead>
       <tbody>
         {% for ts in token_stats %}
         <tr>
-          <td style="font-family:var(--font-mono); color:var(--muted)">{{ loop.index }}</td>
+          <td style="color:var(--subtle); font-family:var(--font-mono)">{{ loop.index }}</td>
           <td>
             <a href="{{ ts.source.url or ts.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ ts.source.display_title }}</a>
-            <div style="font-size:11px; color:var(--muted)">{{ ts.source.domain or ts.source.original_name or ts.label }}</div>
+            <div style="font-size:12px; color:var(--muted); font-family:var(--font-sans); margin-top:2px">{{ ts.source.domain or ts.source.original_name or ts.label }}</div>
           </td>
-          <td style="font-family:var(--font-mono)">{{ "{:,}".format(ts.tokens) }}</td>
-          <td>{% if ts.warn %}<span class="warn-badge">⚠ &lt;500</span>{% else %}<span style="color:var(--green)">✓</span>{% endif %}</td>
+          <td>{{ "{:,}".format(ts.tokens) }}</td>
+          <td>{% if ts.warn %}<span class="warn-badge">⚠ &lt;500 токенів</span>{% else %}<span style="color:var(--forest); font-family:var(--font-sans); font-size:11px">OK</span>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-  </div>
+  </section>
 
-  <!-- TOP MFW -->
-  <div class="section">
-    <h2 class="section-title">Топ-20 найчастіших слів (MFW)</h2>
-    <p class="section-body" style="margin-bottom:10px; font-size:12px">
-      Стилометричні ознаки аналізу. Функціональні слова (прийменники, сполучники, частки) є найбільш діагностичними для авторського стилю.
+  <!-- ── Топ-20 найчастіших слів ── -->
+  <section class="section">
+    <h2 class="section-title">Топ-20 найчастіших слів</h2>
+    <p class="section-body" style="margin-bottom:14px; font-size:14px; color:var(--muted); font-style:italic">
+      Функціональні слова (прийменники, сполучники, частки) є найбільш діагностичними для авторського стилю.
     </p>
     <div class="mfw-grid">
       {% for item in mfw_table %}
       <div class="mfw-item">
-        <span><span class="mfw-rank">{{ item.rank }}.</span><strong>{{ item.word }}</strong></span>
+        <span><span class="mfw-rank">{{ item.rank }}</span><strong>{{ item.word }}</strong></span>
         <span class="mfw-freq">{{ item.freq }}</span>
       </div>
       {% endfor %}
     </div>
-  </div>
+  </section>
 
-  <!-- METHODOLOGY -->
-  <div class="section">
+  <!-- ── Методологія ── -->
+  <section class="section">
     <h2 class="section-title">Методологія</h2>
     <div class="method-box">
       <p><strong>Базова модель:</strong> інтегроване DIMS-оцінювання з <span class="math-inline">&Delta;<sub>Burrows</sub></span> як індикатором координації.</p>
@@ -671,38 +990,23 @@
         <div>G = SS&nbsp; &nbsp;&theta;<sub>3</sub> &le; R<sub>DIMS</sub> &lt; &theta;<sub>4</sub></div>
         <div>G = SSS &nbsp;R<sub>DIMS</sub> &ge; &theta;<sub>4</sub></div>
       </div>
-      <p class="method-note"><strong>Обмеження:</strong> Стилометрія є індикатором, а не доказом. Жанрова схожість або спільна тематика можуть підвищувати подібність незалежних текстів. Результати потребують доповнення контент-аналізом та OSINT.</p>
+      <p class="method-note"><strong>Обмеження.</strong> Стилометрія є індикатором, а не доказом. Жанрова схожість або спільна тематика можуть підвищувати подібність незалежних текстів. Результати потребують доповнення контент-аналізом та OSINT.</p>
     </div>
-  </div>
+  </section>
 
-  <!-- RECOMMENDATIONS -->
-  <div class="section">
-    <h2 class="section-title">Рекомендації</h2>
-    <ul class="rec-list">
-      {% if n_flagged > 0 %}
-      <li>Провести детальний контент-аналіз пар із рівнем <strong>Критичний</strong> та <strong>Високий</strong> для підтвердження координації.</li>
-      <li>Порівняти часові мітки публікацій підозрілих джерел (синхронність підсилює аргумент координації).</li>
-      <li>Встановити власників підозрілих ресурсів через OSINT (WHOIS, MediaOwnership).</li>
-      {% endif %}
-      <li>Повторити аналіз з різними MFW (50 / 100 / 200 / 500) для перевірки стабільності результатів.</li>
-      <li>Оптимальний обсяг тексту — від 1000 слів на документ.</li>
-      <li>Аналізувати тексти однією мовою для уникнення міжмовних артефактів.</li>
-      <li>Результати є індикативними — інтерпретувати в комплексі з іншими методами.</li>
-    </ul>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="report-footer">
-    Звіт: {{ timestamp }} &bull;
-    <span class="math-inline">&Delta;<sub>Burrows</sub></span> &bull;
-    Удосконалена методика моніторингу інформації у відкритих джерелах
-  </div>
+  <!-- ═══════════════ FOOTER ═══════════════ -->
+  <footer class="report-footer">
+    DIMS · Аналітичний звіт &middot; {{ timestamp }} &middot; <span class="math-inline">&Delta;<sub>Burrows</sub></span>
+  </footer>
 
 </div>
 
-<!-- Print bar -->
 <div class="print-bar">
   <a class="btn btn-ghost" href="/">← Назад</a>
+  <a class="btn btn-ghost" href="/api/export/daily-form"
+     title="Завантажити Анкету добового моніторингу (Додаток 1 Методики НУЗРКС МОУ № 46 від 28.11.2022)">
+     📄 Анкета (Додаток 1)
+  </a>
   <button class="btn btn-primary" onclick="window.print()">🖨 Друкувати / PDF</button>
 </div>
 
