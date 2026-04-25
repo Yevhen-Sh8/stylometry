@@ -638,6 +638,108 @@ def _fetch_google_news(query: str, lang: str, limit: int = 15) -> list[dict]:
     return items
 
 
+@app.post("/api/evidence")
+def evidence():
+    """Return token-level evidence for a flagged pair (TabooTrigger / EvidenceDrawer).
+
+    Request JSON:
+        a_label     – label of source A
+        b_label     – label of source B
+        mfw_n       – (optional) number of MFW to compare; default 200
+        feature_type– (optional) "word" | "char"; default "word"
+        char_n      – (optional) char-n-gram size; default 3
+
+    Response JSON:
+        shared_tokens  – [{token, freq_a, freq_b}] sorted by freq_a+freq_b desc
+        a_top_tokens   – [{token, freq_a}] distinctive to A (top 30)
+        b_top_tokens   – [{token, freq_b}] distinctive to B (top 30)
+        overlap_pct    – % of A's MFW that appear in B's top tokens
+        a_preview      – first 600 chars of source A text
+        b_preview      – first 600 chars of source B text
+        feature_type   – echoed
+        mfw_n          – echoed
+        char_n         – echoed
+    """
+    from collections import Counter
+    from core.analysis import tokenise_corpus, find_mfw, clean_and_tokenise, char_ngrams
+
+    data = request.get_json(silent=True) or {}
+    a_label = (data.get("a_label") or "").strip()
+    b_label = (data.get("b_label") or "").strip()
+
+    if not a_label or not b_label:
+        return _err("a_label та b_label є обов'язковими.")
+    if a_label not in SOURCES:
+        return _err(f"Джерело «{a_label}» не знайдено у корпусі.")
+    if b_label not in SOURCES:
+        return _err(f"Джерело «{b_label}» не знайдено у корпусі.")
+
+    mfw_n        = min(int(data.get("mfw_n", 200)), 400)
+    feature_type = str(data.get("feature_type", "word")).lower()
+    char_n       = int(data.get("char_n", 3))
+    if feature_type not in {"word", "char"}:
+        feature_type = "word"
+
+    text_a = SOURCES[a_label]
+    text_b = SOURCES[b_label]
+
+    # Tokenise both texts
+    mini_corpus = {a_label: text_a, b_label: text_b}
+    tokenised = tokenise_corpus(mini_corpus, feature_type=feature_type, char_n=char_n)
+    tokens_a  = tokenised[a_label]
+    tokens_b  = tokenised[b_label]
+
+    counter_a = Counter(tokens_a)
+    counter_b = Counter(tokens_b)
+
+    # MFW of the pair (no culling — only 2 docs)
+    mfw_list = find_mfw(tokenised, n=mfw_n, min_doc_freq=1)
+    mfw_set  = set(mfw_list)
+
+    # Shared: in both MFW lists
+    top_a_set = {t for t, _ in counter_a.most_common(mfw_n)}
+    top_b_set = {t for t, _ in counter_b.most_common(mfw_n)}
+    shared_set = top_a_set & top_b_set
+
+    shared_tokens = sorted(
+        [{"token": t, "freq_a": counter_a[t], "freq_b": counter_b[t]}
+         for t in shared_set],
+        key=lambda x: x["freq_a"] + x["freq_b"],
+        reverse=True,
+    )[:60]  # cap at 60 for readability
+
+    # Distinctive A: in top-A but NOT in top-B
+    a_only = sorted(
+        [{"token": t, "freq_a": counter_a[t]}
+         for t in (top_a_set - top_b_set)],
+        key=lambda x: x["freq_a"],
+        reverse=True,
+    )[:30]
+
+    # Distinctive B: in top-B but NOT in top-A
+    b_only = sorted(
+        [{"token": t, "freq_b": counter_b[t]}
+         for t in (top_b_set - top_a_set)],
+        key=lambda x: x["freq_b"],
+        reverse=True,
+    )[:30]
+
+    # Overlap %: fraction of A's MFW that appear at all in B
+    overlap_pct = (len(shared_set) / max(len(top_a_set), 1)) * 100
+
+    return _ok(
+        shared_tokens=shared_tokens,
+        a_top_tokens=a_only,
+        b_top_tokens=b_only,
+        overlap_pct=round(overlap_pct, 1),
+        a_preview=text_a[:600].replace("\n", " "),
+        b_preview=text_b[:600].replace("\n", " "),
+        feature_type=feature_type,
+        mfw_n=mfw_n,
+        char_n=char_n,
+    )
+
+
 @app.post("/api/search-news")
 def search_news():
     """Multi-language news search via Google News RSS."""

@@ -1102,6 +1102,7 @@ function renderResults(data) {
     (dims && dims.r_dims) ? dims.r_dims.toFixed(4) : "",
   ].join("|");
   renderCriticalAlert(dims, data.flagged);
+  renderTabooTrigger(dims);
 
   // Sensitivity range (max across indicators) — for R_DIMS metric mini-bar
   let sensRange = 0, sensMin = dims.r_dims, sensMax = dims.r_dims;
@@ -1158,12 +1159,12 @@ function renderResults(data) {
       ${MATH.iDynamics} = ${dims.indicators.I_dynamics.toFixed(3)} &bull;
       ${MATH.iImpact} = ${dims.indicators.I_impact.toFixed(3)} &bull;
       ${MATH.iSource} = ${dims.indicators.I_source.toFixed(3)} &bull;
-      Грейд ${gradeBadgeMd}
+      Грейд ${gradeBadgeMd}${dims.grade && dims.grade.forced_by_taboo ? tabooInlinePillHtml() : ""}
     </div>
     <div class="dims-radar-row" style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,1.4fr);gap:var(--s-4);align-items:start;margin-bottom:var(--s-3)">
       ${radarHtml}
       <div>
-        ${sourceComponentHtml(dims.source_components)}
+        ${renderConfidenceMeterHtml(dims.source_components)}
         ${sourceBreakdownHtml(data.source_breakdown)}
       </div>
     </div>`;
@@ -1184,8 +1185,14 @@ function renderResults(data) {
         const ci = f.ci && (f.ci.lo !== undefined)
           ? ` &bull; 95% CI [${f.ci.lo.toFixed(3)}, ${f.ci.hi.toFixed(3)}]`
           : "";
+        const aLabel = f.a_meta ? escHtml(f.a_meta.label || "") : "";
+        const bLabel = f.b_meta ? escHtml(f.b_meta.label || "") : "";
+        const aTitle = f.a_meta ? escHtml(f.a_meta.display_title || f.a_meta.label || "") : "";
+        const bTitle = f.b_meta ? escHtml(f.b_meta.display_title || f.b_meta.label || "") : "";
         return `
-        <div class="flagged-item ${escHtml(f.severity.css || "")}">
+        <div class="flagged-item ${escHtml(f.severity.css || "")}"
+             data-a-label="${aLabel}" data-b-label="${bLabel}"
+             data-a-title="${aTitle}" data-b-title="${bTitle}">
           <span class="flagged-icon" aria-hidden="true">${escHtml(f.severity.icon || "")}</span>
           <div class="flagged-info">
             <div class="flagged-names">${sourceLinkHtml(f.a_meta, "flagged-link")} ↔ ${sourceLinkHtml(f.b_meta, "flagged-link")}</div>
@@ -1195,8 +1202,355 @@ function renderResults(data) {
         </div>`;
       }).join("")}
     `;
+    // Wire evidence buttons after DOM is rendered
+    requestAnimationFrame(addEvidenceButtons);
   }
 
+}
+
+// ─────────────────────────────────────────────────────────────
+//  TABOO TRIGGER
+//  Показує пояснення, коли вид прояву «табу» примусово підняв
+//  грейд до SS (Методика НУЗРКС МОУ № 46 від 28.11.2022).
+// ─────────────────────────────────────────────────────────────
+function renderTabooTrigger(dims) {
+  const slot = document.getElementById("tabooTriggerSlot");
+  if (!slot) return;
+  slot.innerHTML = "";
+  if (!dims || !dims.grade || !dims.grade.forced_by_taboo) return;
+
+  const manifestationLabel = (dims.manifestation && dims.manifestation.label)
+    ? escHtml(dims.manifestation.label)
+    : "Табу";
+  const oldGrade = dims.grade.computed_grade
+    ? escHtml(String(dims.grade.computed_grade).toUpperCase())
+    : "B";
+
+  slot.innerHTML = `
+    <div class="taboo-trigger" role="status" aria-live="polite">
+      <div class="taboo-trigger-icon" aria-hidden="true">🔒</div>
+      <div class="taboo-trigger-body">
+        <div class="taboo-trigger-title">Правило «Табу» — автоматичне підвищення грейду</div>
+        <div class="taboo-trigger-msg">
+          Вид прояву <strong>${manifestationLabel}</strong> активував примусове підвищення:
+          грейд <strong>${oldGrade}</strong> → <strong>SS</strong>.
+          Результат не підлягає перегляду без зміни виду прояву.
+        </div>
+        <div class="taboo-trigger-meta">
+          <span class="taboo-trigger-rule">📋 Наказ НУЗРКС МОУ №&thinsp;46 від 28.11.2022</span>
+          <span class="taboo-trigger-rule">⚙ Правило: <code>taboo → auto SS</code></span>
+          <span class="taboo-trigger-rule">R<sub>DIMS</sub>&nbsp;= ${Number(dims.r_dims || 0).toFixed(4)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Inline pill для використання всередині DIMS-summary рядка.
+function tabooInlinePillHtml() {
+  return `<span class="taboo-inline-pill" title="Вид прояву «Табу»: грейд автоматично підвищено до SS">🔒 TABOO → SS</span>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  CONFIDENCE METER  (розклад I_source по компонентах)
+//  Горизонтальний stacked-bar із 7 компонентами якості джерела:
+//  domain, owner, policy, finance, original, cred, ethics.
+// ─────────────────────────────────────────────────────────────
+const CMETER_COLORS = {
+  domain:   "var(--signal-red)",
+  owner:    "var(--signal-orange)",
+  ethics:   "#e07b39",
+  policy:   "var(--signal-amber)",
+  cred:     "#c4b54d",
+  finance:  "var(--signal-blue)",
+  original: "var(--signal-violet)",
+};
+const CMETER_UA_LABELS = {
+  domain:   "R_domain",
+  owner:    "R_owner",
+  policy:   "R_policy",
+  finance:  "R_finance",
+  original: "R_original",
+  cred:     "R_cred",
+  ethics:   "R_ethics",
+};
+
+function renderConfidenceMeterHtml(sourceComponents) {
+  if (!sourceComponents) return "";
+  const entries = Object.entries(sourceComponents);
+  if (!entries.length) return "";
+
+  // Weighted total (weighted average of score * weight)
+  let totalWeighted = 0, totalW = 0;
+  entries.forEach(([, item]) => {
+    totalWeighted += Number(item.score || 0) * Number(item.weight || 0);
+    totalW += Number(item.weight || 0);
+  });
+  const overallScore = totalW > 0 ? Math.min(1, totalWeighted / totalW) : 0;
+  const pct = v => (Number(v) * 100).toFixed(0);
+  const totalClass = overallScore >= 0.65 ? "is-low" : overallScore >= 0.35 ? "is-mid" : "is-high";
+  const totalLabel = overallScore >= 0.65 ? "Високий ризик" : overallScore >= 0.35 ? "Середній ризик" : "Низький ризик";
+
+  // Stacked bar segments: proportional to weight * score
+  const segments = entries.map(([label, item]) => {
+    const key = item.key || label;
+    const score = Number(item.score || 0);
+    const w = Number(item.weight || 0);
+    const contribution = score * w;
+    return { key, label, score, weight: w, contribution, description: item.description || "" };
+  }).filter(s => s.weight > 0);
+
+  const totalContrib = segments.reduce((s, seg) => s + seg.contribution, 0) || 1;
+  const segHtml = segments.map(s => {
+    const widthPct = ((s.contribution / totalContrib) * 100).toFixed(1);
+    const color = CMETER_COLORS[s.key] || "var(--signal-blue)";
+    const tooltip = `${CMETER_UA_LABELS[s.key] || s.key}: ${pct(s.score)}% · вага ${(s.weight * 100).toFixed(0)}% · ${s.description}`;
+    return `<div class="confidence-meter-seg" data-key="${escHtml(s.key)}"
+      style="width:${widthPct}%; background:${color}"
+      title="${escHtml(tooltip)}" aria-label="${escHtml(tooltip)}"></div>`;
+  }).join("");
+
+  const rowsHtml = segments.map(s => {
+    const color = CMETER_COLORS[s.key] || "var(--signal-blue)";
+    const barWidth = (s.score * 100).toFixed(0);
+    return `
+      <div class="confidence-meter-row">
+        <div class="confidence-meter-row-swatch" style="background:${color}"></div>
+        <div class="confidence-meter-row-label" title="${escHtml(s.description)}">${escHtml(CMETER_UA_LABELS[s.key] || s.key)}</div>
+        <div class="confidence-meter-row-bar">
+          <div class="confidence-meter-row-bar-fill" style="width:${barWidth}%;background:${color}"></div>
+        </div>
+        <div class="confidence-meter-row-score">${pct(s.score)}%&nbsp;·&nbsp;w=${(s.weight*100).toFixed(0)}%</div>
+      </div>`;
+  }).join("");
+
+  return `
+    <div class="confidence-meter" role="figure" aria-label="Розклад компонентів I_source">
+      <div class="confidence-meter-title">Компоненти I_source (ризик джерела)</div>
+      <div class="confidence-meter-bar" aria-hidden="true">${segHtml}</div>
+      <div class="confidence-meter-total">
+        <span class="confidence-meter-value ${totalClass}">${pct(overallScore)}%</span>
+        <span class="confidence-meter-label">${totalLabel}</span>
+      </div>
+      <div class="confidence-meter-rows">${rowsHtml}</div>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  EVIDENCE DRAWER
+//  Бічна панель з доказами стилометричного збігу пари.
+//  Відкривається кнопкою «Докази ↗» на кожній flagged-pair картці.
+// ─────────────────────────────────────────────────────────────
+let _evidenceDrawerOpen = false;
+
+function _getOrCreateEvidenceDrawer() {
+  let overlay = document.getElementById("evidenceOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "evidenceOverlay";
+    overlay.className = "evidence-overlay";
+    overlay.style.display = "none";
+    overlay.setAttribute("aria-hidden", "true");
+
+    const drawer = document.createElement("aside");
+    drawer.id = "evidenceDrawer";
+    drawer.className = "evidence-drawer";
+    drawer.setAttribute("role", "dialog");
+    drawer.setAttribute("aria-modal", "true");
+    drawer.setAttribute("aria-labelledby", "evidenceDrawerTitle");
+    drawer.setAttribute("aria-hidden", "true");
+    drawer.setAttribute("hidden", "");
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(drawer);
+
+    overlay.addEventListener("click", closeEvidenceDrawer);
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape" && _evidenceDrawerOpen) closeEvidenceDrawer();
+    });
+  }
+  return { overlay, drawer: document.getElementById("evidenceDrawer") };
+}
+
+function closeEvidenceDrawer() {
+  const { overlay, drawer } = _getOrCreateEvidenceDrawer();
+  _evidenceDrawerOpen = false;
+  drawer.classList.remove("is-open");
+  setTimeout(() => {
+    overlay.style.display = "none";
+    overlay.setAttribute("aria-hidden", "true");
+    drawer.setAttribute("hidden", "");
+    drawer.setAttribute("aria-hidden", "true");
+    drawer.innerHTML = "";
+  }, 260);
+}
+
+async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle) {
+  const { overlay, drawer } = _getOrCreateEvidenceDrawer();
+
+  overlay.style.display = "block";
+  overlay.removeAttribute("aria-hidden");
+  drawer.removeAttribute("hidden");
+  drawer.removeAttribute("aria-hidden");
+
+  // Initial skeleton
+  drawer.innerHTML = `
+    <div class="evidence-drawer-head">
+      <div>
+        <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">🔍 Докази збігу</h3>
+        <div class="evidence-drawer-subtitle">${escHtml(aTitle || aLabel)} ↔ ${escHtml(bTitle || bLabel)}</div>
+      </div>
+      <button class="evidence-drawer-close" type="button" aria-label="Закрити">✕</button>
+    </div>
+    <div class="evidence-drawer-body">
+      <div class="evidence-loading">
+        <div class="spinner" style="width:18px;height:18px" aria-hidden="true"></div>
+        Завантаження доказів…
+      </div>
+    </div>`;
+
+  drawer.querySelector(".evidence-drawer-close").addEventListener("click", closeEvidenceDrawer);
+
+  // Animate open
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => drawer.classList.add("is-open"));
+  });
+  _evidenceDrawerOpen = true;
+
+  // Fetch evidence from backend
+  let evData = null;
+  try {
+    evData = await api("/api/evidence", "POST", { a_label: aLabel, b_label: bLabel });
+  } catch (e) {
+    evData = { ok: false, error: "Помилка мережі" };
+  }
+
+  if (!evData || !evData.ok) {
+    drawer.querySelector(".evidence-drawer-body").innerHTML = `
+      <div class="evidence-empty">⚠ ${escHtml((evData && evData.error) || "Не вдалося отримати дані")}</div>`;
+    return;
+  }
+
+  _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle);
+}
+
+function _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle) {
+  const sharedTokens   = evData.shared_tokens   || [];
+  const aTopTokens     = evData.a_top_tokens    || [];
+  const bTopTokens     = evData.b_top_tokens    || [];
+  const overlapPct     = evData.overlap_pct     || 0;
+  const aPreview       = evData.a_preview       || "";
+  const bPreview       = evData.b_preview       || "";
+  const featureType    = evData.feature_type    || "word";
+
+  let currentFilter = "all";  // all | shared | a_only | b_only
+
+  function filterTokens(mode) {
+    currentFilter = mode;
+    drawer.querySelectorAll(".evidence-filter-btn").forEach(b =>
+      b.classList.toggle("is-active", b.dataset.filter === mode)
+    );
+    const tokensDiv = drawer.querySelector("#evidenceTokensPanel");
+    if (!tokensDiv) return;
+
+    let tokens = [];
+    if (mode === "all" || mode === "shared") {
+      tokens = tokens.concat(sharedTokens.map(t => ({ ...t, kind: "shared" })));
+    }
+    if (mode === "all" || mode === "a_only") {
+      tokens = tokens.concat(aTopTokens.map(t => ({ ...t, kind: "a" })));
+    }
+    if (mode === "all" || mode === "b_only") {
+      tokens = tokens.concat(bTopTokens.map(t => ({ ...t, kind: "b" })));
+    }
+
+    tokensDiv.innerHTML = tokens.length
+      ? tokens.map(t => `
+          <span class="evidence-token is-${t.kind}" title="${escHtml(t.token)}: A=${t.freq_a ?? "—"} / B=${t.freq_b ?? "—"}">
+            ${escHtml(t.token)}
+            <span class="evidence-token-freq">×${t.freq_a ?? t.freq ?? "?"}</span>
+          </span>`).join("")
+      : `<span style="color:var(--text-3);font-size:12px">Немає токенів для цього фільтру</span>`;
+  }
+
+  const featureLabel = featureType === "char"
+    ? `char-${evData.char_n ?? 3}-gram`
+    : `word (MFW ${evData.mfw_n ?? 100})`;
+
+  drawer.innerHTML = `
+    <div class="evidence-drawer-head">
+      <div>
+        <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">🔍 Докази збігу</h3>
+        <div class="evidence-drawer-subtitle">${escHtml(aTitle || aLabel)} ↔ ${escHtml(bTitle || bLabel)}</div>
+      </div>
+      <button class="evidence-drawer-close" type="button" aria-label="Закрити">✕</button>
+    </div>
+    <div class="evidence-filter-bar" role="tablist">
+      <button class="evidence-filter-btn is-active" data-filter="all" role="tab">Всі токени</button>
+      <button class="evidence-filter-btn" data-filter="shared" role="tab">🟠 Спільні (${sharedTokens.length})</button>
+      <button class="evidence-filter-btn" data-filter="a_only" role="tab">🔵 Лише A (${aTopTokens.length})</button>
+      <button class="evidence-filter-btn" data-filter="b_only" role="tab">🟣 Лише B (${bTopTokens.length})</button>
+    </div>
+    <div class="evidence-drawer-body">
+      <div class="evidence-section">
+        <div class="evidence-section-title">Перекриття токенів · ${featureLabel}</div>
+        <div class="evidence-overlap-row">
+          <span class="evidence-overlap-label">Збіг</span>
+          <div class="evidence-overlap-bar"><div class="evidence-overlap-fill" style="width:${overlapPct.toFixed(1)}%"></div></div>
+          <span class="evidence-overlap-pct">${overlapPct.toFixed(0)}%</span>
+        </div>
+      </div>
+      <div class="evidence-section">
+        <div class="evidence-section-title">Токени</div>
+        <div class="evidence-tokens" id="evidenceTokensPanel"></div>
+      </div>
+      <div class="evidence-split">
+        <div class="evidence-split-pane">
+          <div class="evidence-split-pane-title is-a">${escHtml(aTitle || aLabel)}</div>
+          <div class="evidence-split-text">${_highlightShared(aPreview, sharedTokens)}</div>
+        </div>
+        <div class="evidence-split-pane">
+          <div class="evidence-split-pane-title is-b">${escHtml(bTitle || bLabel)}</div>
+          <div class="evidence-split-text">${_highlightShared(bPreview, sharedTokens)}</div>
+        </div>
+      </div>
+    </div>`;
+
+  drawer.querySelector(".evidence-drawer-close").addEventListener("click", closeEvidenceDrawer);
+  drawer.querySelectorAll(".evidence-filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => filterTokens(btn.dataset.filter));
+  });
+  filterTokens("all");
+}
+
+function _highlightShared(text, sharedTokens) {
+  if (!text || !sharedTokens.length) return escHtml(text);
+  // Sort by length descending to avoid partial replacements
+  const terms = [...sharedTokens]
+    .map(t => t.token)
+    .sort((a, b) => b.length - a.length);
+  let escaped = escHtml(text);
+  terms.forEach(term => {
+    const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+    escaped = escaped.replace(re, "<mark>$1</mark>");
+  });
+  return escaped;
+}
+
+// Wire evidence button into each flagged-pair card
+function addEvidenceButtons() {
+  document.querySelectorAll(".flagged-item[data-a-label]").forEach(card => {
+    const aLabel = card.dataset.aLabel;
+    const bLabel = card.dataset.bLabel;
+    const aTitle = card.dataset.aTitle || aLabel;
+    const bTitle = card.dataset.bTitle || bLabel;
+    if (card.querySelector(".btn-evidence")) return; // already added
+    const btn = document.createElement("button");
+    btn.className = "btn-evidence";
+    btn.type = "button";
+    btn.innerHTML = "🔎 Докази ↗";
+    btn.addEventListener("click", () => openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle));
+    card.appendChild(btn);
+  });
 }
 
 // ─────────────────────────────────────────────────────────────
