@@ -40,7 +40,6 @@ function gradeBadgeHtml(grade, opts = {}) {
   const size = opts.size || "md";               // sm | md | lg
   const withLabel = opts.withLabel !== false;
   const withR = opts.r_dims != null;
-  const taboo = !!grade.forced_by_taboo;
 
   const parts = [`<span class="grade-code">${escHtml(code)}</span>`];
   if (withLabel && grade.label) {
@@ -49,19 +48,14 @@ function gradeBadgeHtml(grade, opts = {}) {
   if (withR) {
     parts.push(`<span class="grade-meta">R=${Number(opts.r_dims).toFixed(3)}</span>`);
   }
-  if (taboo) parts.push(`<span class="grade-flag" aria-hidden="true"></span>`);
 
-  const cls = ["grade-badge", `is-${size}`, taboo ? "is-taboo" : ""].filter(Boolean).join(" ");
-  const title = taboo
-    ? "Грейд автоматично підвищено до SS згідно з Методикою (вид прояву «табу»)."
-    : (grade.label || "");
-  return `<span class="${cls}" data-grade="${code}" title="${escHtml(title)}">${parts.join("")}</span>`;
+  const cls = `grade-badge is-${size}`;
+  return `<span class="${cls}" data-grade="${code}" title="${escHtml(grade.label || "")}">${parts.join("")}</span>`;
 }
 
 // ─────────────────────────────────────────────────────────────
-//  CRITICAL ALERT BANNER — sticky попередження про SS/SSS/табу.
-//  Відображається у верхній частині результатів; керує керівник,
-//  не гортаючи звіт у пошуках критичного.
+//  CRITICAL ALERT BANNER — sticky попередження про SS/SSS.
+//  Відображається у верхній частині результатів.
 // ─────────────────────────────────────────────────────────────
 function renderCriticalAlert(dims, flagged) {
   const slot = document.getElementById("criticalAlert");
@@ -70,14 +64,12 @@ function renderCriticalAlert(dims, flagged) {
   if (!dims || !dims.grade) return;
 
   const code = String(dims.grade.grade || "").toUpperCase();
-  const taboo = !!dims.grade.forced_by_taboo;
   const rdims = Number(dims.r_dims || 0);
-  const isCritical = code === "SSS" || taboo || rdims >= 0.8;
+  const isCritical = code === "SSS" || rdims >= 0.8;
   const isHigh = !isCritical && code === "SS";
   if (!isCritical && !isHigh) return;
 
-  // Dismiss-per-fingerprint: не нав'язуємось при повторному рендері того ж аналізу.
-  const fp = (LAST_RESULTS_FP || "") + ":" + code + ":" + (taboo ? "T" : "");
+  const fp = (LAST_RESULTS_FP || "") + ":" + code;
   try {
     if (sessionStorage.getItem("dims-cb-dismissed") === fp) return;
   } catch (_) { /* privacy mode */ }
@@ -85,7 +77,6 @@ function renderCriticalAlert(dims, flagged) {
   const nFlagged = Array.isArray(flagged) ? flagged.length : 0;
   const critPairs = (flagged || []).filter(f => (f.severity && f.severity.css) === "critical").length;
   const parts = [];
-  if (taboo) parts.push("виявлено вид прояву «табу»");
   if (critPairs) parts.push(`${critPairs} критичних пар`);
   else if (nFlagged) parts.push(`${nFlagged} підозрілих пар`);
   if (!parts.length) parts.push(`R<sub>DIMS</sub> = ${rdims.toFixed(3)} перевищує поріг`);
@@ -94,11 +85,10 @@ function renderCriticalAlert(dims, flagged) {
   const cls = isCritical ? "is-critical" : "is-high";
   const role = isCritical ? 'role="alert" aria-live="assertive"' : 'role="status" aria-live="polite"';
   const label = isCritical ? "КРИТИЧНО" : "ВИСОКИЙ РИЗИК";
-  const icon = taboo ? "⚑" : "⚠";
 
   slot.innerHTML = `
     <div class="critical-banner ${cls}" ${role}>
-      <div class="cb-icon" aria-hidden="true">${icon}</div>
+      <div class="cb-icon" aria-hidden="true">⚠</div>
       <div class="cb-body">
         <div class="cb-title">
           <span>${label} · ${escHtml(code)}</span>
@@ -404,9 +394,7 @@ async function loadManifestationTypes() {
     data.types.forEach(t => {
       const opt = document.createElement("option");
       opt.value = t.key;
-      opt.textContent = t.key === data.taboo_key
-        ? `${t.label} (автоматично → грейд SS)`
-        : t.label;
+      opt.textContent = t.label;
       select.appendChild(opt);
     });
   } catch (err) {
@@ -452,19 +440,10 @@ const els = {
   fileInput:    $("fileInput"),
   uploadProg:   $("uploadProgress"),
   uploadFill:   $("uploadProgressFill"),
-  // URL
-  urlInput:     $("urlInput"),
-  urlLabel:     $("urlLabel"),
-  btnAddUrl:    $("btnAddUrl"),
-  // Text
-  textInput:    $("textInput"),
-  textLabel:    $("textLabel"),
-  btnAddText:   $("btnAddText"),
-  // HTML
-  htmlInput:    $("htmlInput"),
-  htmlLabel:    $("htmlLabel"),
-  htmlUrl:      $("htmlUrl"),
-  btnAddHtml:   $("btnAddHtml"),
+  // Manual input (URL / text / HTML — auto-detected)
+  manualInput:  $("manualInput"),
+  manualLabel:  $("manualLabel"),
+  btnAddManual: $("btnAddManual"),
   // Sources
   sourcesList:  $("sourcesList"),
   sourcesEmpty: $("sourcesEmpty"),
@@ -656,6 +635,22 @@ els.tabBtns.forEach((btn, idx, arr) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+//  SUB-MODE SWITCHING (within tabs)
+// ─────────────────────────────────────────────────────────────
+document.querySelectorAll(".sub-mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const parent = btn.closest(".tab-panel, .sub-mode-row")?.closest(".tab-panel");
+    if (!parent) return;
+    const mode = btn.dataset.submode;
+    parent.querySelectorAll(".sub-mode-btn").forEach(b => b.classList.toggle("active", b === btn));
+    parent.querySelectorAll(".sub-mode-panel").forEach(p => {
+      const isActive = p.id === `subpanel-${mode}`;
+      if (isActive) p.removeAttribute("hidden"); else p.setAttribute("hidden", "");
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
 //  SOURCE LIST RENDERING
 // ─────────────────────────────────────────────────────────────
 function renderSources() {
@@ -757,32 +752,47 @@ els.dropzone.addEventListener("drop", e => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  ADD URL
+//  ADD MANUAL (URL / text / HTML — auto-detected)
 // ─────────────────────────────────────────────────────────────
-els.btnAddUrl.addEventListener("click", async () => {
-  const url   = els.urlInput.value.trim();
-  const label = els.urlLabel.value.trim();
-  if (!url) { showToast("Введіть URL", "error"); return; }
+els.btnAddManual.addEventListener("click", async () => {
+  const raw   = els.manualInput.value.trim();
+  const label = els.manualLabel.value.trim();
+  if (!raw) { showToast("Введіть текст або URL", "error"); return; }
 
-  els.btnAddUrl.disabled = true;
-  showOverlay("Завантажую статтю...");
+  let endpoint, body, loadingMsg;
+  if (/^https?:\/\//i.test(raw)) {
+    endpoint   = "/api/add-url";
+    body       = { url: raw, label: label || null };
+    loadingMsg = "Завантажую статтю…";
+  } else if (/<[a-z][^>]*>/i.test(raw)) {
+    endpoint   = "/api/add-html";
+    body       = { html: raw, label: label || "HTML-джерело", url: "" };
+    loadingMsg = "Очищаю HTML…";
+  } else {
+    endpoint   = "/api/add-text";
+    body       = { text: raw, label: label || "Джерело" };
+    loadingMsg = null;
+  }
+
+  els.btnAddManual.disabled = true;
+  if (loadingMsg) showOverlay(loadingMsg);
 
   try {
-    const data = await api("/api/add-url", "POST", { url, label });
-    if (!data.ok) { showToast(data.error, "error"); return; }
+    const data = await api(endpoint, "POST", body);
+    if (!data.ok) { showToast(data.error || "Помилка", "error"); return; }
     addSource(data.source);
-    showToast(`✅ Додано: ${data.source.label}`, "success");
-    els.urlInput.value = "";
-    els.urlLabel.value = "";
+    showToast(`✅ Додано: ${data.source.display_title || data.source.label}`, "success");
+    els.manualInput.value = "";
+    els.manualLabel.value = "";
   } catch (e) {
     showToast("Мережева помилка", "error");
   } finally {
-    els.btnAddUrl.disabled = false;
+    els.btnAddManual.disabled = false;
     hideOverlay();
   }
 });
 
-els.urlInput.addEventListener("keydown", e => { if (e.key === "Enter") els.btnAddUrl.click(); });
+els.manualInput.addEventListener("keydown", e => { if (e.key === "Enter" && e.ctrlKey) els.btnAddManual.click(); });
 
 // ─────────────────────────────────────────────────────────────
 //  NEWS SEARCH
@@ -945,54 +955,229 @@ $("btnImportSelected").addEventListener("click", async () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  ADD TEXT
+//  RSS FEED
 // ─────────────────────────────────────────────────────────────
-els.btnAddText.addEventListener("click", async () => {
-  const text  = els.textInput.value.trim();
-  const label = els.textLabel.value.trim();
-  if (!text) { showToast("Вставте текст", "error"); return; }
+const rssState = { results: [], selected: new Set() };
 
-  els.btnAddText.disabled = true;
+function updateRssButton() {
+  const btn = $("btnImportRss");
+  const cnt = $("rssImportCount");
+  const n = rssState.selected.size;
+  btn.disabled = n === 0;
+  cnt.textContent = n ? `(${n})` : "";
+}
+
+function renderRssResults(results) {
+  const list = $("rssResultsList");
+  const wrap = $("rssResults");
+  $("rssResultsCount").textContent = `Знайдено ${results.length} статей`;
+  wrap.hidden = false;
+  rssState.selected.clear();
+  list.innerHTML = results.map((r, i) => {
+    let date = "";
+    if (r.published) { const d = new Date(r.published); if (!isNaN(d)) date = d.toLocaleDateString("uk-UA"); }
+    const safeUrl = /^https?:\/\//i.test(r.url) ? escapeHtml(r.url) : "#";
+    return `
+      <label class="search-result" data-idx="${i}">
+        <input type="checkbox" data-idx="${i}" />
+        <div class="search-result-body">
+          <div class="search-result-title">${escapeHtml(r.title)}</div>
+          <div class="search-result-meta">
+            ${r.source ? `<span class="sr-source">${escapeHtml(r.source)}</span>` : ""}
+            ${date ? `<span class="sr-date">${escapeHtml(date)}</span>` : ""}
+            <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">відкрити ↗</a>
+          </div>
+          ${r.snippet ? `<div class="search-result-snippet">${escapeHtml(r.snippet.slice(0,160))}</div>` : ""}
+        </div>
+      </label>`;
+  }).join("");
+  list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener("change", e => {
+      const idx = Number(e.target.dataset.idx);
+      if (e.target.checked) rssState.selected.add(idx); else rssState.selected.delete(idx);
+      updateRssButton();
+    });
+  });
+  updateRssButton();
+}
+
+$("btnFetchRss").addEventListener("click", async () => {
+  const url = $("rssUrl").value.trim();
+  if (!url) { showToast("Введіть URL стрічки", "error"); return; }
+  const btn = $("btnFetchRss");
+  btn.disabled = true;
+  $("rssStatus").textContent = "Завантаження…";
   try {
-    const data = await api("/api/add-text", "POST", { text, label });
-    if (!data.ok) { showToast(data.error, "error"); return; }
-    addSource(data.source);
-    showToast(`✅ Додано: ${data.source.label}`, "success");
-    els.textInput.value = "";
-    els.textLabel.value = "";
-  } catch (e) {
-    showToast("Помилка", "error");
-  } finally {
-    els.btnAddText.disabled = false;
+    const data = await api("/api/fetch-rss", "POST", { url, limit: Number($("rssLimit").value) || 20 });
+    if (!data.ok) { showToast(data.error, "error"); $("rssStatus").textContent = ""; return; }
+    rssState.results = data.results || [];
+    $("rssStatus").textContent = rssState.results.length ? "" : "Статей не знайдено.";
+    renderRssResults(rssState.results);
+  } catch (e) { showToast("Помилка: " + e.message, "error"); }
+  finally { btn.disabled = false; }
+});
+
+$("btnSelectAllRss").addEventListener("click", () => {
+  const boxes = [...document.querySelectorAll("#rssResultsList input[type=checkbox]")];
+  const allChecked = boxes.length > 0 && boxes.every(cb => cb.checked);
+  boxes.forEach(cb => {
+    cb.checked = !allChecked;
+    const idx = Number(cb.dataset.idx);
+    if (!allChecked) rssState.selected.add(idx); else rssState.selected.delete(idx);
+  });
+  updateRssButton();
+});
+
+$("btnImportRss").addEventListener("click", async () => {
+  const picks = [...rssState.selected].map(i => ({ idx: i, r: rssState.results[i] })).filter(x => x.r);
+  if (!picks.length) return;
+  const btn = $("btnImportRss");
+  btn.disabled = true;
+  let imported = 0, failed = 0;
+  for (let i = 0; i < picks.length; i++) {
+    const { idx, r } = picks[i];
+    markResultStatus(idx, "loading", "завантаження…");
+    $("rssStatus").textContent = `Імпорт ${i + 1}/${picks.length}…`;
+    try {
+      const data = await api("/api/add-url", "POST", { url: r.url, label: "" });
+      if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "✓ додано"); }
+      else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "").slice(0, 80)); }
+    } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 80)); }
   }
+  $("rssStatus").textContent = `Готово: імпортовано ${imported}${failed ? `, помилок ${failed}` : ""}.`;
+  showToast(`Імпортовано ${imported} статей${failed ? ` (помилок: ${failed})` : ""}`, failed ? "warn" : "success");
+  rssState.selected.clear();
+  updateRssButton();
 });
 
 // ─────────────────────────────────────────────────────────────
-//  ADD HTML
+//  TELEGRAM CHANNEL
 // ─────────────────────────────────────────────────────────────
-els.btnAddHtml.addEventListener("click", async () => {
-  const html = els.htmlInput.value.trim();
-  const label = els.htmlLabel.value.trim();
-  const url = els.htmlUrl.value.trim();
-  if (!html) { showToast("Вставте HTML", "error"); return; }
+const tgState = { results: [], selected: new Set(), channel: "" };
 
-  els.btnAddHtml.disabled = true;
-  showOverlay("Очищаю HTML...");
+function updateTgButton() {
+  const btn = $("btnImportTg");
+  const cnt = $("tgImportCount");
+  const n = tgState.selected.size;
+  btn.disabled = n === 0;
+  cnt.textContent = n ? `(${n})` : "";
+}
+
+function renderTgResults(results, channel) {
+  const list = $("tgResultsList");
+  const wrap = $("tgResults");
+  $("tgResultsCount").textContent = `@${channel}: ${results.length} постів`;
+  wrap.hidden = false;
+  tgState.selected.clear();
+  list.innerHTML = results.map((r, i) => {
+    let date = "";
+    if (r.published) { const d = new Date(r.published); if (!isNaN(d)) date = d.toLocaleDateString("uk-UA"); }
+    const safeUrl = /^https?:\/\//i.test(r.url) ? escapeHtml(r.url) : "#";
+    return `
+      <label class="search-result" data-idx="${i}">
+        <input type="checkbox" data-idx="${i}" />
+        <div class="search-result-body">
+          <div class="search-result-title">${escapeHtml(r.title)}</div>
+          <div class="search-result-meta">
+            <span class="sr-source">${escapeHtml(r.source)}</span>
+            ${date ? `<span class="sr-date">${date}</span>` : ""}
+            <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">пост ↗</a>
+          </div>
+        </div>
+      </label>`;
+  }).join("");
+  list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener("change", e => {
+      const idx = Number(e.target.dataset.idx);
+      if (e.target.checked) tgState.selected.add(idx); else tgState.selected.delete(idx);
+      updateTgButton();
+    });
+  });
+  updateTgButton();
+}
+
+$("btnFetchTelegram").addEventListener("click", async () => {
+  const channel = $("tgChannel").value.trim();
+  if (!channel) { showToast("Введіть назву каналу", "error"); return; }
+  const btn = $("btnFetchTelegram");
+  btn.disabled = true;
+  $("tgStatus").textContent = "Завантаження…";
   try {
-    const data = await api("/api/add-html", "POST", { html, label, url });
-    if (!data.ok) { showToast(data.error, "error", 6000); return; }
-    addSource(data.source);
-    showToast(`✅ Додано: ${data.source.display_title || data.source.label}`, "success");
-    els.htmlInput.value = "";
-    els.htmlLabel.value = "";
-    els.htmlUrl.value = "";
-  } catch (e) {
-    showToast("Помилка обробки HTML", "error");
-  } finally {
-    els.btnAddHtml.disabled = false;
-    hideOverlay();
-  }
+    const data = await api("/api/fetch-telegram", "POST", { channel, limit: Number($("tgLimit").value) || 20 });
+    if (!data.ok) { showToast(data.error, "error"); $("tgStatus").textContent = ""; return; }
+    tgState.results = data.results || [];
+    tgState.channel = data.channel || channel;
+    $("tgStatus").textContent = tgState.results.length ? "" : "Постів не знайдено.";
+    renderTgResults(tgState.results, tgState.channel);
+  } catch (e) { showToast("Помилка: " + e.message, "error"); }
+  finally { btn.disabled = false; }
 });
+
+$("tgChannel").addEventListener("keydown", e => { if (e.key === "Enter") $("btnFetchTelegram").click(); });
+
+$("btnSelectAllTg").addEventListener("click", () => {
+  const boxes = [...document.querySelectorAll("#tgResultsList input[type=checkbox]")];
+  const allChecked = boxes.length > 0 && boxes.every(cb => cb.checked);
+  boxes.forEach(cb => {
+    cb.checked = !allChecked;
+    const idx = Number(cb.dataset.idx);
+    if (!allChecked) tgState.selected.add(idx); else tgState.selected.delete(idx);
+  });
+  updateTgButton();
+});
+
+$("btnImportTg").addEventListener("click", async () => {
+  const picks = [...tgState.selected].map(i => ({ idx: i, r: tgState.results[i] })).filter(x => x.r);
+  if (!picks.length) return;
+  const btn = $("btnImportTg");
+  btn.disabled = true;
+  const merge = $("tgMerge").checked;
+
+  if (merge) {
+    // Агрегація: всі обрані пости → один документ
+    const channel = tgState.channel || "tg";
+    const combined = picks.map(({ r }) => r.full_text).join("\n\n");
+    const words = combined.split(/\s+/).filter(Boolean).length;
+    const label = `@${channel} (${picks.length} постів, ${words} слів)`;
+    picks.forEach(({ idx }) => markResultStatus(idx, "loading", "об'єднання…"));
+    $("tgStatus").textContent = `Об'єдную ${picks.length} постів…`;
+    try {
+      const data = await api("/api/add-text", "POST", { text: combined, label });
+      if (data.ok) {
+        addSource(data.source);
+        picks.forEach(({ idx }) => markResultStatus(idx, "ok", "✓ об'єднано"));
+        showToast(`✅ Додано: ${label}`, "success");
+        $("tgStatus").textContent = `Готово: ${picks.length} постів → 1 документ (${words} слів).`;
+      } else {
+        picks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ помилка"));
+        showToast(data.error || "Помилка", "error");
+      }
+    } catch (e) {
+      picks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ " + e.message.slice(0, 60)));
+      showToast("Мережева помилка", "error");
+    }
+  } else {
+    // Поодинокий імпорт (старий режим)
+    let imported = 0, failed = 0;
+    for (let i = 0; i < picks.length; i++) {
+      const { idx, r } = picks[i];
+      markResultStatus(idx, "loading", "додавання…");
+      $("tgStatus").textContent = `Імпорт ${i + 1}/${picks.length}…`;
+      try {
+        const label = `${r.source}_${i + 1}`;
+        const data = await api("/api/add-text", "POST", { text: r.full_text, label, url: r.url });
+        if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "✓ додано"); }
+        else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "").slice(0, 80)); }
+      } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 80)); }
+    }
+    $("tgStatus").textContent = `Готово: імпортовано ${imported}${failed ? `, помилок ${failed}` : ""}.`;
+    showToast(`Імпортовано ${imported} постів${failed ? ` (помилок: ${failed})` : ""}`, failed ? "warn" : "success");
+  }
+
+  tgState.selected.clear();
+  updateTgButton();
+});
+
 
 // ─────────────────────────────────────────────────────────────
 //  CLEAR ALL
@@ -1102,7 +1287,6 @@ function renderResults(data) {
     (dims && dims.r_dims) ? dims.r_dims.toFixed(4) : "",
   ].join("|");
   renderCriticalAlert(dims, data.flagged);
-  renderTabooTrigger(dims);
 
   // Sensitivity range (max across indicators) — for R_DIMS metric mini-bar
   let sensRange = 0, sensMin = dims.r_dims, sensMax = dims.r_dims;
@@ -1159,7 +1343,7 @@ function renderResults(data) {
       ${MATH.iDynamics} = ${dims.indicators.I_dynamics.toFixed(3)} &bull;
       ${MATH.iImpact} = ${dims.indicators.I_impact.toFixed(3)} &bull;
       ${MATH.iSource} = ${dims.indicators.I_source.toFixed(3)} &bull;
-      Грейд ${gradeBadgeMd}${dims.grade && dims.grade.forced_by_taboo ? tabooInlinePillHtml() : ""}
+      Грейд ${gradeBadgeMd}
     </div>
     <div class="dims-radar-row" style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,1.4fr);gap:var(--s-4);align-items:start;margin-bottom:var(--s-3)">
       ${radarHtml}
@@ -1206,48 +1390,6 @@ function renderResults(data) {
     requestAnimationFrame(addEvidenceButtons);
   }
 
-}
-
-// ─────────────────────────────────────────────────────────────
-//  TABOO TRIGGER
-//  Показує пояснення, коли вид прояву «табу» примусово підняв
-//  грейд до SS (Методика НУЗРКС МОУ № 46 від 28.11.2022).
-// ─────────────────────────────────────────────────────────────
-function renderTabooTrigger(dims) {
-  const slot = document.getElementById("tabooTriggerSlot");
-  if (!slot) return;
-  slot.innerHTML = "";
-  if (!dims || !dims.grade || !dims.grade.forced_by_taboo) return;
-
-  const manifestationLabel = (dims.manifestation && dims.manifestation.label)
-    ? escHtml(dims.manifestation.label)
-    : "Табу";
-  const oldGrade = dims.grade.computed_grade
-    ? escHtml(String(dims.grade.computed_grade).toUpperCase())
-    : "B";
-
-  slot.innerHTML = `
-    <div class="taboo-trigger" role="status" aria-live="polite">
-      <div class="taboo-trigger-icon" aria-hidden="true">🔒</div>
-      <div class="taboo-trigger-body">
-        <div class="taboo-trigger-title">Правило «Табу» — автоматичне підвищення грейду</div>
-        <div class="taboo-trigger-msg">
-          Вид прояву <strong>${manifestationLabel}</strong> активував примусове підвищення:
-          грейд <strong>${oldGrade}</strong> → <strong>SS</strong>.
-          Результат не підлягає перегляду без зміни виду прояву.
-        </div>
-        <div class="taboo-trigger-meta">
-          <span class="taboo-trigger-rule">📋 Наказ НУЗРКС МОУ №&thinsp;46 від 28.11.2022</span>
-          <span class="taboo-trigger-rule">⚙ Правило: <code>taboo → auto SS</code></span>
-          <span class="taboo-trigger-rule">R<sub>DIMS</sub>&nbsp;= ${Number(dims.r_dims || 0).toFixed(4)}</span>
-        </div>
-      </div>
-    </div>`;
-}
-
-// Inline pill для використання всередині DIMS-summary рядка.
-function tabooInlinePillHtml() {
-  return `<span class="taboo-inline-pill" title="Вид прояву «Табу»: грейд автоматично підвищено до SS">🔒 TABOO → SS</span>`;
 }
 
 // ─────────────────────────────────────────────────────────────

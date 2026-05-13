@@ -334,6 +334,29 @@ button, .btn { outline-offset: 2px; }
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
+/* ═══════════════ SUB-MODE SWITCHER ═══════════════ */
+.sub-mode-row {
+  display: flex; gap: 4px;
+  margin-bottom: var(--s-4);
+}
+.sub-mode-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-1);
+  color: var(--text-2);
+  font: 600 11px/1 var(--font-sans);
+  padding: 6px 14px; cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  transition: background 100ms, color 100ms, border-color 100ms;
+  white-space: nowrap;
+}
+.sub-mode-btn:hover { color: var(--text-0); border-color: var(--border-0); }
+.sub-mode-btn.active {
+  background: var(--signal-orange);
+  border-color: var(--signal-orange);
+  color: #fff;
+}
+
 /* ═══════════════ DROPZONE ═══════════════ */
 .dropzone {
   border: 1px dashed var(--border-2);
@@ -853,6 +876,7 @@ input[type="range"]::-moz-range-thumb {
   letter-spacing: 0.02em;
 }
 .chk-inline input { accent-color: var(--signal-orange); }
+.chk-priority { color: var(--signal-red); font-weight: 700; }
 
 .search-results {
   margin-top: var(--s-4);
@@ -1010,7 +1034,7 @@ input[type="range"]::-moz-range-thumb {
 /* ═══════════════════════════════════════════════════════════════
    GRADE BADGE COMPONENT
    — Уніфіковане подання грейда F/B/S/SS/SSS за Методикою НУЗРКС МОУ № 46.
-   — Три розміри (sm/md/lg); варіант .is-taboo (обвідка + піктограма).
+   — Три розміри (sm/md/lg).
    — Токени свідомо продубльовані світла/темна тема (через каскад :root).
    ═══════════════════════════════════════════════════════════════ */
 :root {
@@ -1050,8 +1074,6 @@ input[type="range"]::-moz-range-thumb {
 .grade-badge.is-md { padding: 2px 8px; font-size: 12px; }
 .grade-badge.is-lg { padding: 6px 14px; font-size: 18px; }
 
-.grade-badge.is-taboo { outline: 2px solid currentColor; outline-offset: 2px; }
-.grade-badge.is-taboo .grade-flag::before { content: "⚑"; }
 
 @media print {
   .grade-badge {
@@ -1335,82 +1357,6 @@ input[type="range"]::-moz-range-thumb {
 }
 .timeline-clear:hover { text-decoration: underline; }
 
-/* ═══════════════════════════════════════════════════════════════
-   TABOO TRIGGER
-   — Інлайн-чіп, що з'являється коли вид прояву «табу» примусово
-     підвищив грейд до SS (Методика НУЗРКС МОУ № 46).
-   ═══════════════════════════════════════════════════════════════ */
-.taboo-trigger {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--s-3);
-  padding: var(--s-3) var(--s-4);
-  background: color-mix(in srgb, var(--grade-ss-bg) 12%, var(--bg-1));
-  border: 1px solid color-mix(in srgb, var(--grade-ss-bg) 40%, transparent);
-  border-left: 3px solid var(--grade-ss-bg);
-  border-radius: var(--r-md);
-  margin-bottom: var(--s-3);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.taboo-trigger-icon {
-  font-size: 20px;
-  line-height: 1;
-  flex-shrink: 0;
-  animation: taboo-pulse 2.4s ease-in-out infinite;
-}
-@keyframes taboo-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%       { transform: scale(1.15); opacity: 0.75; }
-}
-.taboo-trigger-body {
-  flex: 1;
-  min-width: 0;
-}
-.taboo-trigger-title {
-  font: 700 12px var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--grade-ss-bg);
-  margin-bottom: 2px;
-}
-.taboo-trigger-msg {
-  color: var(--text-1);
-}
-.taboo-trigger-meta {
-  margin-top: 4px;
-  font: 500 11px var(--font-mono);
-  color: var(--text-3);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-2);
-}
-.taboo-trigger-rule {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px 6px;
-  background: var(--bg-2);
-  border: 1px solid var(--border-1);
-  border-radius: var(--r-sm);
-  font-size: 10px;
-  color: var(--text-2);
-}
-/* inline pill variant used inside grade-badge row */
-.taboo-inline-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 1px 7px;
-  background: color-mix(in srgb, var(--grade-ss-bg) 18%, var(--bg-2));
-  border: 1px solid color-mix(in srgb, var(--grade-ss-bg) 50%, transparent);
-  border-radius: 999px;
-  font: 600 10px var(--font-mono);
-  color: var(--grade-ss-bg);
-  vertical-align: middle;
-  margin-left: 6px;
-  white-space: nowrap;
-}
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIDENCE METER  (I_source breakdown)

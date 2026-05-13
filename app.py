@@ -501,7 +501,6 @@ def manifestation_types():
             {"key": key, "label": label}
             for key, label in DIMS_MANIFESTATION_TYPES.items()
         ],
-        taboo_key="taboo",
     )
 
 
@@ -524,6 +523,8 @@ _GN_LOCALES = {
     "uk": {"hl": "uk",    "gl": "UA", "ceid": "UA:uk"},
     "ru": {"hl": "ru",    "gl": "RU", "ceid": "RU:ru"},
     "en": {"hl": "en-US", "gl": "US", "ceid": "US:en"},
+    "de": {"hl": "de",    "gl": "DE", "ceid": "DE:de"},
+    "fr": {"hl": "fr",    "gl": "FR", "ceid": "FR:fr"},
 }
 
 
@@ -738,6 +739,139 @@ def evidence():
         mfw_n=mfw_n,
         char_n=char_n,
     )
+
+
+@app.post("/api/fetch-rss")
+def fetch_rss():
+    """Отримує та парсить RSS/Atom-стрічку. Повертає список статей для імпорту."""
+    import xml.etree.ElementTree as ET
+    import requests as _req
+
+    data = request.get_json(silent=True) or {}
+    feed_url = (data.get("url") or "").strip()
+    limit = min(int(data.get("limit") or 30), 50)
+
+    if not feed_url:
+        return _err("URL RSS-стрічки порожній.")
+    try:
+        feed_url = _assert_public_url(feed_url)
+    except RuntimeError as exc:
+        return _err(str(exc))
+
+    try:
+        r = _req.get(feed_url, timeout=20,
+                     headers={"User-Agent": "Mozilla/5.0 (DIMS research tool)", "Accept": "application/rss+xml,application/atom+xml,*/*"})
+        r.raise_for_status()
+        root = ET.fromstring(r.content)
+    except Exception as exc:
+        return _err(f"Не вдалося отримати RSS: {exc}")
+
+    items = []
+    _NS = {"atom": "http://www.w3.org/2005/Atom",
+           "media": "http://search.yahoo.com/mrss/"}
+
+    def _txt(el, *tags):
+        for t in tags:
+            v = el.findtext(t, namespaces=_NS)
+            if v: return v.strip()
+        return ""
+
+    # RSS 2.0
+    for item in root.findall(".//item")[:limit]:
+        link = _txt(item, "link")
+        if not link:
+            continue
+        title   = _txt(item, "title") or link
+        snippet = _txt(item, "description")[:300]
+        pub     = _txt(item, "pubDate")
+        domain  = urlparse(link).netloc.replace("www.", "")
+        items.append({"title": title, "url": link, "snippet": snippet,
+                      "published": pub, "source": domain, "lang": ""})
+
+    # Atom (якщо RSS-елементів не було)
+    if not items:
+        for entry in root.findall("atom:entry", _NS)[:limit]:
+            link_el = entry.find("atom:link[@rel='alternate']", _NS) or entry.find("atom:link", _NS)
+            link = link_el.get("href", "") if link_el is not None else ""
+            if not link:
+                continue
+            title   = _txt(entry, "atom:title")  or link
+            snippet = _txt(entry, "atom:summary", "atom:content")[:300]
+            pub     = _txt(entry, "atom:published", "atom:updated")
+            domain  = urlparse(link).netloc.replace("www.", "")
+            items.append({"title": title, "url": link, "snippet": snippet,
+                          "published": pub, "source": domain, "lang": ""})
+
+    if not items:
+        return _err("У стрічці не знайдено жодної статті. Перевірте URL і формат (RSS 2.0 / Atom).")
+    return _ok(results=items, feed_url=feed_url, count=len(items))
+
+
+@app.post("/api/fetch-telegram")
+def fetch_telegram():
+    """Scrape публічного Telegram-каналу через t.me/s/<channel>."""
+    import requests as _req
+    from bs4 import BeautifulSoup
+
+    data = request.get_json(silent=True) or {}
+    raw = (data.get("channel") or "").strip()
+    limit = min(int(data.get("limit") or 20), 40)
+
+    if not raw:
+        return _err("Назва каналу порожня.")
+
+    # Приводимо до просто назви каналу
+    import re as _re
+    channel = _re.sub(r'^(https?://)?(t\.me/s?/|telegram\.me/)?@?', '', raw).strip("/").split("/")[0]
+    if not channel:
+        return _err("Не вдалося розпізнати назву каналу.")
+
+    url = f"https://t.me/s/{channel}"
+    try:
+        r = _req.get(url, timeout=25, headers={
+            "User-Agent": "Mozilla/5.0 (DIMS research tool)",
+            "Accept-Language": "ru,uk;q=0.9,de;q=0.8,fr;q=0.7,en;q=0.6",
+        })
+        r.raise_for_status()
+    except Exception as exc:
+        return _err(f"Не вдалося завантажити канал @{channel}: {exc}")
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    posts = []
+    for wrap in soup.select(".tgme_widget_message_wrap")[:limit]:
+        text_el = wrap.select_one(".tgme_widget_message_text")
+        if not text_el:
+            continue
+        text = text_el.get_text(separator="\n").strip()
+        # Стрипаємо типові boilerplate-footer'и (Підписатись, шаблонні посилання тощо)
+        import re as _re2
+        text = _re2.sub(
+            r'(?i)(подписат[ьься]+\s+на\s+\S+.*|підписат[ьися]+\s+на\s+\S+.*'
+            r'|\bтг\b.*|\bзеркало\b.*|\bmax\b\s*$)',
+            '', text, flags=_re2.MULTILINE
+        ).strip()
+        if len(text.split()) < 8:
+            continue
+
+        date_el = wrap.select_one("a.tgme_widget_message_date")
+        date    = date_el.get("datetime", "") if date_el else ""
+        msg_url = date_el.get("href", f"https://t.me/{channel}") if date_el else f"https://t.me/{channel}"
+
+        posts.append({
+            "title":     text[:120].replace("\n", " ") + ("…" if len(text) > 120 else ""),
+            "full_text": text,
+            "url":       msg_url,
+            "published": date,
+            "source":    f"@{channel}",
+            "lang":      "",
+        })
+
+    if not posts:
+        return _err(
+            f"Повідомлень не знайдено у @{channel}. "
+            "Переконайтеся що канал публічний і існує (t.me/s/<назва>)."
+        )
+    return _ok(results=posts, channel=channel, count=len(posts))
 
 
 @app.post("/api/search-news")
@@ -1018,7 +1152,20 @@ def export_daily_form():
             source_breakdown_list.append({"label": lbl, "score": float(score)})
 
     # Підозрілі стилометричні пари
+    # LAST_RESULTS["flagged"] зберігає туплі (a, b, delta, severity) з пайплайну;
+    # build_daily_monitoring_form очікує список dict з ключами a_source/b_source/delta.
     flagged_raw = LAST_RESULTS.get("flagged") or []
+    flagged_pairs: list[dict] = []
+    for fp in flagged_raw:
+        if isinstance(fp, (list, tuple)):
+            a_lbl, b_lbl = fp[0], fp[1]
+            flagged_pairs.append({
+                "a_source": _source_lookup(a_lbl),
+                "b_source": _source_lookup(b_lbl),
+                "delta": float(fp[2]),
+            })
+        elif isinstance(fp, dict):
+            flagged_pairs.append(fp)
 
     buffer = build_daily_monitoring_form(
         grade_info=dims.get("grade") or {},
@@ -1027,7 +1174,7 @@ def export_daily_form():
         indicators=dims.get("indicators") or {},
         sources=sources_payload,
         source_breakdown=source_breakdown_list,
-        flagged_pairs=flagged_raw,
+        flagged_pairs=flagged_pairs,
         direction=direction,
         organization=organization or "УПРАВЛІННЯ ЗАБЕЗПЕЧЕННЯ РЕАГУВАННЯ НА КРИЗОВІ СИТУАЦІЇ",
         custom_recommendation=custom_recommendation,

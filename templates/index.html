@@ -60,14 +60,10 @@
       <div class="tab-buttons" role="tablist" aria-label="Спосіб додавання джерел">
         <button class="tab-btn active" data-tab="files" role="tab" type="button"
                 id="tabbtn-files" aria-selected="true" aria-controls="tab-files" tabindex="0">📁 Файли</button>
-        <button class="tab-btn" data-tab="url" role="tab" type="button"
-                id="tabbtn-url" aria-selected="false" aria-controls="tab-url" tabindex="-1">🌐 URL</button>
         <button class="tab-btn" data-tab="text" role="tab" type="button"
                 id="tabbtn-text" aria-selected="false" aria-controls="tab-text" tabindex="-1">✏️ Текст</button>
-        <button class="tab-btn" data-tab="html" role="tab" type="button"
-                id="tabbtn-html" aria-selected="false" aria-controls="tab-html" tabindex="-1">🧩 HTML</button>
-        <button class="tab-btn" data-tab="search" role="tab" type="button"
-                id="tabbtn-search" aria-selected="false" aria-controls="tab-search" tabindex="-1">🔎 Пошук новин</button>
+        <button class="tab-btn" data-tab="news" role="tab" type="button"
+                id="tabbtn-news" aria-selected="false" aria-controls="tab-news" tabindex="-1">🔎 Пошук новин</button>
       </div>
 
       <!-- TAB: FILES -->
@@ -94,77 +90,35 @@
         </div>
       </div>
 
-      <!-- TAB: URL -->
-      <div class="tab-panel" id="tab-url" role="tabpanel" aria-labelledby="tabbtn-url" hidden>
-        <div class="url-form">
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="urlInput">Посилання на статтю</label>
-              <input type="url" id="urlInput" class="form-control"
-                     placeholder="https://www.pravda.com.ua/articles/..." />
-            </div>
-            <div class="form-group">
-              <label for="urlLabel">Назва джерела (необов'язково)</label>
-              <input type="text" id="urlLabel" class="form-control"
-                     placeholder="напр. pravda.com.ua" />
-            </div>
-          </div>
-          <button class="btn btn-primary" id="btnAddUrl" type="button">
-            <span class="btn-icon" aria-hidden="true">🌐</span> Додати статтю
-          </button>
-          <p class="hint">Текст статті буде автоматично витягнутий без реклами та навігації.</p>
-        </div>
-      </div>
-
-      <!-- TAB: TEXT -->
+      <!-- TAB: MANUAL -->
       <div class="tab-panel" id="tab-text" role="tabpanel" aria-labelledby="tabbtn-text" hidden>
-        <div class="text-form">
-          <div class="form-group">
-            <label for="textLabel">Назва джерела</label>
-            <input type="text" id="textLabel" class="form-control"
-                   placeholder="напр. Джерело А" />
-          </div>
-          <div class="form-group">
-            <label for="textInput">Текст</label>
-            <textarea id="textInput" class="form-control textarea-large"
-                      placeholder="Вставте текст статті тут..."></textarea>
-          </div>
-          <button class="btn btn-primary" id="btnAddText" type="button">
-            <span class="btn-icon" aria-hidden="true">✏️</span> Додати текст
-          </button>
+        <div class="form-group">
+          <label for="manualLabel">Назва джерела</label>
+          <input type="text" id="manualLabel" class="form-control"
+                 placeholder="напр. RT Telegram, ТАСС, Джерело А" />
         </div>
+        <div class="form-group">
+          <textarea id="manualInput" class="form-control textarea-large"
+                    placeholder="Вставте текст, HTML-код або пряме посилання (https://…)&#10;&#10;Ctrl+Enter — швидке додавання"></textarea>
+        </div>
+        <button class="btn btn-primary" id="btnAddManual" type="button">
+          ✏️ Додати джерело
+        </button>
+        <p class="hint">URL → текст завантажується автоматично · HTML → очищується до plain text · Текст → додається напряму</p>
       </div>
 
-      <!-- TAB: HTML -->
-      <div class="tab-panel" id="tab-html" role="tabpanel" aria-labelledby="tabbtn-html" hidden>
-        <div class="text-form">
-          <div class="form-row">
-            <div class="form-group flex-1">
-              <label for="htmlLabel">Назва джерела</label>
-              <input type="text" id="htmlLabel" class="form-control"
-                     placeholder="напр. TASS вручну" />
-            </div>
-            <div class="form-group flex-1">
-              <label for="htmlUrl">Оригінальний URL (необов'язково)</label>
-              <input type="url" id="htmlUrl" class="form-control"
-                     placeholder="https://tass.ru/politika/..." />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="htmlInput">Сирий HTML сторінки</label>
-            <textarea id="htmlInput" class="form-control textarea-large textarea-code"
-                      placeholder="Вставте сюди HTML-код сторінки..."></textarea>
-          </div>
-          <button class="btn btn-primary" id="btnAddHtml" type="button">
-            <span class="btn-icon" aria-hidden="true">🧩</span> Додати HTML
-          </button>
-          <p class="hint">Зручно для сайтів, які не вдається завантажити напряму. Система сама очистить HTML до plain text.</p>
-        </div>
-      </div>
+      <!-- TAB: NEWS (Google News + RSS + Telegram) -->
+      <div class="tab-panel" id="tab-news" role="tabpanel" aria-labelledby="tabbtn-news" hidden>
 
-      <!-- TAB: SEARCH -->
-      <div class="tab-panel" id="tab-search" role="tabpanel" aria-labelledby="tabbtn-search" hidden>
-        <div class="search-form">
+        <!-- Sub-mode selector -->
+        <div class="sub-mode-row">
+          <button class="sub-mode-btn active" data-submode="google">🔎 Google News</button>
+          <button class="sub-mode-btn" data-submode="rss">📡 RSS</button>
+          <button class="sub-mode-btn" data-submode="telegram">✈️ Telegram</button>
+        </div>
+
+        <!-- Google News sub-panel -->
+        <div class="sub-mode-panel" id="subpanel-google">
           <div class="form-row">
             <div class="form-group flex-1">
               <label for="searchQuery">Пошуковий запит</label>
@@ -174,17 +128,18 @@
             <div class="form-group">
               <label>Мови</label>
               <div class="search-lang-row">
-                <label class="chk-inline"><input type="checkbox" value="uk" checked> UK</label>
-                <label class="chk-inline"><input type="checkbox" value="ru" checked> RU</label>
-                <label class="chk-inline"><input type="checkbox" value="en" checked> EN</label>
+                <label class="chk-inline chk-priority"><input type="checkbox" value="ru" checked> RU ★</label>
+                <label class="chk-inline"><input type="checkbox" value="de" checked> DE</label>
+                <label class="chk-inline"><input type="checkbox" value="fr" checked> FR</label>
+                <label class="chk-inline"><input type="checkbox" value="uk"> UA</label>
+                <label class="chk-inline"><input type="checkbox" value="en"> EN</label>
               </div>
             </div>
           </div>
           <button class="btn btn-primary" id="btnSearchNews" type="button">
             <span class="btn-icon" aria-hidden="true">🔎</span> Шукати
           </button>
-          <p class="hint">Багатомовний пошук через Google News. Мова кожного джерела зберігається в метаданих — переклад не застосовується (інакше стилометрія спотворюється).</p>
-
+          <p class="hint">Багатомовний пошук через Google News RSS. Мова кожного джерела зберігається в метаданих — переклад не застосовується.</p>
           <div id="searchResults" class="search-results" aria-live="polite" hidden>
             <div class="search-results-header">
               <span id="searchResultsCount" class="search-results-count"></span>
@@ -198,6 +153,73 @@
             <div id="searchResultsList" class="search-results-list"></div>
           </div>
           <div id="searchStatus" class="search-status" role="status" aria-live="polite"></div>
+        </div>
+
+        <!-- RSS sub-panel -->
+        <div class="sub-mode-panel" id="subpanel-rss" hidden>
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="rssUrl">URL RSS або Atom стрічки</label>
+              <input type="url" id="rssUrl" class="form-control"
+                     placeholder="https://tass.ru/rss/v2.xml" />
+            </div>
+            <div class="form-group">
+              <label for="rssLimit">Кількість статей</label>
+              <input type="number" id="rssLimit" class="form-control" value="20" min="5" max="50" style="width:80px" />
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btnFetchRss" type="button">
+            <span class="btn-icon" aria-hidden="true">📡</span> Завантажити стрічку
+          </button>
+          <p class="hint">RSS/Atom будь-якого ресурсу: ТАСС, RT, Sputnik, regnum.ru, ria.ru тощо.</p>
+          <div id="rssResults" class="search-results" aria-live="polite" hidden>
+            <div class="search-results-header">
+              <span id="rssResultsCount" class="search-results-count"></span>
+              <div class="search-results-actions">
+                <button class="btn btn-ghost btn-sm" id="btnSelectAllRss" type="button">Обрати всі</button>
+                <button class="btn btn-primary btn-sm" id="btnImportRss" type="button" disabled>
+                  Імпортувати <span id="rssImportCount"></span>
+                </button>
+              </div>
+            </div>
+            <div id="rssResultsList" class="search-results-list"></div>
+          </div>
+          <div id="rssStatus" class="search-status" role="status" aria-live="polite"></div>
+        </div>
+
+        <!-- Telegram sub-panel -->
+        <div class="sub-mode-panel" id="subpanel-telegram" hidden>
+          <div class="form-row">
+            <div class="form-group flex-1">
+              <label for="tgChannel">Канал (назва або t.me/s/…)</label>
+              <input type="text" id="tgChannel" class="form-control"
+                     placeholder="@rt_russian або t.me/s/rt_russian" />
+            </div>
+            <div class="form-group">
+              <label for="tgLimit">Кількість постів</label>
+              <input type="number" id="tgLimit" class="form-control" value="20" min="5" max="40" style="width:80px" />
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btnFetchTelegram" type="button">
+            <span class="btn-icon" aria-hidden="true">✈️</span> Завантажити канал
+          </button>
+          <p class="hint">Тільки <strong>публічні</strong> канали. Рекомендовані: <code>rt_russian</code>, <code>tass_agency</code>, <code>sputniknewsrussia</code>, <code>ria_novosti</code>.</p>
+          <div id="tgResults" class="search-results" aria-live="polite" hidden>
+            <div class="search-results-header">
+              <span id="tgResultsCount" class="search-results-count"></span>
+              <div class="search-results-actions">
+                <label class="chk-inline tg-merge-toggle" title="Об'єднати обрані пости в один документ для надійного Burrows Delta (рекомендовано)">
+                  <input type="checkbox" id="tgMerge" checked> Об'єднати в 1 документ
+                </label>
+                <button class="btn btn-ghost btn-sm" id="btnSelectAllTg" type="button">Обрати всі</button>
+                <button class="btn btn-primary btn-sm" id="btnImportTg" type="button" disabled>
+                  Імпортувати <span id="tgImportCount"></span>
+                </button>
+              </div>
+            </div>
+            <div id="tgResultsList" class="search-results-list"></div>
+          </div>
+          <div id="tgStatus" class="search-status" role="status" aria-live="polite"></div>
         </div>
       </div>
     </div>
@@ -329,9 +351,8 @@
           <option value="" selected>— не визначено —</option>
           <!-- Варіанти заповнюються з /api/manifestation-types -->
         </select>
-        <p class="hint">Класифікація виду прояву DIMs за Методикою.
-           На бали не впливає, окрім виду «Табу», якому
-           автоматично призначається грейд SS.</p>
+        <p class="hint">Класифікація виду прояву DIMs за Методикою НУЗРКС МОУ №&thinsp;46.
+           Вид прояву фіксується для протоколу; на числові бали не впливає.</p>
         <details class="param-help">
           <summary>Перелік видів прояву</summary>
           <p>Маніпуляція, фейк, інформаційний сендвіч, конспірологія,
@@ -359,11 +380,8 @@
     <!-- Language / data warnings -->
     <div id="languageAlert"></div>
 
-    <!-- Critical alert (sticky, SS/SSS/taboo only) -->
+    <!-- Critical alert (sticky, SS/SSS only) -->
     <div id="criticalAlert"></div>
-
-    <!-- Taboo trigger explanation (only when forced_by_taboo) -->
-    <div id="tabooTriggerSlot"></div>
 
     <!-- Quick stats -->
     <div class="stats-grid" id="statsGrid"></div>

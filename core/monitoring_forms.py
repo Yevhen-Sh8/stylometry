@@ -218,7 +218,6 @@ def _source_row_info(
 def _source_row_proposal(
     grade: str,
     source: dict,
-    forced_by_taboo: bool,
     manifestation_label: str,
     custom_recommendation: str,
 ) -> str:
@@ -230,11 +229,6 @@ def _source_row_proposal(
     else:
         parts.append(_GRADE_RECOMMENDATIONS.get(grade, ""))
 
-    if forced_by_taboo:
-        parts.append(
-            "Примітка: грейд автоматично підвищено до SS "
-            "(вид прояву «табу», Методика НУЗРКС МОУ № 46)."
-        )
     if manifestation_label:
         parts.append(f"Вид прояву DIMs: {manifestation_label}.")
 
@@ -250,7 +244,6 @@ def _add_source_row(
     num: int,
     source: dict,
     grade: str,
-    forced_by_taboo: bool,
     manifestation_label: str,
     custom_recommendation: str,
     flagged_labels: set[str],
@@ -260,29 +253,24 @@ def _add_source_row(
     row = table.add_row()
     cells = row.cells
 
-    # Ширини (повторне встановлення для кожного рядка)
     for idx, w in enumerate(_COL_WIDTHS):
         cells[idx].width = w
         cells[idx].vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
-    # Виділення критичних
     if grade == "SSS":
         for cell in cells:
             _set_cell_bg(cell, _CRITICAL_BG)
 
-    # №
     _clear_and_write(cells[0], str(num),
                      align=WD_ALIGN_PARAGRAPH.CENTER,
                      size_pt=_FONT_SIZE_BODY)
 
-    # Необхідність реагування
     resp = _requires_response(grade)
     _clear_and_write(cells[1], resp,
                      bold=(resp == "ТАК"),
                      align=WD_ALIGN_PARAGRAPH.CENTER,
                      size_pt=_FONT_SIZE_BODY)
 
-    # Пріоритет (грейд)
     grade_label = _GRADE_LABELS.get(grade, "")
     grade_text = f"{grade}\n({grade_label})"
     _clear_and_write(cells[2], grade_text,
@@ -290,14 +278,11 @@ def _add_source_row(
                      align=WD_ALIGN_PARAGRAPH.CENTER,
                      size_pt=_FONT_SIZE_BODY)
 
-    # Основні відомості
     info_text = _source_row_info(source, flagged_labels, breakdown_map)
     _clear_and_write(cells[3], info_text, size_pt=_FONT_SIZE_BODY)
 
-    # Пропозиції
     proposal_text = _source_row_proposal(
-        grade, source, forced_by_taboo,
-        manifestation_label, custom_recommendation,
+        grade, source, manifestation_label, custom_recommendation,
     )
     _clear_and_write(cells[4], proposal_text, size_pt=_FONT_SIZE_BODY)
 
@@ -391,7 +376,6 @@ def build_daily_monitoring_form(
     """
     compiled_at = compiled_at or datetime.now()
     grade = str(grade_info.get("grade") or "F").upper()
-    forced_by_taboo = bool(grade_info.get("forced_by_taboo"))
     manifestation = manifestation or {}
     manifestation_label = str(manifestation.get("label") or "")
     flagged_pairs = flagged_pairs or []
@@ -491,7 +475,6 @@ def build_daily_monitoring_form(
             num=i,
             source=src,
             grade=grade,
-            forced_by_taboo=forced_by_taboo,
             manifestation_label=manifestation_label,
             custom_recommendation=custom_recommendation,
             flagged_labels=flagged_labels,

@@ -513,9 +513,7 @@
     .grade-badge.is-sm  { padding: 1px 6px; font-size: 10px; }
     .grade-badge.is-md  { padding: 2px 9px; font-size: 12px; }
     .grade-badge.is-lg  { padding: 4px 12px; font-size: 17px; letter-spacing: 0.04em; }
-    .grade-badge.is-taboo { outline: 2px solid currentColor; outline-offset: 2px; }
-    .grade-badge.is-taboo::after { content: " ⚑"; }
-    @media print {
+@media print {
       .grade-badge { background:#fff !important; color:#000 !important; border:1.5px solid #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
 
@@ -644,9 +642,9 @@
       </div>
       <div class="kpi-card {% if dims_assessment.grade.grade in ['SS','SSS'] %}danger{% elif dims_assessment.grade.grade == 'S' %}warn{% else %}ok{% endif %}">
         <div class="kpi-value" style="display:flex; align-items:center">
-          <span class="grade-badge is-lg{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}"
+          <span class="grade-badge is-lg"
                 data-grade="{{ dims_assessment.grade.grade }}"
-                title="{{ dims_assessment.grade.label }}{% if dims_assessment.grade.forced_by_taboo %} — грейд підвищено згідно з правилом «табу»{% endif %}">
+                title="{{ dims_assessment.grade.label }}">
             {{ dims_assessment.grade.grade }}
           </span>
         </div>
@@ -660,23 +658,18 @@
     <div class="exec-summary">
       {% if dims_assessment.grade.grade in ['SS', 'SSS'] %}
         <strong>Виявлено підвищений DIMS-ризик.</strong>
-        Інтегральна оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <span class="grade-badge is-md{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span>.
+        Інтегральна оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <span class="grade-badge is-md" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span>.
         Домінуючі індикатори — змістовий та координаційний аналіз. Рекомендується пріоритетне експертне опрацювання та перевірка скоординованих джерел.
       {% elif dims_assessment.grade.grade == 'S' %}
         <strong>Значущий рівень інформаційного інтересу.</strong>
         Оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> вказує на наявність ознак інформаційної загрози. Стилометричні та змістові індикатори потребують додаткової верифікації.
       {% else %}
         <strong>Низький DIMS-ризик.</strong>
-        Оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <span class="grade-badge is-md{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span>. Підстав для пріоритетного реагування не виявлено. Результати слід інтерпретувати разом із контекстом та експертним аналізом.
+        Оцінка <strong>{{ "%.4f"|format(dims_assessment.r_dims) }}</strong> → грейд <span class="grade-badge is-md" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span>. Підстав для пріоритетного реагування не виявлено. Результати слід інтерпретувати разом із контекстом та експертним аналізом.
       {% endif %}
       {% if dims_assessment.manifestation and dims_assessment.manifestation.label %}
         <div style="margin-top:10px">
           <strong>Вид прояву DIMs:</strong> {{ dims_assessment.manifestation.label }}.
-          {% if dims_assessment.grade.forced_by_taboo %}
-            <em>Грейд підвищено до SS згідно з Методикою НУЗРКС МОУ
-            № 46 від 28.11.2022 (правило «табу → автоматичний SS-грейд»).
-            Обчислений за балами грейд — {{ dims_assessment.grade.computed_grade }}.</em>
-          {% endif %}
         </div>
       {% endif %}
     </div>
@@ -769,7 +762,7 @@
         <tr><td><span class="math-inline">I<sub>dynamics</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_dynamics) }}</td><td>Динаміка поширення</td></tr>
         <tr><td><span class="math-inline">I<sub>impact</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_impact) }}</td><td>Потенційний вплив</td></tr>
         <tr><td><span class="math-inline">I<sub>source</sub></span></td><td>{{ "%.4f"|format(dims_assessment.indicators.I_source) }}</td><td>Ризик джерела: домен, прозорість, редакційні та джерельні ознаки</td></tr>
-        <tr><td><span class="math-inline">R<sub>DIMS</sub></span></td><td>{{ "%.4f"|format(dims_assessment.r_dims) }}</td><td>Інтегральна оцінка → грейд <span class="grade-badge is-md{% if dims_assessment.grade.forced_by_taboo %} is-taboo{% endif %}" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span> ({{ dims_assessment.grade.label }})</td></tr>
+        <tr><td><span class="math-inline">R<sub>DIMS</sub></span></td><td>{{ "%.4f"|format(dims_assessment.r_dims) }}</td><td>Інтегральна оцінка → грейд <span class="grade-badge is-md" data-grade="{{ dims_assessment.grade.grade }}">{{ dims_assessment.grade.grade }}</span> ({{ dims_assessment.grade.label }})</td></tr>
       </tbody>
     </table>
 
@@ -818,24 +811,29 @@
 
     {% if source_breakdown_rows %}
     <div style="margin-top:24px">
-      <h2 class="section-title">Розклад за джерелами</h2>
-      <table class="corpus-table">
-        <thead><tr><th>Джерело</th><th>Домен</th><th>Профіль ризику</th><th><span class="math-inline">I<sub>source</sub></span></th></tr></thead>
-        <tbody>
-          {% for row in source_breakdown_rows %}
-          <tr>
-            <td><a href="{{ row.source.url or row.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ row.source.display_title }}</a></td>
-            <td>{{ row.source.domain or row.label }}</td>
-            <td>
-              <span class="math-inline">R<sub>domain</sub></span>={{ "%.2f"|format(row.components.domain or 0) }},
-              <span class="math-inline">R<sub>owner</sub></span>={{ "%.2f"|format(row.components.owner or 0) }},
-              <span class="math-inline">R<sub>cred</sub></span>={{ "%.2f"|format(row.components.cred or 0) }}
-            </td>
-            <td>{{ "%.4f"|format(row.score) }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <details>
+        <summary style="cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;">
+          <h2 class="section-title" style="margin:0; display:inline">Розклад <span class="math-inline">I<sub>source</sub></span> за джерелами</h2>
+          <span style="font-size:12px; color:var(--text-muted, #888); font-weight:400">({{ source_breakdown_rows|length }} джерел — розгорнути)</span>
+        </summary>
+        <table class="corpus-table" style="margin-top:12px">
+          <thead><tr><th>Джерело</th><th>Домен</th><th>Профіль ризику</th><th><span class="math-inline">I<sub>source</sub></span></th></tr></thead>
+          <tbody>
+            {% for row in source_breakdown_rows %}
+            <tr>
+              <td><a href="{{ row.source.url or row.source.local_text_url }}" target="_blank" rel="noopener noreferrer">{{ row.source.display_title }}</a></td>
+              <td>{{ row.source.domain or row.label }}</td>
+              <td>
+                <span class="math-inline">R<sub>domain</sub></span>={{ "%.2f"|format(row.components.domain or 0) }},
+                <span class="math-inline">R<sub>owner</sub></span>={{ "%.2f"|format(row.components.owner or 0) }},
+                <span class="math-inline">R<sub>cred</sub></span>={{ "%.2f"|format(row.components.cred or 0) }}
+              </td>
+              <td>{{ "%.4f"|format(row.score) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </details>
     </div>
     {% endif %}
   </section>

@@ -79,8 +79,7 @@ DIMS_MANIFESTATION_TYPES = {
     "sensitive":      "Чутлива тема",
     "taboo":          "Табу",
 }
-TABOO_MANIFESTATION_KEY = "taboo"
-TABOO_FORCED_GRADE = "SS"
+_TABOO_FORCED_GRADE = "SS"
 CONTENT_MARKERS = {
     "фейк", "фейки", "маніпуляція", "маніпуляції", "маніпулятивний",
     "дезінформація", "дезінформації", "пропаганда", "конспірологія",
@@ -324,21 +323,37 @@ def detect_script(text: str) -> str:
     return "mixed"
 
 
+_CYRILLIC_FAMILY = {"ru", "ua", "cyrillic"}
+
 def detect_corpus_languages(corpus: dict[str, str]) -> dict:
     """Виявляє скрипти корпусу. Повертає dict з per-doc scripts та попередженням,
     якщо корпус змішаний (стилометричні порівняння різномовних текстів
     недостовірні — див. дисертацію 2.5.6).
+
+    «cyrillic» (недостатньо маркерів для розрізнення ru/ua) не є окремою
+    мовою — це та сама кирилична родина. Попередження виникає лише при
+    реальному змішуванні сімей (кирилиця + латиниця) або явному «mixed».
     """
     per_doc = {label: detect_script(text) for label, text in corpus.items()}
-    unique = {s for s in per_doc.values() if s not in ("unknown",)}
-    is_mixed = len(unique) > 1 or "mixed" in unique
-    warning = None
+    unique = {s for s in per_doc.values() if s != "unknown"}
+    # Тільки кирилична родина — не вважається змішаним корпусом
+    is_mixed = not (unique <= _CYRILLIC_FAMILY) or "mixed" in unique
+    warnings: list[str] = []
     if is_mixed:
-        warning = (
-            f"Виявлено мультимовність ({', '.join(sorted(unique))}). "
+        warnings.append(
+            f"Виявлено різні мовні родини ({', '.join(sorted(unique))}). "
             "Результати стилометрії можуть бути недостовірними: "
             "рекомендується аналізувати одномовні корпуси."
         )
+    # Попередження про короткі тексти
+    short_docs = [lbl for lbl, txt in corpus.items() if len(txt.split()) < 500]
+    if short_docs:
+        warnings.append(
+            f"Короткі тексти ({len(short_docs)} із {len(corpus)}): "
+            "надійний Burrows Delta потребує ≥ 500 слів (Burrows 2002, Eder 2013). "
+            "Telegram-пости та новинні нотатки дають ненадійні результати."
+        )
+    warning = " | ".join(warnings) if warnings else None
     return {
         "per_document": per_doc,
         "scripts": sorted(unique),
@@ -1017,43 +1032,32 @@ _GRADE_ORDER = {g: idx for idx, (g, _, _) in enumerate(GRADE_THRESHOLDS)}
 def classify_interest_grade(
     r_dims: float,
     manifestation: str | None = None,
-) -> dict[str, str | float | bool]:
+) -> dict[str, str | float]:
     """Обчислення грейду відповідно до GRADE_THRESHOLDS.
 
     Якщо задано *manifestation* = «табу», результат примусово підіймається
     щонайменше до SS-грейду згідно з Методикою НУЗРКС МОУ № 46 від
     28.11.2022 (розділ 1). Решта видів прояву на оцінку не впливають.
     """
-    computed_grade = "SSS"
-    computed_label = "Критичний інтерес"
+    grade = "SSS"
+    label = "Критичний інтерес"
     upper_bound: float = 1.0
-    for grade, upper, label in GRADE_THRESHOLDS:
+    for g, upper, lbl in GRADE_THRESHOLDS:
         if r_dims < upper:
-            computed_grade = grade
-            computed_label = label
-            upper_bound = upper
+            grade, label, upper_bound = g, lbl, upper
             break
 
-    forced_by_taboo = False
-    final_grade = computed_grade
-    final_label = computed_label
-    if manifestation == TABOO_MANIFESTATION_KEY:
-        if _GRADE_ORDER.get(computed_grade, 0) < _GRADE_ORDER[TABOO_FORCED_GRADE]:
-            forced_by_taboo = True
-            final_grade = TABOO_FORCED_GRADE
-            for grade, upper, label in GRADE_THRESHOLDS:
-                if grade == TABOO_FORCED_GRADE:
-                    final_label = label
-                    upper_bound = upper
-                    break
+    if manifestation == "taboo" and _GRADE_ORDER.get(grade, 0) < _GRADE_ORDER[_TABOO_FORCED_GRADE]:
+        grade = _TABOO_FORCED_GRADE
+        for g, upper, lbl in GRADE_THRESHOLDS:
+            if g == _TABOO_FORCED_GRADE:
+                label, upper_bound = lbl, upper
+                break
 
     return {
-        "grade": final_grade,
-        "label": final_label,
+        "grade": grade,
+        "label": label,
         "upper_bound": upper_bound,
-        "computed_grade": computed_grade,
-        "computed_label": computed_label,
-        "forced_by_taboo": forced_by_taboo,
     }
 
 
