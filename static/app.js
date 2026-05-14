@@ -634,21 +634,6 @@ els.tabBtns.forEach((btn, idx, arr) => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────
-//  SUB-MODE SWITCHING (within tabs)
-// ─────────────────────────────────────────────────────────────
-document.querySelectorAll(".sub-mode-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const parent = btn.closest(".tab-panel, .sub-mode-row")?.closest(".tab-panel");
-    if (!parent) return;
-    const mode = btn.dataset.submode;
-    parent.querySelectorAll(".sub-mode-btn").forEach(b => b.classList.toggle("active", b === btn));
-    parent.querySelectorAll(".sub-mode-panel").forEach(p => {
-      const isActive = p.id === `subpanel-${mode}`;
-      if (isActive) p.removeAttribute("hidden"); else p.setAttribute("hidden", "");
-    });
-  });
-});
 
 // ─────────────────────────────────────────────────────────────
 //  SOURCE LIST RENDERING
@@ -795,120 +780,22 @@ els.btnAddManual.addEventListener("click", async () => {
 els.manualInput.addEventListener("keydown", e => { if (e.key === "Enter" && e.ctrlKey) els.btnAddManual.click(); });
 
 // ─────────────────────────────────────────────────────────────
-//  NEWS SEARCH
+//  UNIFIED SEARCH (Google News + RSS + Telegram simultaneously)
 // ─────────────────────────────────────────────────────────────
-const searchState = { results: [], selected: new Set() };
+const unifiedState = { results: [], selected: new Set() };
 
-function updateImportButton() {
-  const btn = $("btnImportSelected");
-  const cnt = $("importSelectedCount");
-  const n = searchState.selected.size;
-  btn.disabled = n === 0;
-  cnt.textContent = n ? `(${n})` : "";
-}
-
+// ── Shared helpers ──────────────────────────────────────────
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 }
 
-function renderSearchResults(results) {
-  const list = $("searchResultsList");
-  const wrap = $("searchResults");
-  const count = $("searchResultsCount");
-  if (!results.length) {
-    wrap.hidden = true;
-    return;
-  }
-  wrap.hidden = false;
-  searchState.selected.clear();
-  count.textContent = `Знайдено ${results.length} джерел`;
-  list.innerHTML = results.map((r, i) => {
-    let date = "";
-    if (r.published) {
-      const d = new Date(r.published);
-      if (!isNaN(d)) date = d.toLocaleDateString("uk-UA");
-    }
-    const safeUrl = /^https?:\/\//i.test(r.url) ? escapeHtml(r.url) : "#";
-    const lang = /^[a-z]{2}$/i.test(r.lang || "") ? r.lang.toLowerCase() : "xx";
-    return `
-      <label class="search-result" data-idx="${i}">
-        <input type="checkbox" data-idx="${i}" />
-        <div class="search-result-body">
-          <div class="search-result-title">${escapeHtml(r.title)}</div>
-          <div class="search-result-meta">
-            <span class="lang-tag lang-${lang}">${lang.toUpperCase()}</span>
-            ${r.source ? `<span class="sr-source">${escapeHtml(r.source)}</span>` : ""}
-            ${date ? `<span class="sr-date">${escapeHtml(date)}</span>` : ""}
-            <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener"
-               onclick="event.stopPropagation()">відкрити ↗</a>
-          </div>
-        </div>
-      </label>`;
-  }).join("");
-
-  list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener("change", e => {
-      const idx = Number(e.target.dataset.idx);
-      if (e.target.checked) searchState.selected.add(idx);
-      else searchState.selected.delete(idx);
-      updateImportButton();
-    });
-  });
-  updateImportButton();
-}
-
-$("btnSearchNews").addEventListener("click", async () => {
-  const query = $("searchQuery").value.trim();
-  if (!query) { showToast("Введіть пошуковий запит", "error"); return; }
-  const langs = Array.from(document.querySelectorAll(".search-lang-row input:checked"))
-    .map(i => i.value);
-  if (!langs.length) { showToast("Оберіть хоча б одну мову", "error"); return; }
-
-  const btn = $("btnSearchNews");
-  const status = $("searchStatus");
-  btn.disabled = true;
-  status.textContent = "Пошук…";
-  searchState.selected.clear();
-
-  try {
-    const data = await api("/api/search-news", "POST", { query, languages: langs, limit: 15 });
-    if (!data.ok) { showToast(data.error, "error"); status.textContent = ""; return; }
-    searchState.results = data.results || [];
-    status.textContent = searchState.results.length
-      ? ""
-      : "За цим запитом нічого не знайдено.";
-    renderSearchResults(searchState.results);
-  } catch (e) {
-    showToast("Помилка пошуку: " + e.message, "error");
-    status.textContent = "";
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-$("searchQuery").addEventListener("keydown", e => {
-  if (e.key === "Enter") $("btnSearchNews").click();
-});
-
-$("btnSelectAllResults").addEventListener("click", () => {
-  const boxes = [...document.querySelectorAll("#searchResultsList input[type=checkbox]")];
-  const allChecked = boxes.length > 0 && boxes.every(cb => cb.checked);
-  boxes.forEach(cb => {
-    cb.checked = !allChecked;
-    const idx = Number(cb.dataset.idx);
-    if (!allChecked) searchState.selected.add(idx);
-    else searchState.selected.delete(idx);
-  });
-  updateImportButton();
-});
-
-function markResultStatus(idx, state, message) {
-  const row = document.querySelector(`.search-result[data-idx="${idx}"]`);
+function markResultStatus(idx, st, message) {
+  const row = document.querySelector(`#unifiedResultsList .search-result[data-idx="${idx}"]`);
   if (!row) return;
   row.classList.remove("is-ok", "is-err", "is-loading");
-  row.classList.add("is-" + state);
+  row.classList.add("is-" + st);
   let badge = row.querySelector(".sr-status");
   if (!badge) {
     badge = document.createElement("div");
@@ -918,74 +805,137 @@ function markResultStatus(idx, state, message) {
   badge.textContent = message;
 }
 
-$("btnImportSelected").addEventListener("click", async () => {
-  const picks = [...searchState.selected].map(i => ({ idx: i, r: searchState.results[i] }))
-    .filter(x => x.r);
-  if (!picks.length) return;
+// ── Search config: RSS feeds + TG channels ──────────────────
+const searchCfg = { rss_feeds: [], tg_channels: [] };
 
-  const btn = $("btnImportSelected");
-  const status = $("searchStatus");
-  btn.disabled = true;
-  let imported = 0, failed = 0;
-
-  for (let i = 0; i < picks.length; i++) {
-    const { idx, r } = picks[i];
-    markResultStatus(idx, "loading", "завантаження…");
-    status.textContent = `Імпорт ${i + 1}/${picks.length}: ${r.title.slice(0, 60)}…`;
-    try {
-      const data = await api("/api/add-url", "POST", { url: r.url, label: "" });
-      if (data.ok) {
-        addSource(data.source);
-        imported++;
-        markResultStatus(idx, "ok", "✓ додано");
-      } else {
-        failed++;
-        markResultStatus(idx, "err", "✗ " + (data.error || "помилка").slice(0, 120));
-      }
-    } catch (e) {
-      failed++;
-      markResultStatus(idx, "err", "✗ " + e.message.slice(0, 120));
+async function loadSearchConfig() {
+  try {
+    const d = await api("/api/search-config", "GET");
+    if (d.ok && d.config) {
+      searchCfg.rss_feeds   = d.config.rss_feeds   || [];
+      searchCfg.tg_channels = d.config.tg_channels || [];
+      renderRssTags();
+      renderTgTags();
     }
-  }
-  status.textContent = `Готово: імпортовано ${imported}${failed ? `, з помилкою ${failed}` : ""}. Наведіть курсор на позначки ✗, щоб побачити причину.`;
-  showToast(`Імпортовано ${imported} джерел${failed ? ` (помилок: ${failed})` : ""}`,
-            failed ? "warn" : "success");
-  searchState.selected.clear();
-  updateImportButton();
+  } catch (_) { /* ignore */ }
+}
+
+async function saveSearchConfig() {
+  try {
+    await api("/api/search-config", "POST", {
+      rss_feeds:   searchCfg.rss_feeds,
+      tg_channels: searchCfg.tg_channels,
+    });
+  } catch (_) { /* ignore */ }
+}
+
+function renderRssTags() {
+  const container = $("rssFeedTags");
+  if (!container) return;
+  container.innerHTML = searchCfg.rss_feeds.map((url, i) => `
+    <span class="search-tag" data-idx="${i}">
+      <span class="tag-label" title="${escapeHtml(url)}">${escapeHtml(url.replace(/^https?:\/\//, "").slice(0, 50))}</span>
+      <button class="tag-remove" data-type="rss" data-idx="${i}" title="Видалити">✕</button>
+    </span>`).join("");
+  container.querySelectorAll(".tag-remove[data-type=rss]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      searchCfg.rss_feeds.splice(Number(btn.dataset.idx), 1);
+      renderRssTags();
+      saveSearchConfig();
+    });
+  });
+}
+
+function renderTgTags() {
+  const container = $("tgChannelTags");
+  if (!container) return;
+  container.innerHTML = searchCfg.tg_channels.map((ch, i) => `
+    <span class="search-tag search-tag--tg" data-idx="${i}">
+      <span class="tag-label">@${escapeHtml(ch)}</span>
+      <button class="tag-remove" data-type="tg" data-idx="${i}" title="Видалити">✕</button>
+    </span>`).join("");
+  container.querySelectorAll(".tag-remove[data-type=tg]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      searchCfg.tg_channels.splice(Number(btn.dataset.idx), 1);
+      renderTgTags();
+      saveSearchConfig();
+    });
+  });
+}
+
+// Add RSS feed
+$("btnAddRssFeed").addEventListener("click", () => {
+  const input = $("rssAddInput");
+  const url = (input.value || "").trim();
+  if (!url || !/^https?:\/\//i.test(url)) { showToast("Введіть коректний URL стрічки", "error"); return; }
+  if (searchCfg.rss_feeds.includes(url)) { showToast("Ця стрічка вже є у списку", "warn"); return; }
+  searchCfg.rss_feeds.push(url);
+  input.value = "";
+  renderRssTags();
+  saveSearchConfig();
+  showToast("RSS-стрічку збережено", "success");
 });
+$("rssAddInput").addEventListener("keydown", e => { if (e.key === "Enter") $("btnAddRssFeed").click(); });
 
-// ─────────────────────────────────────────────────────────────
-//  RSS FEED
-// ─────────────────────────────────────────────────────────────
-const rssState = { results: [], selected: new Set() };
+// Add Telegram channel
+$("btnAddTgChannel").addEventListener("click", () => {
+  const input = $("tgAddInput");
+  const raw = (input.value || "").trim().replace(/^@/, "").replace(/^(https?:\/\/)?(t\.me\/s?\/)?/i, "").split("/")[0];
+  if (!raw) { showToast("Введіть назву Telegram-каналу", "error"); return; }
+  if (searchCfg.tg_channels.includes(raw)) { showToast("Цей канал вже є у списку", "warn"); return; }
+  searchCfg.tg_channels.push(raw);
+  input.value = "";
+  renderTgTags();
+  saveSearchConfig();
+  showToast(`@${raw} збережено`, "success");
+});
+$("tgAddInput").addEventListener("keydown", e => { if (e.key === "Enter") $("btnAddTgChannel").click(); });
 
-function updateRssButton() {
-  const btn = $("btnImportRss");
-  const cnt = $("rssImportCount");
-  const n = rssState.selected.size;
+// Load config on page init (called below)
+document.addEventListener("DOMContentLoaded", loadSearchConfig);
+
+// ── Render unified results ───────────────────────────────────
+const _sourceTypeMeta = {
+  google:   { label: "Google News", cls: "src-google" },
+  rss:      { label: "RSS",         cls: "src-rss" },
+  telegram: { label: "Telegram",    cls: "src-telegram" },
+};
+
+function updateUnifiedImportButton() {
+  const btn = $("btnImportUnified");
+  const cnt = $("unifiedImportCount");
+  if (!btn) return;
+  const n = unifiedState.selected.size;
   btn.disabled = n === 0;
   cnt.textContent = n ? `(${n})` : "";
 }
 
-function renderRssResults(results) {
-  const list = $("rssResultsList");
-  const wrap = $("rssResults");
-  $("rssResultsCount").textContent = `Знайдено ${results.length} статей`;
+function renderUnifiedResults(results) {
+  const list = $("unifiedResultsList");
+  const wrap = $("unifiedResults");
+  const countEl = $("unifiedResultsCount");
+  if (!results.length) { wrap.hidden = true; return; }
   wrap.hidden = false;
-  rssState.selected.clear();
+  unifiedState.selected.clear();
+  countEl.textContent = `Знайдено ${results.length} матеріалів`;
   list.innerHTML = results.map((r, i) => {
     let date = "";
     if (r.published) { const d = new Date(r.published); if (!isNaN(d)) date = d.toLocaleDateString("uk-UA"); }
     const safeUrl = /^https?:\/\//i.test(r.url) ? escapeHtml(r.url) : "#";
+    const lang = /^[a-z]{2}$/i.test(r.lang || "") ? r.lang.toLowerCase() : "";
+    const stMeta = _sourceTypeMeta[r.source_type] || { label: r.source_type || "", cls: "" };
     return `
       <label class="search-result" data-idx="${i}">
         <input type="checkbox" data-idx="${i}" />
         <div class="search-result-body">
           <div class="search-result-title">${escapeHtml(r.title)}</div>
           <div class="search-result-meta">
+            <span class="src-type-badge ${stMeta.cls}">${stMeta.label}</span>
+            ${lang ? `<span class="lang-tag lang-${lang}">${lang.toUpperCase()}</span>` : ""}
             ${r.source ? `<span class="sr-source">${escapeHtml(r.source)}</span>` : ""}
             ${date ? `<span class="sr-date">${escapeHtml(date)}</span>` : ""}
-            <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">відкрити ↗</a>
+            <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener"
+               onclick="event.stopPropagation()">відкрити ↗</a>
           </div>
           ${r.snippet ? `<div class="search-result-snippet">${escapeHtml(r.snippet.slice(0,160))}</div>` : ""}
         </div>
@@ -994,188 +944,140 @@ function renderRssResults(results) {
   list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
     cb.addEventListener("change", e => {
       const idx = Number(e.target.dataset.idx);
-      if (e.target.checked) rssState.selected.add(idx); else rssState.selected.delete(idx);
-      updateRssButton();
+      if (e.target.checked) unifiedState.selected.add(idx);
+      else unifiedState.selected.delete(idx);
+      updateUnifiedImportButton();
     });
   });
-  updateRssButton();
+  updateUnifiedImportButton();
 }
 
-$("btnFetchRss").addEventListener("click", async () => {
-  const url = $("rssUrl").value.trim();
-  if (!url) { showToast("Введіть URL стрічки", "error"); return; }
-  const btn = $("btnFetchRss");
+// ── Search button ────────────────────────────────────────────
+$("btnSearchAll").addEventListener("click", async () => {
+  const query = ($("unifiedQuery").value || "").trim();
+  if (!query) { showToast("Введіть пошуковий запит", "error"); return; }
+  const langs = Array.from(document.querySelectorAll(".search-lang-row input:checked")).map(i => i.value);
+
+  const btn = $("btnSearchAll");
+  const status = $("unifiedStatus");
   btn.disabled = true;
-  $("rssStatus").textContent = "Завантаження…";
+  status.textContent = "Пошук по Google News, RSS, Telegram…";
+  unifiedState.selected.clear();
+  $("unifiedResults").hidden = true;
+
   try {
-    const data = await api("/api/fetch-rss", "POST", { url, limit: Number($("rssLimit").value) || 20 });
-    if (!data.ok) { showToast(data.error, "error"); $("rssStatus").textContent = ""; return; }
-    rssState.results = data.results || [];
-    $("rssStatus").textContent = rssState.results.length ? "" : "Статей не знайдено.";
-    renderRssResults(rssState.results);
-  } catch (e) { showToast("Помилка: " + e.message, "error"); }
-  finally { btn.disabled = false; }
+    const data = await api("/api/search-all", "POST", { query, languages: langs, limit: 15 });
+    if (!data.ok) { showToast(data.error || "Помилка пошуку", "error"); status.textContent = ""; return; }
+    unifiedState.results = data.results || [];
+    if (data.errors && data.errors.length) {
+      status.textContent = `⚠ Деякі джерела не відповіли: ${data.errors.length}`;
+    } else {
+      status.textContent = unifiedState.results.length ? "" : "Нічого не знайдено за цим запитом.";
+    }
+    renderUnifiedResults(unifiedState.results);
+  } catch (e) {
+    showToast("Помилка: " + e.message, "error");
+    status.textContent = "";
+  } finally {
+    btn.disabled = false;
+  }
 });
 
-$("btnSelectAllRss").addEventListener("click", () => {
-  const boxes = [...document.querySelectorAll("#rssResultsList input[type=checkbox]")];
+$("unifiedQuery").addEventListener("keydown", e => { if (e.key === "Enter") $("btnSearchAll").click(); });
+
+// ── Select all ───────────────────────────────────────────────
+$("btnSelectAllUnified").addEventListener("click", () => {
+  const boxes = [...document.querySelectorAll("#unifiedResultsList input[type=checkbox]")];
   const allChecked = boxes.length > 0 && boxes.every(cb => cb.checked);
   boxes.forEach(cb => {
     cb.checked = !allChecked;
     const idx = Number(cb.dataset.idx);
-    if (!allChecked) rssState.selected.add(idx); else rssState.selected.delete(idx);
+    if (!allChecked) unifiedState.selected.add(idx);
+    else unifiedState.selected.delete(idx);
   });
-  updateRssButton();
+  updateUnifiedImportButton();
 });
 
-$("btnImportRss").addEventListener("click", async () => {
-  const picks = [...rssState.selected].map(i => ({ idx: i, r: rssState.results[i] })).filter(x => x.r);
+// ── Import selected ──────────────────────────────────────────
+$("btnImportUnified").addEventListener("click", async () => {
+  const picks = [...unifiedState.selected]
+    .map(i => ({ idx: i, r: unifiedState.results[i] }))
+    .filter(x => x.r);
   if (!picks.length) return;
-  const btn = $("btnImportRss");
+
+  const btn = $("btnImportUnified");
+  const status = $("unifiedStatus");
+  const merge = $("tgMerge").checked;
   btn.disabled = true;
+
+  // Group Telegram picks by channel for optional merging
+  const tgByChannel = {};
+  const nonTgPicks  = [];
+  for (const p of picks) {
+    if (p.r.source_type === "telegram") {
+      const ch = p.r.source || "tg";
+      (tgByChannel[ch] = tgByChannel[ch] || []).push(p);
+    } else {
+      nonTgPicks.push(p);
+    }
+  }
+
   let imported = 0, failed = 0;
-  for (let i = 0; i < picks.length; i++) {
-    const { idx, r } = picks[i];
+
+  // Non-Telegram: import by URL
+  for (let i = 0; i < nonTgPicks.length; i++) {
+    const { idx, r } = nonTgPicks[i];
     markResultStatus(idx, "loading", "завантаження…");
-    $("rssStatus").textContent = `Імпорт ${i + 1}/${picks.length}…`;
+    status.textContent = `Імпорт ${i + 1}/${nonTgPicks.length}: ${r.title.slice(0, 60)}…`;
     try {
       const data = await api("/api/add-url", "POST", { url: r.url, label: "" });
       if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "✓ додано"); }
-      else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "").slice(0, 80)); }
-    } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 80)); }
+      else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "помилка").slice(0, 120)); }
+    } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 120)); }
   }
-  $("rssStatus").textContent = `Готово: імпортовано ${imported}${failed ? `, помилок ${failed}` : ""}.`;
-  showToast(`Імпортовано ${imported} статей${failed ? ` (помилок: ${failed})` : ""}`, failed ? "warn" : "success");
-  rssState.selected.clear();
-  updateRssButton();
-});
 
-// ─────────────────────────────────────────────────────────────
-//  TELEGRAM CHANNEL
-// ─────────────────────────────────────────────────────────────
-const tgState = { results: [], selected: new Set(), channel: "" };
-
-function updateTgButton() {
-  const btn = $("btnImportTg");
-  const cnt = $("tgImportCount");
-  const n = tgState.selected.size;
-  btn.disabled = n === 0;
-  cnt.textContent = n ? `(${n})` : "";
-}
-
-function renderTgResults(results, channel) {
-  const list = $("tgResultsList");
-  const wrap = $("tgResults");
-  $("tgResultsCount").textContent = `@${channel}: ${results.length} постів`;
-  wrap.hidden = false;
-  tgState.selected.clear();
-  list.innerHTML = results.map((r, i) => {
-    let date = "";
-    if (r.published) { const d = new Date(r.published); if (!isNaN(d)) date = d.toLocaleDateString("uk-UA"); }
-    const safeUrl = /^https?:\/\//i.test(r.url) ? escapeHtml(r.url) : "#";
-    return `
-      <label class="search-result" data-idx="${i}">
-        <input type="checkbox" data-idx="${i}" />
-        <div class="search-result-body">
-          <div class="search-result-title">${escapeHtml(r.title)}</div>
-          <div class="search-result-meta">
-            <span class="sr-source">${escapeHtml(r.source)}</span>
-            ${date ? `<span class="sr-date">${date}</span>` : ""}
-            <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">пост ↗</a>
-          </div>
-        </div>
-      </label>`;
-  }).join("");
-  list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener("change", e => {
-      const idx = Number(e.target.dataset.idx);
-      if (e.target.checked) tgState.selected.add(idx); else tgState.selected.delete(idx);
-      updateTgButton();
-    });
-  });
-  updateTgButton();
-}
-
-$("btnFetchTelegram").addEventListener("click", async () => {
-  const channel = $("tgChannel").value.trim();
-  if (!channel) { showToast("Введіть назву каналу", "error"); return; }
-  const btn = $("btnFetchTelegram");
-  btn.disabled = true;
-  $("tgStatus").textContent = "Завантаження…";
-  try {
-    const data = await api("/api/fetch-telegram", "POST", { channel, limit: Number($("tgLimit").value) || 20 });
-    if (!data.ok) { showToast(data.error, "error"); $("tgStatus").textContent = ""; return; }
-    tgState.results = data.results || [];
-    tgState.channel = data.channel || channel;
-    $("tgStatus").textContent = tgState.results.length ? "" : "Постів не знайдено.";
-    renderTgResults(tgState.results, tgState.channel);
-  } catch (e) { showToast("Помилка: " + e.message, "error"); }
-  finally { btn.disabled = false; }
-});
-
-$("tgChannel").addEventListener("keydown", e => { if (e.key === "Enter") $("btnFetchTelegram").click(); });
-
-$("btnSelectAllTg").addEventListener("click", () => {
-  const boxes = [...document.querySelectorAll("#tgResultsList input[type=checkbox]")];
-  const allChecked = boxes.length > 0 && boxes.every(cb => cb.checked);
-  boxes.forEach(cb => {
-    cb.checked = !allChecked;
-    const idx = Number(cb.dataset.idx);
-    if (!allChecked) tgState.selected.add(idx); else tgState.selected.delete(idx);
-  });
-  updateTgButton();
-});
-
-$("btnImportTg").addEventListener("click", async () => {
-  const picks = [...tgState.selected].map(i => ({ idx: i, r: tgState.results[i] })).filter(x => x.r);
-  if (!picks.length) return;
-  const btn = $("btnImportTg");
-  btn.disabled = true;
-  const merge = $("tgMerge").checked;
-
-  if (merge) {
-    // Агрегація: всі обрані пости → один документ
-    const channel = tgState.channel || "tg";
-    const combined = picks.map(({ r }) => r.full_text).join("\n\n");
-    const words = combined.split(/\s+/).filter(Boolean).length;
-    const label = `@${channel} (${picks.length} постів, ${words} слів)`;
-    picks.forEach(({ idx }) => markResultStatus(idx, "loading", "об'єднання…"));
-    $("tgStatus").textContent = `Об'єдную ${picks.length} постів…`;
-    try {
-      const data = await api("/api/add-text", "POST", { text: combined, label });
-      if (data.ok) {
-        addSource(data.source);
-        picks.forEach(({ idx }) => markResultStatus(idx, "ok", "✓ об'єднано"));
-        showToast(`✅ Додано: ${label}`, "success");
-        $("tgStatus").textContent = `Готово: ${picks.length} постів → 1 документ (${words} слів).`;
-      } else {
-        picks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ помилка"));
-        showToast(data.error || "Помилка", "error");
-      }
-    } catch (e) {
-      picks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ " + e.message.slice(0, 60)));
-      showToast("Мережева помилка", "error");
-    }
-  } else {
-    // Поодинокий імпорт (старий режим)
-    let imported = 0, failed = 0;
-    for (let i = 0; i < picks.length; i++) {
-      const { idx, r } = picks[i];
-      markResultStatus(idx, "loading", "додавання…");
-      $("tgStatus").textContent = `Імпорт ${i + 1}/${picks.length}…`;
+  // Telegram: merge per channel (if merge checked) or add separately
+  for (const [ch, chPicks] of Object.entries(tgByChannel)) {
+    if (merge) {
+      const combined = chPicks.map(({ r }) => r.full_text || r.title).join("\n\n");
+      const words = combined.split(/\s+/).filter(Boolean).length;
+      const label = `${ch} (${chPicks.length} постів, ${words} слів)`;
+      chPicks.forEach(({ idx }) => markResultStatus(idx, "loading", "об'єднання…"));
+      status.textContent = `Об'єдную ${chPicks.length} постів @${ch}…`;
       try {
-        const label = `${r.source}_${i + 1}`;
-        const data = await api("/api/add-text", "POST", { text: r.full_text, label, url: r.url });
-        if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "✓ додано"); }
-        else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "").slice(0, 80)); }
-      } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 80)); }
+        const data = await api("/api/add-text", "POST", { text: combined, label });
+        if (data.ok) {
+          addSource(data.source); imported++;
+          chPicks.forEach(({ idx }) => markResultStatus(idx, "ok", "✓ об'єднано"));
+          showToast(`✅ ${label}`, "success");
+        } else {
+          failed += chPicks.length;
+          chPicks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ помилка"));
+        }
+      } catch (e) {
+        failed += chPicks.length;
+        chPicks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ " + e.message.slice(0, 60)));
+      }
+    } else {
+      for (let i = 0; i < chPicks.length; i++) {
+        const { idx, r } = chPicks[i];
+        markResultStatus(idx, "loading", "додавання…");
+        try {
+          const label = `${r.source}_${i + 1}`;
+          const data = await api("/api/add-text", "POST", { text: r.full_text || r.title, label, url: r.url });
+          if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "✓ додано"); }
+          else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "").slice(0, 80)); }
+        } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 80)); }
+      }
     }
-    $("tgStatus").textContent = `Готово: імпортовано ${imported}${failed ? `, помилок ${failed}` : ""}.`;
-    showToast(`Імпортовано ${imported} постів${failed ? ` (помилок: ${failed})` : ""}`, failed ? "warn" : "success");
   }
 
-  tgState.selected.clear();
-  updateTgButton();
+  status.textContent = `Готово: імпортовано ${imported}${failed ? `, помилок ${failed}` : ""}.`;
+  showToast(`Імпортовано ${imported} джерел${failed ? ` (помилок: ${failed})` : ""}`,
+            failed ? "warn" : "success");
+  unifiedState.selected.clear();
+  updateUnifiedImportButton();
+  btn.disabled = false;
 });
 
 

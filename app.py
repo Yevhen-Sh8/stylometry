@@ -60,6 +60,9 @@ SOURCE_META: dict[str, dict] = {}
 # Last analysis results (for /report)
 LAST_RESULTS: dict = {}
 
+# Unified search configuration (RSS feeds + Telegram channels)
+SEARCH_CONFIG: dict = {"rss_feeds": [], "tg_channels": []}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  HELPERS
@@ -909,6 +912,187 @@ def search_news():
         deduped.append(r)
 
     return _ok(results=deduped, query=query, languages=langs, count=len(deduped))
+
+
+@app.route("/api/search-config", methods=["GET", "POST"])
+def search_config():
+    """GET → повертає поточну конфігурацію (RSS + Telegram).
+       POST → зберігає нову конфігурацію."""
+    global SEARCH_CONFIG
+    if request.method == "GET":
+        return _ok(config=SEARCH_CONFIG)
+    data = request.get_json(silent=True) or {}
+    rss = data.get("rss_feeds")
+    tg  = data.get("tg_channels")
+    if rss is not None:
+        SEARCH_CONFIG["rss_feeds"] = [str(u).strip() for u in rss if str(u).strip()]
+    if tg is not None:
+        SEARCH_CONFIG["tg_channels"] = [str(c).strip().lstrip("@") for c in tg if str(c).strip()]
+    return _ok(config=SEARCH_CONFIG)
+
+
+@app.post("/api/search-all")
+def search_all():
+    """Уніфікований пошук за ключовим словом одночасно у:
+       1. Google News RSS (обрані мови)
+       2. Збережені RSS-стрічки (фільтрація за ключем)
+       3. Збережені Telegram-канали (фільтрація за ключем)
+    """
+    import xml.etree.ElementTree as ET
+    import requests as _rq
+    import re as _re
+    from bs4 import BeautifulSoup
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    data   = request.get_json(silent=True) or {}
+    query  = (data.get("query") or "").strip()
+    langs  = data.get("languages") or ["ru", "uk", "en"]
+    limit  = int(data.get("limit") or 15)
+    if not query:
+        return _err("Пошуковий запит порожній.")
+    langs = [l for l in langs if l in _GN_LOCALES]
+
+    kw_parts = [p.lower() for p in query.split() if len(p) > 2]
+
+    def _matches(text: str) -> bool:
+        t = text.lower()
+        return any(k in t for k in kw_parts) if kw_parts else True
+
+    # ── Google News (per language) ─────────────────────────────────────────
+    def _gn_task(lang):
+        items = _fetch_google_news(query, lang, limit)
+        for i in items:
+            i["source_type"] = "google"
+        return items
+
+    # ── Single RSS feed keyword-filter ────────────────────────────────────
+    def _rss_task(feed_url):
+        _NS = {"atom": "http://www.w3.org/2005/Atom"}
+        try:
+            safe = _assert_public_url(feed_url)
+            r = _rq.get(safe, timeout=15,
+                        headers={"User-Agent": "Mozilla/5.0 (DIMS research tool)",
+                                 "Accept": "application/rss+xml,application/atom+xml,*/*"})
+            r.raise_for_status()
+            root = ET.fromstring(r.content)
+        except Exception:
+            return []
+        items = []
+
+        def _txt(el, *tags):
+            for t in tags:
+                v = el.findtext(t, namespaces=_NS)
+                if v:
+                    return v.strip()
+            return ""
+
+        for item in root.findall(".//item"):
+            title   = _txt(item, "title")
+            link    = _txt(item, "link")
+            snippet = _txt(item, "description")[:300]
+            pub     = _txt(item, "pubDate")
+            if not link:
+                continue
+            if not _matches(title + " " + snippet):
+                continue
+            domain = urlparse(link).netloc.replace("www.", "")
+            items.append({"title": title or link, "url": link, "snippet": snippet,
+                          "published": pub, "source": domain,
+                          "source_type": "rss", "lang": ""})
+
+        if not items:
+            for entry in root.findall("atom:entry", _NS):
+                link_el = entry.find("atom:link[@rel='alternate']", _NS) or entry.find("atom:link", _NS)
+                link = link_el.get("href", "") if link_el is not None else ""
+                if not link:
+                    continue
+                title   = _txt(entry, "atom:title")
+                snippet = _txt(entry, "atom:summary", "atom:content")[:300]
+                pub     = _txt(entry, "atom:published", "atom:updated")
+                if not _matches(title + " " + snippet):
+                    continue
+                domain = urlparse(link).netloc.replace("www.", "")
+                items.append({"title": title or link, "url": link, "snippet": snippet,
+                              "published": pub, "source": domain,
+                              "source_type": "rss", "lang": ""})
+        return items[:limit]
+
+    # ── Single Telegram channel keyword-filter ────────────────────────────
+    def _tg_task(channel):
+        try:
+            url = f"https://t.me/s/{channel}"
+            r = _rq.get(url, timeout=20, headers={
+                "User-Agent": "Mozilla/5.0 (DIMS research tool)",
+                "Accept-Language": "ru,uk;q=0.9,en;q=0.6",
+            })
+            r.raise_for_status()
+        except Exception:
+            return []
+        soup = BeautifulSoup(r.text, "html.parser")
+        posts = []
+        for wrap in soup.select(".tgme_widget_message_wrap"):
+            text_el = wrap.select_one(".tgme_widget_message_text")
+            if not text_el:
+                continue
+            text = text_el.get_text(separator="\n").strip()
+            text = _re.sub(
+                r'(?i)(подписат[ьься]+\s+на\s+\S+.*|підписат[ьися]+\s+на\s+\S+.*'
+                r'|\bтг\b.*|\bзеркало\b.*|\bmax\b\s*$)',
+                '', text, flags=_re.MULTILINE
+            ).strip()
+            if len(text.split()) < 8:
+                continue
+            if not _matches(text):
+                continue
+            date_el = wrap.select_one("a.tgme_widget_message_date")
+            date    = date_el.get("datetime", "") if date_el else ""
+            msg_url = date_el.get("href", f"https://t.me/{channel}") if date_el else f"https://t.me/{channel}"
+            posts.append({
+                "title":     text[:120].replace("\n", " ") + ("…" if len(text) > 120 else ""),
+                "full_text": text,
+                "url":       msg_url,
+                "published": date,
+                "source":    f"@{channel}",
+                "source_type": "telegram",
+                "lang": "",
+            })
+            if len(posts) >= limit:
+                break
+        return posts
+
+    # ── Run all tasks in parallel ──────────────────────────────────────────
+    futures = {}
+    with ThreadPoolExecutor(max_workers=16) as ex:
+        for lang in langs:
+            futures[ex.submit(_gn_task, lang)] = f"google:{lang}"
+        for feed_url in SEARCH_CONFIG.get("rss_feeds", []):
+            futures[ex.submit(_rss_task, feed_url)] = f"rss:{feed_url}"
+        for channel in SEARCH_CONFIG.get("tg_channels", []):
+            futures[ex.submit(_tg_task, channel)] = f"tg:{channel}"
+
+        all_items = []
+        errors    = []
+        for fut in as_completed(futures):
+            key = futures[fut]
+            try:
+                all_items.extend(fut.result() or [])
+            except Exception as exc:
+                errors.append(f"{key}: {exc}")
+
+    # Deduplicate by URL
+    seen, deduped = set(), []
+    for item in all_items:
+        k = item.get("url", "")
+        if k and k not in seen:
+            seen.add(k)
+            deduped.append(item)
+
+    # Sort: google first, then rss, then telegram
+    _order = {"google": 0, "rss": 1, "telegram": 2}
+    deduped.sort(key=lambda x: _order.get(x.get("source_type", ""), 9))
+
+    return _ok(results=deduped, query=query, languages=langs,
+               count=len(deduped), errors=errors)
 
 
 @app.post("/api/analyze")

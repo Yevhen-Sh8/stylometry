@@ -1099,6 +1099,49 @@ input[type="range"]::-moz-range-thumb {
 .tg-merge-toggle { cursor: pointer; }
 
 /* ═══════════════════════════════════════════════════════════════
+   UNIFIED SEARCH — tag inputs, source badges
+   ═══════════════════════════════════════════════════════════════ */
+.search-sources-group { margin-bottom: var(--s-3); }
+
+.tag-input-row {
+  display: flex; gap: var(--s-2); align-items: center; margin-bottom: var(--s-2);
+}
+.tag-input-row .form-control { flex: 1; min-width: 0; }
+
+.tag-list {
+  display: flex; flex-wrap: wrap; gap: 6px; min-height: 4px;
+}
+
+.search-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 20px;
+  background: var(--bg-2); border: 1px solid var(--border-1);
+  font: 500 11px var(--font-mono); color: var(--text-1);
+  max-width: 240px;
+}
+.search-tag--tg { border-color: rgba(0, 136, 204, 0.4); color: #60a5fa; }
+.search-tag .tag-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-tag .tag-remove {
+  background: none; border: none; cursor: pointer;
+  font-size: 10px; padding: 0 1px; color: var(--text-2);
+  line-height: 1; flex-shrink: 0;
+}
+.search-tag .tag-remove:hover { color: var(--signal-red); }
+
+/* Source type badge (Google / RSS / Telegram) */
+.src-type-badge {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font: 700 9px var(--font-mono); letter-spacing: 0.04em;
+  text-transform: uppercase; flex-shrink: 0;
+}
+.src-google   { background: rgba(66,133,244,.2);  color: #93c5fd; }
+.src-rss      { background: rgba(251,191,36,.15); color: var(--accent); }
+.src-telegram { background: rgba(0,136,204,.2);   color: #60a5fa; }
+
+/* Big search button */
+.btn-search-all { width: 100%; justify-content: center; margin-top: var(--s-2); }
+
+/* ═══════════════════════════════════════════════════════════════
    SOURCE CHIP (uniform label in results)
    ═══════════════════════════════════════════════════════════════ */
 .source-chip {
