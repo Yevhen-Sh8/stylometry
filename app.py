@@ -68,6 +68,18 @@ SEARCH_CONFIG: dict = {"rss_feeds": [], "tg_channels": []}
 #  HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
+import html as _html_module
+import re as _re_module
+
+def _strip_snippet_html(text: str) -> str:
+    """Strip HTML tags and decode entities from an RSS snippet/description."""
+    if not text:
+        return ""
+    text = _re_module.sub(r"<[^>]+>", " ", text)
+    text = _html_module.unescape(text)
+    return _re_module.sub(r"\s+", " ", text).strip()
+
+
 def _save_clean_text(label: str, text: str) -> None:
     """Persist a clean-text version to output/clean_texts/<label>.txt"""
     CLEAN_DIR.mkdir(parents=True, exist_ok=True)
@@ -628,11 +640,11 @@ def _fetch_google_news(query: str, lang: str, limit: int = 15) -> list[dict]:
             title, link, pub, desc, src = row
             real = _resolve_gn_url(link, session) or link
             return {
-                "title": title,
+                "title": _strip_snippet_html(title),
                 "url": real,
                 "source": src,
                 "published": pub,
-                "snippet": desc,
+                "snippet": _strip_snippet_html(desc),
                 "lang": lang,
             }
 
@@ -785,10 +797,10 @@ def fetch_rss():
         if not link:
             continue
         title   = _txt(item, "title") or link
-        snippet = _txt(item, "description")[:300]
+        snippet = _strip_snippet_html(_txt(item, "description"))[:300]
         pub     = _txt(item, "pubDate")
         domain  = urlparse(link).netloc.replace("www.", "")
-        items.append({"title": title, "url": link, "snippet": snippet,
+        items.append({"title": _strip_snippet_html(title), "url": link, "snippet": snippet,
                       "published": pub, "source": domain, "lang": ""})
 
     # Atom (якщо RSS-елементів не було)
@@ -798,8 +810,8 @@ def fetch_rss():
             link = link_el.get("href", "") if link_el is not None else ""
             if not link:
                 continue
-            title   = _txt(entry, "atom:title")  or link
-            snippet = _txt(entry, "atom:summary", "atom:content")[:300]
+            title   = _strip_snippet_html(_txt(entry, "atom:title")) or link
+            snippet = _strip_snippet_html(_txt(entry, "atom:summary", "atom:content"))[:300]
             pub     = _txt(entry, "atom:published", "atom:updated")
             domain  = urlparse(link).netloc.replace("www.", "")
             items.append({"title": title, "url": link, "snippet": snippet,
@@ -987,9 +999,9 @@ def search_all():
             return ""
 
         for item in root.findall(".//item"):
-            title   = _txt(item, "title")
+            title   = _strip_snippet_html(_txt(item, "title"))
             link    = _txt(item, "link")
-            snippet = _txt(item, "description")[:300]
+            snippet = _strip_snippet_html(_txt(item, "description"))[:300]
             pub     = _txt(item, "pubDate")
             if not link:
                 continue
