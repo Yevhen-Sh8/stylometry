@@ -210,7 +210,7 @@ def _source_row_info(
 
     # Позначка підозрілої пари
     if label in flagged_labels:
-        parts.append("⚠ Входить до підозрілої стилометричної пари.")
+        parts.append("Увага: входить до підозрілої стилометричної пари.")
 
     return "\n".join(parts)
 

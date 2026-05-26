@@ -27,6 +27,21 @@ from .extractors import clean_extracted_text
 _MAX_RESPONSE_BYTES = 10 * 1024 * 1024  # 10 MB cap for any external fetch
 
 
+_NAT64_PREFIX = ipaddress.ip_network("64:ff9b::/96")  # RFC 6052 well-known NAT64 prefix
+
+
+def _is_private_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """Return True only for genuinely non-routable addresses.
+    NAT64 (64:ff9b::/96) maps to public IPv4 — we extract and check the embedded address."""
+    if isinstance(ip, ipaddress.IPv6Address) and ip in _NAT64_PREFIX:
+        # Extract embedded IPv4 from the last 32 bits of the NAT64 address
+        packed = ip.packed  # 16 bytes
+        embedded = ipaddress.IPv4Address(packed[12:])
+        return _is_private_ip(embedded)
+    return (ip.is_private or ip.is_loopback or ip.is_link_local
+            or ip.is_multicast or ip.is_reserved)
+
+
 def _assert_public_url(url: str) -> str:
     """Reject non-http(s) schemes and URLs that resolve to private/loopback IPs.
     Returns a sanitised URL (with CR/LF stripped, reassembled)."""
@@ -41,7 +56,7 @@ def _assert_public_url(url: str) -> str:
         raise RuntimeError(f"Не вдалося визначити IP: {parts.hostname}")
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
+        if _is_private_ip(ip):
             raise RuntimeError(f"URL вказує на приватну/службову адресу: {ip}")
     return urlunsplit((parts.scheme, parts.netloc, quote(parts.path, safe="/%:@"),
                        parts.query, parts.fragment))
@@ -240,6 +255,7 @@ def scrape_url_payload(url: str) -> dict[str, str]:
     """
     final_url = url
     title = ""
+    layer1_err: str = ""
 
     # ── Layer 1: requests → trafilatura/BS4 ───────────────────────────────
     try:
@@ -249,8 +265,18 @@ def scrape_url_payload(url: str) -> dict[str, str]:
         if text:
             return {"text": text, "title": title, "url": final_url,
                     "domain": urlparse(final_url).netloc.replace("www.", "")}
-    except Exception:
-        pass
+        layer1_err = "Текст не вдалося виділити зі сторінки (можливо, контент завантажується через JS)."
+    except RuntimeError as exc:
+        layer1_err = str(exc)
+        # Для мережевих помилок (DNS, timeout, 403) одразу підніматись —
+        # Jina/Wayback не допоможуть якщо сервер просто недоступний.
+        _msg = layer1_err.lower()
+        if any(k in _msg for k in ("dns", "не вдалося визначити ip", "ймовірно, домен",
+                                   "не вдалося з'єднатися", "час очікування",
+                                   "заблокував доступ (403)")):
+            raise ValueError(layer1_err) from exc
+    except Exception as exc:
+        layer1_err = f"Помилка завантаження: {exc}"
 
     # ── Layer 2: Jina Reader ──────────────────────────────────────────────
     text = _try_jina(url)
@@ -264,10 +290,12 @@ def scrape_url_payload(url: str) -> dict[str, str]:
         return {"text": text, "title": title, "url": wb_url,
                 "domain": urlparse(url).netloc.replace("www.", "")}
 
+    host = urlparse(url).netloc or url
     raise ValueError(
-        f"Не вдалося витягти текст зі сторінки '{url}' (пробували: requests, "
-        f"Jina Reader, Wayback Machine). "
-        "Скопіюйте текст вручну та використайте вкладку «Текст»."
+        f"{layer1_err}\n"
+        f"Всі три методи (requests, Jina Reader, Wayback Machine) не дали результату для {host}.\n"
+        "Альтернативи: скористайтеся RSS-стрічкою або Telegram-каналом цього ресурсу; "
+        "або відкрийте сторінку в браузері, скопіюйте текст і вставте у вкладку «Текст»."
     )
 
 

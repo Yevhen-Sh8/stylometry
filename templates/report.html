@@ -950,7 +950,7 @@
             <div style="font-size:12px; color:var(--muted); font-family:var(--font-sans); margin-top:2px">{{ ts.source.domain or ts.source.original_name or ts.label }}</div>
           </td>
           <td>{{ "{:,}".format(ts.tokens) }}</td>
-          <td>{% if ts.warn %}<span class="warn-badge">⚠ &lt;500 токенів</span>{% else %}<span style="color:var(--forest); font-family:var(--font-sans); font-size:11px">OK</span>{% endif %}</td>
+          <td>{% if ts.warn %}<span class="warn-badge">Увага: &lt;500 токенів</span>{% else %}<span style="color:var(--forest); font-family:var(--font-sans); font-size:11px">OK</span>{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -1003,9 +1003,9 @@
   <a class="btn btn-ghost" href="/">← Назад</a>
   <a class="btn btn-ghost" href="/api/export/daily-form"
      title="Завантажити Анкету добового моніторингу (Додаток 1 Методики НУЗРКС МОУ № 46 від 28.11.2022)">
-     📄 Анкета (Додаток 1)
+     Анкета (Додаток 1)
   </a>
-  <button class="btn btn-primary" onclick="window.print()">🖨 Друкувати / PDF</button>
+  <button class="btn btn-primary" onclick="window.print()">Друкувати / PDF</button>
 </div>
 
 </body>

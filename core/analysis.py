@@ -732,7 +732,7 @@ def save_projection_plot(
 
     if method.lower() == "pca" and explained is not None and explained < 60:
         ax.text(0.01, 0.01,
-                f"⚠ {explained:.0f}% — дендрограма/MDS надійніші",
+                f"Увага: {explained:.0f}% — дендрограма/MDS надійніші",
                 transform=ax.transAxes, fontsize=7, color="grey",
                 verticalalignment="bottom")
     fig.tight_layout()
@@ -805,12 +805,12 @@ def classify_severity(delta: float, threshold: float) -> dict:
     high = threshold * 0.60
     if delta < crit:
         return {"label": "Критичний", "en": "Critical", "css": "critical",
-                "color": "#dc2626", "icon": "🔴"}
+                "color": "#dc2626", "icon": ""}
     if delta < high:
         return {"label": "Високий",   "en": "High",     "css": "high",
-                "color": "#ea580c", "icon": "🟠"}
+                "color": "#ea580c", "icon": ""}
     return     {"label": "Помірний",  "en": "Moderate", "css": "moderate",
-                "color": "#ca8a04", "icon": "🟡"}
+                "color": "#ca8a04", "icon": ""}
 
 
 def _marker_score(tokens: list[str], markers: set[str], scale: float) -> float:
