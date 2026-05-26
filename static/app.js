@@ -8,7 +8,7 @@
 //  THEME (auto/light/dark) — applied ASAP to avoid flash
 // ─────────────────────────────────────────────────────────────
 (function initTheme() {
-  const saved = localStorage.getItem("dims-theme") || "auto";
+  const saved = localStorage.getItem("dims-theme") || "light";
   document.documentElement.setAttribute("data-theme", saved);
 })();
 
@@ -21,7 +21,7 @@ function setTheme(value) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const current = localStorage.getItem("dims-theme") || "auto";
+  const current = localStorage.getItem("dims-theme") || "light";
   document.querySelectorAll(".theme-toggle button[data-theme-value]").forEach(btn => {
     btn.setAttribute("aria-pressed", btn.dataset.themeValue === current ? "true" : "false");
     btn.addEventListener("click", () => setTheme(btn.dataset.themeValue));
