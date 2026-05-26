@@ -22,14 +22,14 @@
     </div>
     <div class="header-actions">
       <div class="theme-toggle" role="group" aria-label="Тема інтерфейсу">
-        <button type="button" data-theme-value="auto" aria-pressed="false" title="Авто (системна)">⌬ Авто</button>
-        <button type="button" data-theme-value="light" aria-pressed="false" title="Світла тема">☀ Світла</button>
-        <button type="button" data-theme-value="dark" aria-pressed="false" title="Темна тема">☾ Темна</button>
+        <button type="button" data-theme-value="auto" aria-pressed="false" title="Авто (системна)">Авто</button>
+        <button type="button" data-theme-value="light" aria-pressed="false" title="Світла тема">Світла</button>
+        <button type="button" data-theme-value="dark" aria-pressed="false" title="Темна тема">Темна</button>
       </div>
       <button class="btn btn-ghost" id="btnOpenLog" type="button"
               aria-label="Відкрити журнал моніторингу"
               aria-controls="logDrawer" aria-expanded="false">
-        📔 Журнал
+        Журнал
       </button>
     </div>
   </div>
@@ -52,11 +52,11 @@
         <!-- TAB BUTTONS -->
         <div class="tab-buttons" role="tablist" aria-label="Спосіб додавання джерел">
           <button class="tab-btn active" data-tab="files" role="tab" type="button"
-                  id="tabbtn-files" aria-selected="true" aria-controls="tab-files" tabindex="0">📁 Файли</button>
+                  id="tabbtn-files" aria-selected="true" aria-controls="tab-files" tabindex="0">Файли</button>
           <button class="tab-btn" data-tab="text" role="tab" type="button"
-                  id="tabbtn-text" aria-selected="false" aria-controls="tab-text" tabindex="-1">✏️ Текст</button>
+                  id="tabbtn-text" aria-selected="false" aria-controls="tab-text" tabindex="-1">Текст</button>
           <button class="tab-btn" data-tab="news" role="tab" type="button"
-                  id="tabbtn-news" aria-selected="false" aria-controls="tab-news" tabindex="-1">🔎 Новини</button>
+                  id="tabbtn-news" aria-selected="false" aria-controls="tab-news" tabindex="-1">Новини</button>
         </div>
 
         <!-- TAB: FILES -->
@@ -64,7 +64,6 @@
           <div class="dropzone" id="dropzone" role="button" tabindex="0"
                aria-label="Перетягніть файли сюди або натисніть для вибору">
             <div class="dropzone-content">
-              <span class="dropzone-icon" aria-hidden="true">📂</span>
               <p>Перетягніть файли сюди</p>
               <p class="hint">або</p>
               <label class="btn btn-secondary">
@@ -95,7 +94,7 @@
                       placeholder="Вставте текст, HTML або URL (https://…)&#10;&#10;Ctrl+Enter — швидке додавання"></textarea>
           </div>
           <button class="btn btn-primary" id="btnAddManual" type="button">
-            ✏️ Додати джерело
+            Додати джерело
           </button>
           <p class="hint" style="margin-top:8px">URL → автозавантаження · HTML → очищується · Текст → напряму</p>
         </div>
@@ -114,7 +113,7 @@
           <div class="form-group">
             <label>Мови Google News</label>
             <div class="search-lang-row">
-              <label class="chk-inline chk-priority"><input type="checkbox" value="ru" checked id="langRu"> RU ★</label>
+              <label class="chk-inline chk-priority"><input type="checkbox" value="ru" checked id="langRu"> RU</label>
               <label class="chk-inline"><input type="checkbox" value="de" checked id="langDe"> DE</label>
               <label class="chk-inline"><input type="checkbox" value="fr" checked id="langFr"> FR</label>
               <label class="chk-inline"><input type="checkbox" value="uk" id="langUk"> UA</label>
@@ -146,7 +145,7 @@
 
           <!-- Search button -->
           <button class="btn btn-primary btn-search-all" id="btnSearchAll" type="button">
-            <span class="btn-icon" aria-hidden="true">🔎</span> Шукати скрізь
+            <span class="btn-icon" aria-hidden="true"></span> Шукати скрізь
           </button>
           <p class="hint" style="margin-top:6px">Google News + всі збережені RSS + Telegram одночасно</p>
 
@@ -181,13 +180,12 @@
         </h2>
         <button class="btn btn-ghost btn-xs" id="btnClearAll" type="button"
                 aria-label="Видалити всі джерела">
-          🗑 Очистити
+          Очистити
         </button>
       </div>
 
       <div id="sourcesList" class="sources-list" role="list" aria-live="polite">
         <div class="sources-empty" id="sourcesEmpty">
-          <span aria-hidden="true">📭</span>
           <p>Ще немає доданих джерел</p>
         </div>
       </div>
@@ -314,7 +312,7 @@
     <div class="run-zone">
       <button class="btn btn-analyze" id="btnAnalyze" type="button" disabled
               aria-describedby="runHint">
-        <span id="btnAnalyzeIcon" aria-hidden="true">▶</span>
+        <span id="btnAnalyzeIcon" aria-hidden="true"></span>
         <span id="btnAnalyzeText">ЗАПУСТИТИ АНАЛІЗ</span>
       </button>
       <p class="hint" id="runHint" style="margin-top:10px; text-align:center">
@@ -342,10 +340,10 @@
       <!-- CTA -->
       <div class="results-cta">
         <a href="/report" target="_blank" rel="noopener" class="btn btn-primary btn-large">
-          📄 Відкрити звіт
+          Відкрити звіт
         </a>
         <a href="/output/distance_matrix.csv" class="btn btn-secondary">
-          ⬇ Завантажити CSV
+          Завантажити CSV
         </a>
       </div>
     </div><!-- /sectionResults -->
@@ -360,10 +358,10 @@
        aria-labelledby="logDrawerTitle" aria-hidden="true" hidden>
   <div class="log-drawer-head">
     <div>
-      <h3 id="logDrawerTitle">📔 Журнал моніторингу</h3>
+      <h3 id="logDrawerTitle">Журнал моніторингу</h3>
       <p class="hint">Протокол опрацьованих джерел — Методика НУЗРКС МОУ № 46 від 28.11.2022.</p>
     </div>
-    <button class="log-drawer-close" id="logDrawerClose" type="button" aria-label="Закрити">✕</button>
+    <button class="log-drawer-close" id="logDrawerClose" type="button" aria-label="Закрити">x</button>
   </div>
   <div id="logTimelineStrip"></div>
   <div class="log-drawer-body" id="logDrawerBody">

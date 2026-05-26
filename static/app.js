@@ -88,7 +88,7 @@ function renderCriticalAlert(dims, flagged) {
 
   slot.innerHTML = `
     <div class="critical-banner ${cls}" ${role}>
-      <div class="cb-icon" aria-hidden="true">⚠</div>
+      <div class="cb-icon" aria-hidden="true"></div>
       <div class="cb-body">
         <div class="cb-title">
           <span>${label} · ${escHtml(code)}</span>
@@ -97,7 +97,7 @@ function renderCriticalAlert(dims, flagged) {
         <div class="cb-msg">${msg}</div>
       </div>
       ${nFlagged ? `<button class="cb-cta" type="button" id="cbGotoFlagged">Переглянути пари →</button>` : ""}
-      <button class="cb-close" type="button" aria-label="Приховати сповіщення" id="cbClose">✕</button>
+      <button class="cb-close" type="button" aria-label="Приховати сповіщення" id="cbClose">x</button>
     </div>`;
 
   const cta = document.getElementById("cbGotoFlagged");
@@ -509,9 +509,9 @@ async function api(path, method = "GET", body = null) {
 }
 
 function typeIcon(type) {
-  const icons = { txt: "📄", pdf: "📕", docx: "📘", rtf: "📋",
-                  html: "🌐", htm: "🌐", url: "🔗", text: "✏️", "": "📄" };
-  return icons[type] || "📄";
+  const labels = { txt: "TXT", pdf: "PDF", docx: "DOCX", rtf: "RTF",
+                  html: "HTML", htm: "HTML", url: "URL", text: "TXT", "": "TXT" };
+  return labels[type] || "FILE";
 }
 
 function truncate(str, n = 90) {
@@ -658,11 +658,11 @@ function renderSources() {
         <div class="source-label">${sourceLinkHtml(s)}</div>
         <div class="source-meta">
           ${sourceContextHtml(s)}
-          ${s.warn ? '<span class="source-warn"> ⚠ &lt;500 токенів</span>' : ""}
+          ${s.warn ? '<span class="source-warn"> Увага: &lt;500 токенів</span>' : ""}
         </div>
         ${s.preview ? `<div class="source-preview">${escHtml(s.preview)}</div>` : ""}
       </div>
-      <button class="source-remove" title="Видалити" data-idx="${i}">✕</button>
+      <button class="source-remove" title="Видалити" data-idx="${i}">x</button>
     </div>
   `).join("");
 
@@ -712,8 +712,8 @@ async function handleFiles(fileList) {
     if (!data.ok) { showToast(data.error, "error"); return; }
 
     data.added.forEach(s => addSource(s));
-    if (data.added.length) showToast(`✅ Додано ${data.added.length} файл(ів)`, "success");
-    if (data.skipped.length) showToast(`⚠ Пропущено: ${data.skipped.join(", ")}`, "error", 5000);
+    if (data.added.length) showToast(`Додано ${data.added.length} файл(ів)`, "success");
+    if (data.skipped.length) showToast(`Пропущено: ${data.skipped.join(", ")}`, "error", 5000);
   } catch (e) {
     showToast("Помилка завантаження файлів", "error");
   } finally {
@@ -766,7 +766,7 @@ els.btnAddManual.addEventListener("click", async () => {
     const data = await api(endpoint, "POST", body);
     if (!data.ok) { showToast(data.error || "Помилка", "error"); return; }
     addSource(data.source);
-    showToast(`✅ Додано: ${data.source.display_title || data.source.label}`, "success");
+    showToast(`Додано: ${data.source.display_title || data.source.label}`, "success");
     els.manualInput.value = "";
     els.manualLabel.value = "";
   } catch (e) {
@@ -835,7 +835,7 @@ function renderRssTags() {
   container.innerHTML = searchCfg.rss_feeds.map((url, i) => `
     <span class="search-tag" data-idx="${i}">
       <span class="tag-label" title="${escapeHtml(url)}">${escapeHtml(url.replace(/^https?:\/\//, "").slice(0, 50))}</span>
-      <button class="tag-remove" data-type="rss" data-idx="${i}" title="Видалити">✕</button>
+      <button class="tag-remove" data-type="rss" data-idx="${i}" title="Видалити">x</button>
     </span>`).join("");
   container.querySelectorAll(".tag-remove[data-type=rss]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -852,7 +852,7 @@ function renderTgTags() {
   container.innerHTML = searchCfg.tg_channels.map((ch, i) => `
     <span class="search-tag search-tag--tg" data-idx="${i}">
       <span class="tag-label">@${escapeHtml(ch)}</span>
-      <button class="tag-remove" data-type="tg" data-idx="${i}" title="Видалити">✕</button>
+      <button class="tag-remove" data-type="tg" data-idx="${i}" title="Видалити">x</button>
     </span>`).join("");
   container.querySelectorAll(".tag-remove[data-type=tg]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -935,7 +935,7 @@ function renderUnifiedResults(results) {
             ${r.source ? `<span class="sr-source">${escapeHtml(r.source)}</span>` : ""}
             ${date ? `<span class="sr-date">${escapeHtml(date)}</span>` : ""}
             <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener"
-               onclick="event.stopPropagation()">відкрити ↗</a>
+               onclick="event.stopPropagation()">відкрити</a>
           </div>
           ${r.snippet ? `<div class="search-result-snippet">${escapeHtml(r.snippet.slice(0,160))}</div>` : ""}
         </div>
@@ -970,7 +970,7 @@ $("btnSearchAll").addEventListener("click", async () => {
     if (!data.ok) { showToast(data.error || "Помилка пошуку", "error"); status.textContent = ""; return; }
     unifiedState.results = data.results || [];
     if (data.errors && data.errors.length) {
-      status.textContent = `⚠ Деякі джерела не відповіли: ${data.errors.length}`;
+      status.textContent = `Деякі джерела не відповіли: ${data.errors.length}`;
     } else {
       status.textContent = unifiedState.results.length ? "" : "Нічого не знайдено за цим запитом.";
     }
@@ -1031,9 +1031,9 @@ $("btnImportUnified").addEventListener("click", async () => {
     status.textContent = `Імпорт ${i + 1}/${nonTgPicks.length}: ${r.title.slice(0, 60)}…`;
     try {
       const data = await api("/api/add-url", "POST", { url: r.url, label: "" });
-      if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "✓ додано"); }
-      else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "помилка").slice(0, 120)); }
-    } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 120)); }
+      if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "додано"); }
+      else { failed++; markResultStatus(idx, "err", "помилка: " + (data.error || "помилка").slice(0, 120)); }
+    } catch (e) { failed++; markResultStatus(idx, "err", "помилка: " + e.message.slice(0, 120)); }
   }
 
   // Telegram: merge per channel (if merge checked) or add separately
@@ -1048,15 +1048,15 @@ $("btnImportUnified").addEventListener("click", async () => {
         const data = await api("/api/add-text", "POST", { text: combined, label });
         if (data.ok) {
           addSource(data.source); imported++;
-          chPicks.forEach(({ idx }) => markResultStatus(idx, "ok", "✓ об'єднано"));
-          showToast(`✅ ${label}`, "success");
+          chPicks.forEach(({ idx }) => markResultStatus(idx, "ok", "об'єднано"));
+          showToast(label, "success");
         } else {
           failed += chPicks.length;
-          chPicks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ помилка"));
+          chPicks.forEach(({ idx }) => markResultStatus(idx, "err", "помилка"));
         }
       } catch (e) {
         failed += chPicks.length;
-        chPicks.forEach(({ idx }) => markResultStatus(idx, "err", "✗ " + e.message.slice(0, 60)));
+        chPicks.forEach(({ idx }) => markResultStatus(idx, "err", "помилка: " + e.message.slice(0, 60)));
       }
     } else {
       for (let i = 0; i < chPicks.length; i++) {
@@ -1065,9 +1065,9 @@ $("btnImportUnified").addEventListener("click", async () => {
         try {
           const label = `${r.source}_${i + 1}`;
           const data = await api("/api/add-text", "POST", { text: r.full_text || r.title, label, url: r.url });
-          if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "✓ додано"); }
-          else { failed++; markResultStatus(idx, "err", "✗ " + (data.error || "").slice(0, 80)); }
-        } catch (e) { failed++; markResultStatus(idx, "err", "✗ " + e.message.slice(0, 80)); }
+          if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "додано"); }
+          else { failed++; markResultStatus(idx, "err", "помилка: " + (data.error || "").slice(0, 80)); }
+        } catch (e) { failed++; markResultStatus(idx, "err", "помилка: " + e.message.slice(0, 80)); }
       }
     }
   }
@@ -1130,7 +1130,7 @@ els.btnAnalyze.addEventListener("click", async () => {
   const manifestation = (els.manifestationSelect && els.manifestationSelect.value) || "";
 
   els.btnAnalyze.disabled = true;
-  els.btnAnalyzeIcon.textContent = "⏳";
+  els.btnAnalyzeIcon.textContent = "";
   els.btnAnalyzeText.textContent = "Аналізую...";
   showOverlay("Запускаю стилометричний аналіз...");
 
@@ -1148,13 +1148,13 @@ els.btnAnalyze.addEventListener("click", async () => {
     renderResults(data);
     els.sectionResults.classList.remove("hidden");
     els.sectionResults.scrollIntoView({ behavior: "smooth", block: "start" });
-    showToast("✅ Аналіз завершено", "success");
+    showToast("Аналіз завершено", "success");
 
   } catch (e) {
     showToast("Помилка під час аналізу", "error");
   } finally {
     els.btnAnalyze.disabled = false;
-    els.btnAnalyzeIcon.textContent = "🚀";
+    els.btnAnalyzeIcon.textContent = "";
     els.btnAnalyzeText.textContent = "Запустити аналіз";
     hideOverlay();
   }
@@ -1169,7 +1169,7 @@ function renderLanguageAlert(report) {
   const scripts = (report.scripts || []).join(", ");
   els.languageAlert.innerHTML = `
     <div class="alert alert-critical" role="alert">
-      <strong>⚠ Змішаний мовний корпус.</strong>
+      <strong>Увага: змішаний мовний корпус.</strong>
       ${escHtml(report.warning || "")} Виявлені мови/письма: <strong>${escHtml(scripts)}</strong>.
       <br><span style="font-size:13px">Значення <span class="math-inline">&Delta;<sub>Burrows</sub></span>
       на змішаному корпусі відображають мовну різницю, а не стиль. Рекомендовано розділити корпус за мовою.</span>
@@ -1259,7 +1259,7 @@ function renderResults(data) {
     els.flaggedQuick.innerHTML = `
       ${dimsSummary}
       <div class="no-flagged-banner" role="status">
-        ✅ Підозрілих пар не виявлено
+        Підозрілих пар не виявлено
       </div>`;
   } else {
     els.flaggedQuick.innerHTML = `
@@ -1440,10 +1440,10 @@ async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle) {
   drawer.innerHTML = `
     <div class="evidence-drawer-head">
       <div>
-        <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">🔍 Докази збігу</h3>
+        <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">Докази збігу</h3>
         <div class="evidence-drawer-subtitle">${escHtml(aTitle || aLabel)} ↔ ${escHtml(bTitle || bLabel)}</div>
       </div>
-      <button class="evidence-drawer-close" type="button" aria-label="Закрити">✕</button>
+      <button class="evidence-drawer-close" type="button" aria-label="Закрити">x</button>
     </div>
     <div class="evidence-drawer-body">
       <div class="evidence-loading">
@@ -1470,7 +1470,7 @@ async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle) {
 
   if (!evData || !evData.ok) {
     drawer.querySelector(".evidence-drawer-body").innerHTML = `
-      <div class="evidence-empty">⚠ ${escHtml((evData && evData.error) || "Не вдалося отримати дані")}</div>`;
+      <div class="evidence-empty">Увага: ${escHtml((evData && evData.error) || "Не вдалося отримати дані")}</div>`;
     return;
   }
 
@@ -1523,16 +1523,16 @@ function _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle) 
   drawer.innerHTML = `
     <div class="evidence-drawer-head">
       <div>
-        <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">🔍 Докази збігу</h3>
+        <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">Докази збігу</h3>
         <div class="evidence-drawer-subtitle">${escHtml(aTitle || aLabel)} ↔ ${escHtml(bTitle || bLabel)}</div>
       </div>
-      <button class="evidence-drawer-close" type="button" aria-label="Закрити">✕</button>
+      <button class="evidence-drawer-close" type="button" aria-label="Закрити">x</button>
     </div>
     <div class="evidence-filter-bar" role="tablist">
       <button class="evidence-filter-btn is-active" data-filter="all" role="tab">Всі токени</button>
-      <button class="evidence-filter-btn" data-filter="shared" role="tab">🟠 Спільні (${sharedTokens.length})</button>
-      <button class="evidence-filter-btn" data-filter="a_only" role="tab">🔵 Лише A (${aTopTokens.length})</button>
-      <button class="evidence-filter-btn" data-filter="b_only" role="tab">🟣 Лише B (${bTopTokens.length})</button>
+      <button class="evidence-filter-btn" data-filter="shared" role="tab">Спільні (${sharedTokens.length})</button>
+      <button class="evidence-filter-btn" data-filter="a_only" role="tab">Лише A (${aTopTokens.length})</button>
+      <button class="evidence-filter-btn" data-filter="b_only" role="tab">Лише B (${bTopTokens.length})</button>
     </div>
     <div class="evidence-drawer-body">
       <div class="evidence-section">
@@ -1591,7 +1591,7 @@ function addEvidenceButtons() {
     const btn = document.createElement("button");
     btn.className = "btn-evidence";
     btn.type = "button";
-    btn.innerHTML = "🔎 Докази ↗";
+    btn.innerHTML = "Докази";
     btn.addEventListener("click", () => openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle));
     card.appendChild(btn);
   });

@@ -30,9 +30,9 @@ R_DIMS = w₁·I_content + w₂·I_coord + w₃·I_dynamics + w₄·I_impact + w
 - **Файли** — drag & drop: TXT, PDF, DOCX, RTF, HTML
 - **Вручну** — вставити URL (автофетч), HTML-код (очистка) або plain text
 - **Пошук новин** — три режими:
-  - 🔎 Google News RSS (мови: RU ★, DE, FR, UA, EN)
-  - 📡 RSS/Atom стрічка будь-якого ресурсу (ТАСС, RT, Sputnik тощо)
-  - ✈️ Telegram публічний канал — з агрегацією постів в один документ для надійного Burrows Delta
+  - Google News RSS (мови: RU, DE, FR, UA, EN)
+  - RSS/Atom стрічка будь-якого ресурсу (ТАСС, RT, Sputnik тощо)
+  - Telegram публічний канал — з агрегацією постів в один документ для надійного Burrows Delta
 
 ### Аналіз
 - **Burrows Delta** — стилометрична відстань між джерелами
