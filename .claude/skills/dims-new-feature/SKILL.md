@@ -37,4 +37,5 @@ echo "✓ Створено feature/$NAME від актуального main"
    - `git add <files>`
    - `git commit -m "..."`
    - `git push -u origin feature/$NAME`
-   - `GH_TOKEN=... /opt/homebrew/bin/gh pr create --title "..." --body "..."`
+   - `/opt/homebrew/bin/gh pr create --title "..." --body "..."`
+     (токен бери з `gh auth login` / env; **ніколи не вписуй у файл**)
