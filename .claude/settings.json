@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'f=\"$CLAUDE_FILE_PATH\"; [[ -z \"$f\" ]] && exit 0; SRC=\"/Users/odin/Desktop/Стилометрія\"; DST=\"/tmp/dims_project\"; [[ \"$f\" != \"$SRC\"/* ]] && exit 0; rel=\"${f#$SRC/}\"; case \"$rel\" in app.py|templates/*|static/*|core/*.py) mkdir -p \"$(dirname \"$DST/$rel\")\" && cp \"$f\" \"$DST/$rel\" && echo \"✓ synced $rel → /tmp/dims_project/\" ;; esac; exit 0'"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cmd=\"$CLAUDE_TOOL_INPUT\"; branch=$(git -C \"/Users/odin/Desktop/Стилометрія\" branch --show-current 2>/dev/null); if [[ \"$branch\" == \"main\" ]] && echo \"$cmd\" | grep -qE \"git[[:space:]]+(commit|push)([[:space:]]|$)\" && ! echo \"$cmd\" | grep -qE \"checkout|branch[[:space:]]+-\"; then echo \"⛔ BLOCKED: ви на main. Створіть feature-гілку: git checkout -b feature/<назва>\" >&2; exit 1; fi; exit 0'"
+          }
+        ]
+      }
+    ]
+  }
+}
