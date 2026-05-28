@@ -83,7 +83,7 @@ python3 app.py
 ```bash
 pip install -r requirements.txt
 export MPLCONFIGDIR=/tmp/matplotlib
-gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-2} --timeout ${WEB_TIMEOUT:-180}
+gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-1} --timeout ${WEB_TIMEOUT:-180}
 ```
 
 Підтримані варіанти:
@@ -121,7 +121,7 @@ Railway автоматично передає змінну `PORT`; застос�
 Команда запуску зафіксована в `railway.json`:
 
 ```bash
-gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-2} --timeout ${WEB_TIMEOUT:-180}
+gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-1} --timeout ${WEB_TIMEOUT:-180}
 ```
 
 ---
