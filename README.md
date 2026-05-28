@@ -71,6 +71,59 @@ python3 app.py
 
 Відкрити у браузері: **http://localhost:5001**
 
+### Production-деплой
+
+Проєкт є повноцінним Python/Flask застосунком із науковими залежностями
+(`numpy`, `scipy`, `scikit-learn`, `matplotlib`) і файловими операціями для
+звітів. Його потрібно деплоїти як Python web service або Docker container, а не
+як статичний сайт.
+
+Універсальний production-контракт:
+
+```bash
+pip install -r requirements.txt
+export MPLCONFIGDIR=/tmp/matplotlib
+gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-2} --timeout ${WEB_TIMEOUT:-180}
+```
+
+Підтримані варіанти:
+
+- **Render / Railway / Fly.io / VPS** — рекомендовано; використати `Dockerfile`
+  або `Procfile`.
+- **GitHub** — джерело коду та CI/CD, але не runtime для Flask-застосунку.
+- **Vercel** — можна використовувати тільки для окремого frontend або
+  serverless-обгортки; для цього проєкту як є не рекомендовано через важкі
+  Python-залежності та довгі обчислення.
+- **Cloudflare Workers / Pages** — не використовувати для повного застосунку:
+  Workers не запускає Flask/Python backend. Cloudflare доречно лишити для DNS,
+  CDN або окремого статичного frontend, якщо API розгорнуто на Python-хостингу.
+
+Docker-запуск локально:
+
+```bash
+docker build -t dims-stylometry .
+docker run --rm -p 5001:5001 -e PORT=5001 dims-stylometry
+```
+
+### Деплой на Railway
+
+У репозиторії є `railway.json`, `Dockerfile`, `Procfile` і `runtime.txt`.
+Railway має запускати застосунок як Docker-based Python web service.
+
+1. У Railway створити **New Project**.
+2. Обрати **Deploy from GitHub repo**.
+3. Вибрати репозиторій `Yevhen-Sh8/stylometry`.
+4. Після першого деплою відкрити **Settings → Networking** і натиснути
+   **Generate Domain**.
+5. Перевірити `/healthz`: відповідь має бути `{"status":"ok"}`.
+
+Railway автоматично передає змінну `PORT`; застосунок уже слухає саме її.
+Команда запуску зафіксована в `railway.json`:
+
+```bash
+gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-2} --timeout ${WEB_TIMEOUT:-180}
+```
+
 ---
 
 ## Структура проєкту
