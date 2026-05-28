@@ -51,6 +51,8 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB upload limit
 BASE_DIR   = Path(__file__).parent
 OUTPUT_DIR = BASE_DIR / "output"
 CLEAN_DIR  = OUTPUT_DIR / "clean_texts"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+CLEAN_DIR.mkdir(parents=True, exist_ok=True)
 
 # In-memory source store  {label: clean_text}
 # For a local single-user app this is sufficient.
@@ -280,6 +282,11 @@ def _parse_analysis_params(data: dict) -> tuple[int, float, int, str, int, str]:
 @app.get("/")
 def index():
     return render_template("index.html")
+
+
+@app.get("/healthz")
+def healthz():
+    return jsonify({"status": "ok"})
 
 
 @app.post("/api/upload")
@@ -1403,10 +1410,9 @@ def output_file(filename):
 
 # ─────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    CLEAN_DIR.mkdir(parents=True, exist_ok=True)
+    port = int(os.environ.get("PORT", "5001"))
     print("=" * 60)
     print("  DIMS — Інтегральна оцінка дезінформаційних ризиків за стилометричними ознаками")
-    print("  Відкрийте у браузері: http://localhost:5001")
+    print(f"  Відкрийте у браузері: http://localhost:{port}")
     print("=" * 60)
-    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1", port=5001)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1", host="0.0.0.0", port=port)
