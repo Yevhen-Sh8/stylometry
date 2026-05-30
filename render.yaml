@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: stylometry
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: WEB_CONCURRENCY
+        value: 1
+      - key: WEB_TIMEOUT
+        value: 180
+      - key: MPLCONFIGDIR
+        value: /tmp/matplotlib
