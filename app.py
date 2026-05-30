@@ -60,15 +60,19 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 CLEAN_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# In-memory source store  {label: clean_text}
-# For a local single-user app this is sufficient.
-SOURCES: dict[str, str] = {}
-SOURCE_META: dict[str, dict] = {}
+# Спільний стан між робочими процесами (gunicorn) через SQLite.
+# Раніше корпус джерел і результати аналізу зберігалися в пам'яті ОДНОГО
+# процесу — на Render із кількома воркерами стан "губився" між запитами
+# (додав джерела на одному воркері, а експорт потрапляв на інший, порожній).
+# SOURCES/SOURCE_META/результати аналізу винесено у спільний SQLite-стан.
+from core.state_store import JsonMap, Blob
+SOURCES = JsonMap("sources")               # {label: clean_text}
+SOURCE_META = JsonMap("source_meta")       # {label: meta-dict}
+_LAST = Blob("last_results")               # останній результат аналізу (для /report)
 
-# Last analysis results (for /report)
-LAST_RESULTS: dict = {}
-
-# Unified search configuration (RSS feeds + Telegram channels)
+# SEARCH_CONFIG / MONITOR_CONFIG лишаються файловими (див. _load_search_config /
+# _load_monitor_config нижче) — вони невеликі й уже персистяться у JSON, спільно
+# для всіх воркерів через файлову систему. Дублювати їх у SQLite не потрібно.
 SEARCH_CONFIG: dict = {"rss_feeds": [], "tg_channels": []}
 MONITOR_CONFIG: dict = {"topics": []}
 
@@ -569,10 +573,9 @@ def remove_source():
 
 @app.post("/api/clear")
 def clear_sources():
-    global LAST_RESULTS
     SOURCES.clear()
     SOURCE_META.clear()
-    LAST_RESULTS = {}
+    _LAST.clear()
     return _ok()
 
 
@@ -688,7 +691,11 @@ def _fetch_google_news(query: str, lang: str, limit: int = 15) -> list[dict]:
             headers={"User-Agent": "Mozilla/5.0 (DIMS research tool)"},
         )
         resp.raise_for_status()
-    except Exception:
+    except Exception as exc:
+        # Видимість у логах Render: типова причина "падінь" на сервері — коли
+        # Google News блокує/не пускає запит із дата-центру, хоча локально працює.
+        import sys as _sys
+        print(f"[google-news] запит '{query}' [{lang}] не вдався: {exc}", file=_sys.stderr)
         return []
 
     try:
@@ -1332,9 +1339,9 @@ def search_news():
 def search_config():
     """GET → повертає поточну конфігурацію (RSS + Telegram).
        POST → зберігає нову конфігурацію."""
-    global SEARCH_CONFIG
     if request.method == "GET":
-        return _ok(config=SEARCH_CONFIG)
+        return _ok(config={"rss_feeds": SEARCH_CONFIG.get("rss_feeds", []),
+                           "tg_channels": SEARCH_CONFIG.get("tg_channels", [])})
     data = request.get_json(silent=True) or {}
     rss = data.get("rss_feeds")
     tg  = data.get("tg_channels")
@@ -1567,8 +1574,6 @@ def search_all():
 @app.post("/api/analyze")
 def analyze():
     """Run the full Burrows' Delta pipeline on the current SOURCES."""
-    global LAST_RESULTS
-
     if len(SOURCES) < 2:
         return _err("Потрібно щонайменше 2 джерела для аналізу.")
 
@@ -1600,10 +1605,10 @@ def analyze():
         traceback.print_exc()
         return _err(f"Помилка аналізу: {exc}", code=500)
 
-    # Store for /report
-    LAST_RESULTS = results
-    LAST_RESULTS["timestamp"] = datetime.now().strftime("%d.%m.%Y %H:%M")
-    LAST_RESULTS["manifestation"] = manifestation
+    # Store for /report (спільне сховище між воркерами)
+    results["timestamp"] = datetime.now().strftime("%d.%m.%Y %H:%M")
+    results["manifestation"] = manifestation
+    _LAST.set(results)
 
     pair_ci = results.get("pair_ci", {})
 
@@ -1664,6 +1669,7 @@ def analyze():
 @app.get("/report")
 def report():
     """Render the HTML supervisor report with embedded charts."""
+    LAST_RESULTS = _LAST.get() or {}
     if not LAST_RESULTS:
         return "<h2>Спочатку запустіть аналіз.</h2>", 400
 
@@ -1779,6 +1785,7 @@ def export_daily_form():
     """
     from flask import send_file
 
+    LAST_RESULTS = _LAST.get() or {}
     if not LAST_RESULTS or "dims_assessment" not in LAST_RESULTS:
         return _err(
             "Немає результатів аналізу для формування Анкети. "
