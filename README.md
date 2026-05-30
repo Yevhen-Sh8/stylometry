@@ -148,6 +148,33 @@ gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-1} --timeout 
 Render free instance може засинати після простою, тому перший запит після паузи
 буде повільним.
 
+### Автоматичний моніторинг
+
+У вкладці **Моніторинг** можна створювати теми з окремими ключовими словами для
+`RU / UA / EN / DE / FR`. Ручний запуск виконує пошук у Google News, збережених
+RSS-стрічках і збережених Telegram-каналах, після чого додає матеріали в чергу
+для перегляду та імпорту.
+
+Для запуску за розкладом є endpoint:
+
+```bash
+POST /api/monitor/cron
+```
+
+Якщо на Render задано змінну `MONITOR_TOKEN`, cron-запит має передавати такий
+самий токен у заголовку:
+
+```bash
+X-Monitor-Token: <token>
+```
+
+У репозиторії є GitHub Actions workflow `.github/workflows/monitoring.yml`, який
+викликає цей endpoint кожні 6 годин. Для нього потрібно додати GitHub Secrets:
+
+- `MONITOR_URL` — наприклад `https://stylometry-vjxv.onrender.com`
+- `MONITOR_TOKEN` — той самий токен, що в Render; можна не задавати, якщо токен
+  не використовується
+
 ---
 
 ## Структура проєкту

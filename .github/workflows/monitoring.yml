@@ -1,0 +1,32 @@
+name: DIMS Monitoring
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+jobs:
+  trigger-monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger monitoring endpoint
+        env:
+          MONITOR_URL: ${{ secrets.MONITOR_URL }}
+          MONITOR_TOKEN: ${{ secrets.MONITOR_TOKEN }}
+        run: |
+          if [ -z "$MONITOR_URL" ]; then
+            echo "MONITOR_URL secret is not configured; skipping."
+            exit 0
+          fi
+
+          endpoint="${MONITOR_URL%/}/api/monitor/cron"
+          if [ -n "$MONITOR_TOKEN" ]; then
+            curl -fsS -X POST "$endpoint" \
+              -H "Content-Type: application/json" \
+              -H "X-Monitor-Token: $MONITOR_TOKEN" \
+              -d '{}'
+          else
+            curl -fsS -X POST "$endpoint" \
+              -H "Content-Type: application/json" \
+              -d '{}'
+          fi

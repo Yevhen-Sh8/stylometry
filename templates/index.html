@@ -57,6 +57,8 @@
                   id="tabbtn-text" aria-selected="false" aria-controls="tab-text" tabindex="-1">Текст</button>
           <button class="tab-btn" data-tab="news" role="tab" type="button"
                   id="tabbtn-news" aria-selected="false" aria-controls="tab-news" tabindex="-1">Новини</button>
+          <button class="tab-btn" data-tab="monitor" role="tab" type="button"
+                  id="tabbtn-monitor" aria-selected="false" aria-controls="tab-monitor" tabindex="-1">Моніторинг</button>
         </div>
 
         <!-- TAB: FILES -->
@@ -168,6 +170,66 @@
           <div id="unifiedStatus" class="search-status" role="status" aria-live="polite"></div>
 
         </div><!-- /tab-news -->
+
+        <!-- TAB: MONITORING -->
+        <div class="tab-panel" id="tab-monitor" role="tabpanel" aria-labelledby="tabbtn-monitor" hidden>
+          <div class="form-group">
+            <label for="monitorTopicName">Тема</label>
+            <input type="text" id="monitorTopicName" class="form-control"
+                   placeholder="напр. Переговори / припинення вогню" />
+          </div>
+
+          <div class="monitor-form-row">
+            <label class="chk-inline chk-priority">
+              <input type="checkbox" id="monitorTopicEnabled" checked> Активна
+            </label>
+            <label for="monitorLimit" class="monitor-limit-label">Ліміт</label>
+            <input type="number" id="monitorLimit" class="form-control monitor-limit-input"
+                   min="3" max="25" value="12" />
+          </div>
+
+          <div class="monitor-keywords" aria-label="Ключові слова за мовами">
+            <label>RU <textarea id="monitorKwRu" class="form-control" rows="2"
+              placeholder="прекращение огня, переговоры"></textarea></label>
+            <label>UA <textarea id="monitorKwUk" class="form-control" rows="2"
+              placeholder="припинення вогню, переговори"></textarea></label>
+            <label>EN <textarea id="monitorKwEn" class="form-control" rows="2"
+              placeholder="ceasefire, peace talks"></textarea></label>
+            <label>DE <textarea id="monitorKwDe" class="form-control" rows="2"
+              placeholder="Waffenruhe, Friedensgespräche"></textarea></label>
+            <label>FR <textarea id="monitorKwFr" class="form-control" rows="2"
+              placeholder="cessez-le-feu, pourparlers"></textarea></label>
+          </div>
+
+          <div class="monitor-actions">
+            <button class="btn btn-primary btn-sm" id="btnSaveMonitorTopic" type="button">Зберегти тему</button>
+            <button class="btn btn-ghost btn-sm" id="btnResetMonitorTopic" type="button">Очистити</button>
+          </div>
+
+          <div class="monitor-topic-list" id="monitorTopicsList"></div>
+
+          <div class="monitor-run-row">
+            <button class="btn btn-primary btn-search-all" id="btnRunMonitor" type="button">Запустити моніторинг</button>
+            <button class="btn btn-ghost btn-sm" id="btnClearMonitorQueue" type="button">Очистити чергу</button>
+          </div>
+
+          <div id="monitorResults" class="search-results monitor-results" aria-live="polite" hidden>
+            <div class="search-results-header">
+              <span id="monitorResultsCount" class="search-results-count"></span>
+              <div class="search-results-actions">
+                <label class="chk-inline tg-merge-toggle">
+                  <input type="checkbox" id="monitorTgMerge" checked> Об'єднати TG
+                </label>
+                <button class="btn btn-ghost btn-sm" id="btnSelectAllMonitor" type="button">Обрати всі</button>
+                <button class="btn btn-primary btn-sm" id="btnImportMonitor" type="button" disabled>
+                  Імпортувати <span id="monitorImportCount"></span>
+                </button>
+              </div>
+            </div>
+            <div id="monitorQueueList" class="search-results-list"></div>
+          </div>
+          <div id="monitorStatus" class="search-status" role="status" aria-live="polite"></div>
+        </div><!-- /tab-monitor -->
       </div><!-- /input-tabs -->
     </div><!-- /sectionInput -->
 

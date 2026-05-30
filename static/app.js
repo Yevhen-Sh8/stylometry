@@ -1082,6 +1082,337 @@ $("btnImportUnified").addEventListener("click", async () => {
 
 
 // ─────────────────────────────────────────────────────────────
+//  MONITORING TOPICS + QUEUE
+// ─────────────────────────────────────────────────────────────
+const MONITOR_LANGS = ["ru", "uk", "en", "de", "fr"];
+const monitorState = { topics: [], queue: [], selected: new Set(), editingId: null };
+
+function makeMonitorId(name) {
+  const base = String(name || "topic").toLowerCase()
+    .replace(/[^a-zа-яіїєґ0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40) || "topic";
+  return `${base}-${Date.now().toString(36)}`;
+}
+
+function splitMonitorKeywords(value) {
+  return String(value || "")
+    .split(/[\n;,]+/)
+    .map(v => v.trim())
+    .filter(Boolean)
+    .filter((v, i, arr) => arr.findIndex(x => x.toLowerCase() === v.toLowerCase()) === i)
+    .slice(0, 24);
+}
+
+function monitorField(lang) {
+  const ids = { ru: "monitorKwRu", uk: "monitorKwUk", en: "monitorKwEn", de: "monitorKwDe", fr: "monitorKwFr" };
+  return $(ids[lang]);
+}
+
+function collectMonitorTopic() {
+  const name = ($("monitorTopicName").value || "").trim();
+  const keywords = {};
+  MONITOR_LANGS.forEach(lang => { keywords[lang] = splitMonitorKeywords(monitorField(lang).value); });
+  const googleLanguages = MONITOR_LANGS.filter(lang => keywords[lang].length);
+  const limit = Math.max(3, Math.min(25, parseInt($("monitorLimit").value, 10) || 12));
+  return {
+    id: monitorState.editingId || makeMonitorId(name),
+    name: name || "Тема моніторингу",
+    enabled: $("monitorTopicEnabled").checked,
+    keywords,
+    google_languages: googleLanguages,
+    limit,
+  };
+}
+
+function resetMonitorForm() {
+  monitorState.editingId = null;
+  $("monitorTopicName").value = "";
+  $("monitorTopicEnabled").checked = true;
+  $("monitorLimit").value = "12";
+  MONITOR_LANGS.forEach(lang => { monitorField(lang).value = ""; });
+  $("btnSaveMonitorTopic").textContent = "Зберегти тему";
+}
+
+function fillMonitorForm(topic) {
+  monitorState.editingId = topic.id;
+  $("monitorTopicName").value = topic.name || "";
+  $("monitorTopicEnabled").checked = topic.enabled !== false;
+  $("monitorLimit").value = topic.limit || 12;
+  MONITOR_LANGS.forEach(lang => {
+    monitorField(lang).value = ((topic.keywords || {})[lang] || []).join(", ");
+  });
+  $("btnSaveMonitorTopic").textContent = "Оновити тему";
+}
+
+function renderMonitorTopics() {
+  const list = $("monitorTopicsList");
+  if (!list) return;
+  if (!monitorState.topics.length) {
+    list.innerHTML = `<div class="monitor-empty">Тем ще немає</div>`;
+    return;
+  }
+  list.innerHTML = monitorState.topics.map(topic => {
+    const keywords = MONITOR_LANGS
+      .map(lang => ((topic.keywords || {})[lang] || []).length ? `${lang.toUpperCase()}:${((topic.keywords || {})[lang] || []).length}` : "")
+      .filter(Boolean)
+      .join(" · ");
+    return `
+      <div class="monitor-topic" data-id="${escapeHtml(topic.id)}">
+        <div class="monitor-topic-main">
+          <div class="monitor-topic-title">${escapeHtml(topic.name || "Тема")}</div>
+          <div class="monitor-topic-meta">
+            <span>${topic.enabled === false ? "вимкнено" : "активна"}</span>
+            ${keywords ? `<span>${escapeHtml(keywords)}</span>` : ""}
+            <span>ліміт ${Number(topic.limit || 12)}</span>
+          </div>
+        </div>
+        <div class="monitor-topic-actions">
+          <button class="btn btn-ghost btn-xs monitor-edit" type="button" data-id="${escapeHtml(topic.id)}">Ред.</button>
+          <button class="btn btn-ghost btn-xs monitor-delete" type="button" data-id="${escapeHtml(topic.id)}">Видалити</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  list.querySelectorAll(".monitor-edit").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const topic = monitorState.topics.find(t => t.id === btn.dataset.id);
+      if (topic) fillMonitorForm(topic);
+    });
+  });
+  list.querySelectorAll(".monitor-delete").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      monitorState.topics = monitorState.topics.filter(t => t.id !== btn.dataset.id);
+      if (monitorState.editingId === btn.dataset.id) resetMonitorForm();
+      await saveMonitorConfig();
+      renderMonitorTopics();
+    });
+  });
+}
+
+async function saveMonitorConfig() {
+  const data = await api("/api/monitor/config", "POST", { topics: monitorState.topics });
+  if (data.ok && data.config) monitorState.topics = data.config.topics || [];
+  return data;
+}
+
+async function loadMonitorConfig() {
+  const data = await api("/api/monitor/config", "GET");
+  if (data.ok && data.config) monitorState.topics = data.config.topics || [];
+  renderMonitorTopics();
+}
+
+async function loadMonitorQueue() {
+  const data = await api("/api/monitor/queue", "GET");
+  if (data.ok) monitorState.queue = data.items || [];
+  renderMonitorQueue();
+}
+
+function updateMonitorImportButton() {
+  const btn = $("btnImportMonitor");
+  const cnt = $("monitorImportCount");
+  if (!btn) return;
+  const n = monitorState.selected.size;
+  btn.disabled = n === 0;
+  cnt.textContent = n ? `(${n})` : "";
+}
+
+function markMonitorResultStatus(idx, st, message) {
+  const row = document.querySelector(`#monitorQueueList .search-result[data-idx="${idx}"]`);
+  if (!row) return;
+  row.classList.remove("is-ok", "is-err", "is-loading");
+  row.classList.add("is-" + st);
+  let badge = row.querySelector(".sr-status");
+  if (!badge) {
+    badge = document.createElement("div");
+    badge.className = "sr-status";
+    row.querySelector(".search-result-body").appendChild(badge);
+  }
+  badge.textContent = message;
+}
+
+function renderMonitorQueue() {
+  const wrap = $("monitorResults");
+  const list = $("monitorQueueList");
+  const count = $("monitorResultsCount");
+  if (!wrap || !list || !count) return;
+  monitorState.selected.clear();
+  if (!monitorState.queue.length) {
+    wrap.hidden = true;
+    updateMonitorImportButton();
+    return;
+  }
+  wrap.hidden = false;
+  count.textContent = `У черзі ${monitorState.queue.length} матеріалів`;
+  list.innerHTML = monitorState.queue.map((r, i) => {
+    let date = "";
+    if (r.published) { const d = new Date(r.published); if (!isNaN(d)) date = d.toLocaleDateString("uk-UA"); }
+    const discovered = r.discovered_at ? r.discovered_at.slice(0, 10) : "";
+    const safeUrl = /^https?:\/\//i.test(r.url || "") ? escapeHtml(r.url) : "#";
+    const stMeta = _sourceTypeMeta[r.source_type] || { label: r.source_type || "", cls: "" };
+    return `
+      <label class="search-result monitor-result" data-idx="${i}">
+        <input type="checkbox" data-idx="${i}" />
+        <div class="search-result-body">
+          <div class="search-result-title">${escapeHtml(r.title || "Без назви")}</div>
+          <div class="search-result-meta">
+            <span class="src-type-badge ${stMeta.cls}">${stMeta.label}</span>
+            <span class="monitor-topic-badge">${escapeHtml(r.topic_name || "Тема")}</span>
+            ${r.matched_lang ? `<span class="lang-tag lang-${escapeHtml(r.matched_lang)}">${escapeHtml(r.matched_lang).toUpperCase()}</span>` : ""}
+            ${r.source ? `<span class="sr-source">${escapeHtml(r.source)}</span>` : ""}
+            ${date ? `<span class="sr-date">${escapeHtml(date)}</span>` : ""}
+            ${discovered ? `<span class="sr-date">знайдено ${escapeHtml(discovered)}</span>` : ""}
+            <a class="sr-link" href="${safeUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">відкрити</a>
+          </div>
+          ${r.snippet ? `<div class="search-result-snippet">${escapeHtml(r.snippet.slice(0, 160))}</div>` : ""}
+        </div>
+      </label>`;
+  }).join("");
+  list.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener("change", e => {
+      const idx = Number(e.target.dataset.idx);
+      if (e.target.checked) monitorState.selected.add(idx);
+      else monitorState.selected.delete(idx);
+      updateMonitorImportButton();
+    });
+  });
+  updateMonitorImportButton();
+}
+
+async function importMonitorSelected() {
+  const picks = [...monitorState.selected]
+    .map(i => ({ idx: i, r: monitorState.queue[i] }))
+    .filter(x => x.r);
+  if (!picks.length) return;
+
+  const btn = $("btnImportMonitor");
+  const status = $("monitorStatus");
+  const merge = $("monitorTgMerge").checked;
+  btn.disabled = true;
+
+  const tgByChannel = {};
+  const nonTgPicks = [];
+  for (const p of picks) {
+    if (p.r.source_type === "telegram") {
+      const ch = p.r.source || "tg";
+      (tgByChannel[ch] = tgByChannel[ch] || []).push(p);
+    } else {
+      nonTgPicks.push(p);
+    }
+  }
+
+  let imported = 0, failed = 0;
+  for (let i = 0; i < nonTgPicks.length; i++) {
+    const { idx, r } = nonTgPicks[i];
+    markMonitorResultStatus(idx, "loading", "завантаження…");
+    status.textContent = `Імпорт ${i + 1}/${nonTgPicks.length}: ${(r.title || "").slice(0, 60)}…`;
+    try {
+      const data = await api("/api/add-url", "POST", { url: r.url, label: "" });
+      if (data.ok) { addSource(data.source); imported++; markMonitorResultStatus(idx, "ok", "додано"); }
+      else { failed++; markMonitorResultStatus(idx, "err", "помилка: " + (data.error || "помилка").slice(0, 120)); }
+    } catch (e) { failed++; markMonitorResultStatus(idx, "err", "помилка: " + e.message.slice(0, 120)); }
+  }
+
+  for (const [ch, chPicks] of Object.entries(tgByChannel)) {
+    if (merge) {
+      const combined = chPicks.map(({ r }) => r.full_text || r.title).join("\n\n");
+      const words = combined.split(/\s+/).filter(Boolean).length;
+      const label = `${ch} моніторинг (${chPicks.length} постів, ${words} слів)`;
+      chPicks.forEach(({ idx }) => markMonitorResultStatus(idx, "loading", "об'єднання…"));
+      try {
+        const data = await api("/api/add-text", "POST", { text: combined, label });
+        if (data.ok) {
+          addSource(data.source); imported++;
+          chPicks.forEach(({ idx }) => markMonitorResultStatus(idx, "ok", "об'єднано"));
+        } else {
+          failed += chPicks.length;
+          chPicks.forEach(({ idx }) => markMonitorResultStatus(idx, "err", "помилка"));
+        }
+      } catch (e) {
+        failed += chPicks.length;
+        chPicks.forEach(({ idx }) => markMonitorResultStatus(idx, "err", "помилка: " + e.message.slice(0, 60)));
+      }
+    } else {
+      for (let i = 0; i < chPicks.length; i++) {
+        const { idx, r } = chPicks[i];
+        markMonitorResultStatus(idx, "loading", "додавання…");
+        try {
+          const label = `${r.source}_${i + 1}`;
+          const data = await api("/api/add-text", "POST", { text: r.full_text || r.title, label, url: r.url });
+          if (data.ok) { addSource(data.source); imported++; markMonitorResultStatus(idx, "ok", "додано"); }
+          else { failed++; markMonitorResultStatus(idx, "err", "помилка: " + (data.error || "").slice(0, 80)); }
+        } catch (e) { failed++; markMonitorResultStatus(idx, "err", "помилка: " + e.message.slice(0, 80)); }
+      }
+    }
+  }
+
+  status.textContent = `Готово: імпортовано ${imported}${failed ? `, помилок ${failed}` : ""}.`;
+  showToast(`Імпортовано ${imported} джерел${failed ? ` (помилок: ${failed})` : ""}`, failed ? "warn" : "success");
+  monitorState.selected.clear();
+  updateMonitorImportButton();
+  btn.disabled = false;
+}
+
+function initMonitoring() {
+  if (!$("btnSaveMonitorTopic")) return;
+  $("btnSaveMonitorTopic").addEventListener("click", async () => {
+    const topic = collectMonitorTopic();
+    const hasKeywords = MONITOR_LANGS.some(lang => (topic.keywords[lang] || []).length);
+    if (!hasKeywords) { showToast("Додайте ключові слова хоча б однією мовою", "error"); return; }
+    const idx = monitorState.topics.findIndex(t => t.id === topic.id);
+    if (idx >= 0) monitorState.topics[idx] = topic; else monitorState.topics.push(topic);
+    const data = await saveMonitorConfig();
+    if (!data.ok) { showToast(data.error || "Не вдалося зберегти тему", "error"); return; }
+    renderMonitorTopics();
+    resetMonitorForm();
+    showToast("Тему моніторингу збережено", "success");
+  });
+  $("btnResetMonitorTopic").addEventListener("click", resetMonitorForm);
+  $("btnRunMonitor").addEventListener("click", async () => {
+    if (!monitorState.topics.length) { showToast("Додайте тему моніторингу", "error"); return; }
+    const btn = $("btnRunMonitor");
+    const status = $("monitorStatus");
+    btn.disabled = true;
+    status.textContent = "Збір матеріалів...";
+    try {
+      const data = await api("/api/monitor/run", "POST", {});
+      if (!data.ok) { showToast(data.error || "Помилка моніторингу", "error"); return; }
+      monitorState.queue = data.items || [];
+      renderMonitorQueue();
+      status.textContent = data.added ? `Додано нових матеріалів: ${data.added}` : "Нових матеріалів не знайдено.";
+    } catch (e) {
+      showToast("Помилка: " + e.message, "error");
+      status.textContent = "";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  $("btnClearMonitorQueue").addEventListener("click", async () => {
+    if (!monitorState.queue.length) return;
+    if (!confirm("Очистити чергу моніторингу?")) return;
+    await api("/api/monitor/queue/clear", "POST");
+    monitorState.queue = [];
+    renderMonitorQueue();
+    $("monitorStatus").textContent = "Чергу очищено.";
+  });
+  $("btnSelectAllMonitor").addEventListener("click", () => {
+    const boxes = [...document.querySelectorAll("#monitorQueueList input[type=checkbox]")];
+    const allChecked = boxes.length > 0 && boxes.every(cb => cb.checked);
+    boxes.forEach(cb => {
+      cb.checked = !allChecked;
+      const idx = Number(cb.dataset.idx);
+      if (!allChecked) monitorState.selected.add(idx);
+      else monitorState.selected.delete(idx);
+    });
+    updateMonitorImportButton();
+  });
+  $("btnImportMonitor").addEventListener("click", importMonitorSelected);
+  loadMonitorConfig();
+  loadMonitorQueue();
+}
+
+
+// ─────────────────────────────────────────────────────────────
 //  CLEAR ALL
 // ─────────────────────────────────────────────────────────────
 els.btnClearAll.addEventListener("click", async () => {
@@ -1600,4 +1931,5 @@ function addEvidenceButtons() {
 // ─────────────────────────────────────────────────────────────
 //  INIT
 // ─────────────────────────────────────────────────────────────
+initMonitoring();
 renderSources();

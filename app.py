@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import hashlib
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -36,7 +37,7 @@ from flask import (Flask, jsonify, render_template, request,
 
 from core.extractors import (SUPPORTED_EXTENSIONS, clean_extracted_text,
                               extract_from_file)
-from core.scraper import scrape_url_payload
+from core.scraper import scrape_url_payload, _assert_public_url
 from core.analysis import (DIMS_MANIFESTATION_TYPES, detect_script,
                             run_pipeline)
 from core.monitoring_log import (append_record, find_duplicate, load_records,
@@ -51,8 +52,13 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB upload limit
 BASE_DIR   = Path(__file__).parent
 OUTPUT_DIR = BASE_DIR / "output"
 CLEAN_DIR  = OUTPUT_DIR / "clean_texts"
+DATA_DIR   = BASE_DIR / "Data"
+SEARCH_CONFIG_FILE = DATA_DIR / "search_config.json"
+MONITOR_CONFIG_FILE = DATA_DIR / "monitoring_config.json"
+MONITOR_QUEUE_FILE = DATA_DIR / "monitoring_queue.json"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 CLEAN_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # In-memory source store  {label: clean_text}
 # For a local single-user app this is sufficient.
@@ -64,6 +70,7 @@ LAST_RESULTS: dict = {}
 
 # Unified search configuration (RSS feeds + Telegram channels)
 SEARCH_CONFIG: dict = {"rss_feeds": [], "tg_channels": []}
+MONITOR_CONFIG: dict = {"topics": []}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -80,6 +87,69 @@ def _strip_snippet_html(text: str) -> str:
     text = _re_module.sub(r"<[^>]+>", " ", text)
     text = _html_module.unescape(text)
     return _re_module.sub(r"\s+", " ", text).strip()
+
+
+def _load_json_file(path: Path, default):
+    try:
+        if not path.exists():
+            return default.copy() if isinstance(default, dict) else default
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, type(default)) else default
+    except Exception:
+        return default.copy() if isinstance(default, dict) else default
+
+
+def _save_json_file(path: Path, data) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    tmp.replace(path)
+
+
+def _clean_string_list(values, *, max_items: int = 50, max_len: int = 240) -> list[str]:
+    if isinstance(values, str):
+        raw = _re_module.split(r"[\n;,]+", values)
+    elif isinstance(values, list):
+        raw = values
+    else:
+        raw = []
+
+    out: list[str] = []
+    seen = set()
+    for value in raw:
+        text = str(value).strip()
+        if not text:
+            continue
+        text = _re_module.sub(r"\s+", " ", text)[:max_len]
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(text)
+        if len(out) >= max_items:
+            break
+    return out
+
+
+def _load_search_config() -> dict:
+    data = _load_json_file(SEARCH_CONFIG_FILE, {"rss_feeds": [], "tg_channels": []})
+    return {
+        "rss_feeds": _clean_string_list(data.get("rss_feeds"), max_items=80),
+        "tg_channels": [
+            c.strip().lstrip("@")
+            for c in _clean_string_list(data.get("tg_channels"), max_items=80)
+        ],
+    }
+
+
+def _save_search_config(config: dict) -> None:
+    _save_json_file(SEARCH_CONFIG_FILE, config)
+
+
+SEARCH_CONFIG = _load_search_config()
 
 
 def _save_clean_text(label: str, text: str) -> None:
@@ -661,6 +731,331 @@ def _fetch_google_news(query: str, lang: str, limit: int = 15) -> list[dict]:
     return items
 
 
+def _monitor_default_config() -> dict:
+    return {"topics": []}
+
+
+def _normalise_monitor_topic(raw: dict) -> dict:
+    raw = raw or {}
+    name = str(raw.get("name") or "").strip()[:120] or "Тема моніторингу"
+    raw_id = str(raw.get("id") or "").strip()
+    topic_id = _re_module.sub(r"[^a-zA-Z0-9_-]+", "-", raw_id).strip("-")
+    if not topic_id:
+        topic_id = hashlib.sha1(f"{name}:{datetime.utcnow().isoformat()}".encode("utf-8")).hexdigest()[:12]
+
+    keywords = {}
+    raw_keywords = raw.get("keywords") if isinstance(raw.get("keywords"), dict) else {}
+    for lang in _GN_LOCALES:
+        words = _clean_string_list(raw_keywords.get(lang), max_items=24, max_len=120)
+        keywords[lang] = words
+
+    requested_langs = raw.get("google_languages") or []
+    google_languages = [l for l in requested_langs if l in _GN_LOCALES]
+    if not google_languages:
+        google_languages = [l for l, words in keywords.items() if words]
+
+    try:
+        limit = int(raw.get("limit") or 12)
+    except (TypeError, ValueError):
+        limit = 12
+    limit = max(3, min(limit, 25))
+
+    return {
+        "id": topic_id,
+        "name": name,
+        "enabled": bool(raw.get("enabled", True)),
+        "keywords": keywords,
+        "google_languages": google_languages,
+        "rss_feeds": _clean_string_list(raw.get("rss_feeds"), max_items=40),
+        "tg_channels": [
+            c.strip().lstrip("@")
+            for c in _clean_string_list(raw.get("tg_channels"), max_items=40)
+        ],
+        "limit": limit,
+    }
+
+
+def _load_monitor_config() -> dict:
+    data = _load_json_file(MONITOR_CONFIG_FILE, _monitor_default_config())
+    topics = data.get("topics", []) if isinstance(data, dict) else []
+    return {"topics": [_normalise_monitor_topic(t) for t in topics if isinstance(t, dict)]}
+
+
+def _save_monitor_config(config: dict) -> None:
+    _save_json_file(MONITOR_CONFIG_FILE, {
+        "topics": [_normalise_monitor_topic(t) for t in config.get("topics", []) if isinstance(t, dict)]
+    })
+
+
+def _load_monitor_queue() -> dict:
+    data = _load_json_file(MONITOR_QUEUE_FILE, {"items": [], "last_run": None})
+    if not isinstance(data, dict):
+        return {"items": [], "last_run": None}
+    items = data.get("items", [])
+    return {
+        "items": items if isinstance(items, list) else [],
+        "last_run": data.get("last_run"),
+    }
+
+
+def _save_monitor_queue(queue: dict) -> None:
+    items = queue.get("items", [])
+    if not isinstance(items, list):
+        items = []
+    _save_json_file(MONITOR_QUEUE_FILE, {
+        "items": items[:300],
+        "last_run": queue.get("last_run"),
+    })
+
+
+def _monitor_keywords(topic: dict) -> list[str]:
+    words: list[str] = []
+    for lang_words in (topic.get("keywords") or {}).values():
+        words.extend(lang_words or [])
+    return _clean_string_list(words, max_items=80, max_len=120)
+
+
+def _matches_keywords(text: str, keywords: list[str]) -> bool:
+    if not keywords:
+        return True
+    lower = (text or "").lower()
+    return any(k.lower() in lower for k in keywords if k)
+
+
+def _monitor_item_id(item: dict, topic_id: str) -> str:
+    base = "|".join([
+        topic_id,
+        item.get("url") or "",
+        item.get("title") or "",
+        item.get("published") or "",
+        item.get("source") or "",
+    ])
+    return hashlib.sha1(base.encode("utf-8")).hexdigest()[:16]
+
+
+def _fetch_rss_keyword_matches(feed_url: str, keywords: list[str], limit: int) -> list[dict]:
+    import xml.etree.ElementTree as ET
+    import requests as _rq
+
+    _NS = {"atom": "http://www.w3.org/2005/Atom"}
+    try:
+        safe = _assert_public_url(feed_url)
+        r = _rq.get(
+            safe,
+            timeout=15,
+            headers={
+                "User-Agent": "Mozilla/5.0 (DIMS research tool)",
+                "Accept": "application/rss+xml,application/atom+xml,*/*",
+            },
+        )
+        r.raise_for_status()
+        root = ET.fromstring(r.content)
+    except Exception:
+        return []
+
+    def _txt(el, *tags):
+        for tag in tags:
+            value = el.findtext(tag, namespaces=_NS)
+            if value:
+                return value.strip()
+        return ""
+
+    items: list[dict] = []
+    for item in root.findall(".//item"):
+        title = _strip_snippet_html(_txt(item, "title"))
+        link = _txt(item, "link")
+        snippet = _strip_snippet_html(_txt(item, "description"))[:300]
+        pub = _txt(item, "pubDate")
+        if not link or not _matches_keywords(f"{title} {snippet}", keywords):
+            continue
+        domain = urlparse(link).netloc.replace("www.", "")
+        items.append({
+            "title": title or link,
+            "url": link,
+            "snippet": snippet,
+            "published": pub,
+            "source": domain,
+            "source_type": "rss",
+            "lang": "",
+        })
+        if len(items) >= limit:
+            return items
+
+    if items:
+        return items
+
+    for entry in root.findall("atom:entry", _NS):
+        link_el = entry.find("atom:link[@rel='alternate']", _NS) or entry.find("atom:link", _NS)
+        link = link_el.get("href", "") if link_el is not None else ""
+        title = _strip_snippet_html(_txt(entry, "atom:title"))
+        snippet = _strip_snippet_html(_txt(entry, "atom:summary", "atom:content"))[:300]
+        pub = _txt(entry, "atom:published", "atom:updated")
+        if not link or not _matches_keywords(f"{title} {snippet}", keywords):
+            continue
+        domain = urlparse(link).netloc.replace("www.", "")
+        items.append({
+            "title": title or link,
+            "url": link,
+            "snippet": snippet,
+            "published": pub,
+            "source": domain,
+            "source_type": "rss",
+            "lang": "",
+        })
+        if len(items) >= limit:
+            break
+    return items
+
+
+def _fetch_telegram_keyword_matches(channel: str, keywords: list[str], limit: int) -> list[dict]:
+    import requests as _rq
+    from bs4 import BeautifulSoup
+
+    channel = str(channel or "").strip().lstrip("@")
+    if not channel:
+        return []
+    try:
+        r = _rq.get(
+            f"https://t.me/s/{channel}",
+            timeout=20,
+            headers={
+                "User-Agent": "Mozilla/5.0 (DIMS research tool)",
+                "Accept-Language": "ru,uk;q=0.9,de;q=0.8,fr;q=0.7,en;q=0.6",
+            },
+        )
+        r.raise_for_status()
+    except Exception:
+        return []
+
+    soup = BeautifulSoup(r.text, "html.parser")
+    posts: list[dict] = []
+    for wrap in soup.select(".tgme_widget_message_wrap"):
+        text_el = wrap.select_one(".tgme_widget_message_text")
+        if not text_el:
+            continue
+        text = text_el.get_text(separator="\n").strip()
+        text = _re_module.sub(
+            r'(?i)(подписат[ьься]+\s+на\s+\S+.*|підписат[ьися]+\s+на\s+\S+.*'
+            r'|\bтг\b.*|\bзеркало\b.*|\bmax\b\s*$)',
+            "",
+            text,
+            flags=_re_module.MULTILINE,
+        ).strip()
+        if len(text.split()) < 8 or not _matches_keywords(text, keywords):
+            continue
+        date_el = wrap.select_one("a.tgme_widget_message_date")
+        date = date_el.get("datetime", "") if date_el else ""
+        msg_url = date_el.get("href", f"https://t.me/{channel}") if date_el else f"https://t.me/{channel}"
+        posts.append({
+            "title": text[:120].replace("\n", " ") + ("…" if len(text) > 120 else ""),
+            "full_text": text,
+            "url": msg_url,
+            "published": date,
+            "source": f"@{channel}",
+            "source_type": "telegram",
+            "lang": "",
+        })
+        if len(posts) >= limit:
+            break
+    return posts
+
+
+def _run_monitor_topics(topic_ids: set[str] | None = None) -> dict:
+    global MONITOR_CONFIG, SEARCH_CONFIG
+
+    MONITOR_CONFIG = _load_monitor_config()
+    SEARCH_CONFIG = _load_search_config()
+    queue = _load_monitor_queue()
+    existing_ids = {str(item.get("id")) for item in queue.get("items", []) if item.get("id")}
+
+    now = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    new_items: list[dict] = []
+    per_topic: list[dict] = []
+    errors: list[str] = []
+
+    for topic in MONITOR_CONFIG.get("topics", []):
+        if not topic.get("enabled", True):
+            continue
+        if topic_ids and topic.get("id") not in topic_ids:
+            continue
+
+        keywords = _monitor_keywords(topic)
+        if not keywords:
+            per_topic.append({"id": topic.get("id"), "name": topic.get("name"), "added": 0, "skipped": "no_keywords"})
+            continue
+
+        limit = int(topic.get("limit") or 12)
+        collected: list[dict] = []
+
+        for lang in topic.get("google_languages", []):
+            if lang not in _GN_LOCALES:
+                continue
+            for query in (topic.get("keywords", {}).get(lang) or []):
+                try:
+                    for item in _fetch_google_news(query, lang, limit):
+                        item["source_type"] = "google"
+                        item["matched_query"] = query
+                        item["matched_lang"] = lang
+                        collected.append(item)
+                except Exception as exc:
+                    errors.append(f"{topic.get('name')} google:{lang}: {exc}")
+
+        rss_feeds = topic.get("rss_feeds") or SEARCH_CONFIG.get("rss_feeds", [])
+        for feed_url in rss_feeds:
+            try:
+                for item in _fetch_rss_keyword_matches(feed_url, keywords, limit):
+                    item["matched_query"] = ", ".join(keywords[:3])
+                    collected.append(item)
+            except Exception as exc:
+                errors.append(f"{topic.get('name')} rss:{feed_url}: {exc}")
+
+        tg_channels = topic.get("tg_channels") or SEARCH_CONFIG.get("tg_channels", [])
+        for channel in tg_channels:
+            try:
+                for item in _fetch_telegram_keyword_matches(channel, keywords, limit):
+                    item["matched_query"] = ", ".join(keywords[:3])
+                    collected.append(item)
+            except Exception as exc:
+                errors.append(f"{topic.get('name')} tg:{channel}: {exc}")
+
+        topic_added = 0
+        seen_urls = set()
+        for item in collected:
+            url = item.get("url") or ""
+            if url and url in seen_urls:
+                continue
+            seen_urls.add(url)
+            item_id = _monitor_item_id(item, topic["id"])
+            if item_id in existing_ids:
+                continue
+            existing_ids.add(item_id)
+            item.update({
+                "id": item_id,
+                "topic_id": topic["id"],
+                "topic_name": topic["name"],
+                "discovered_at": now,
+                "status": "new",
+            })
+            new_items.append(item)
+            topic_added += 1
+
+        per_topic.append({"id": topic.get("id"), "name": topic.get("name"), "added": topic_added})
+
+    queue["items"] = new_items + queue.get("items", [])
+    queue["last_run"] = now
+    _save_monitor_queue(queue)
+    return {
+        "added": len(new_items),
+        "items": queue["items"],
+        "last_run": now,
+        "topics": per_topic,
+        "errors": errors,
+    }
+
+
+MONITOR_CONFIG = _load_monitor_config()
+
+
 @app.post("/api/evidence")
 def evidence():
     """Return token-level evidence for a flagged pair (TabooTrigger / EvidenceDrawer).
@@ -947,7 +1342,62 @@ def search_config():
         SEARCH_CONFIG["rss_feeds"] = [str(u).strip() for u in rss if str(u).strip()]
     if tg is not None:
         SEARCH_CONFIG["tg_channels"] = [str(c).strip().lstrip("@") for c in tg if str(c).strip()]
+    _save_search_config(SEARCH_CONFIG)
     return _ok(config=SEARCH_CONFIG)
+
+
+@app.route("/api/monitor/config", methods=["GET", "POST"])
+def monitor_config():
+    """GET/POST topic-based monitoring configuration."""
+    global MONITOR_CONFIG
+    if request.method == "GET":
+        MONITOR_CONFIG = _load_monitor_config()
+        return _ok(config=MONITOR_CONFIG)
+
+    data = request.get_json(silent=True) or {}
+    topics = data.get("topics", [])
+    if not isinstance(topics, list):
+        return _err("topics має бути списком.")
+    MONITOR_CONFIG = {
+        "topics": [_normalise_monitor_topic(t) for t in topics if isinstance(t, dict)]
+    }
+    _save_monitor_config(MONITOR_CONFIG)
+    return _ok(config=MONITOR_CONFIG)
+
+
+@app.get("/api/monitor/queue")
+def monitor_queue():
+    queue = _load_monitor_queue()
+    return _ok(items=queue.get("items", []), last_run=queue.get("last_run"))
+
+
+@app.post("/api/monitor/queue/clear")
+def monitor_queue_clear():
+    _save_monitor_queue({"items": [], "last_run": datetime.utcnow().replace(microsecond=0).isoformat() + "Z"})
+    return _ok(items=[], count=0)
+
+
+@app.post("/api/monitor/run")
+def monitor_run():
+    data = request.get_json(silent=True) or {}
+    raw_ids = data.get("topic_ids") or []
+    topic_ids = {str(i) for i in raw_ids if str(i).strip()} if isinstance(raw_ids, list) else None
+    result = _run_monitor_topics(topic_ids=topic_ids)
+    return _ok(**result)
+
+
+@app.post("/api/monitor/cron")
+def monitor_cron():
+    token = os.environ.get("MONITOR_TOKEN", "").strip()
+    supplied = (
+        request.headers.get("X-Monitor-Token", "")
+        or request.args.get("token", "")
+        or (request.get_json(silent=True) or {}).get("token", "")
+    )
+    if token and supplied != token:
+        return _err("Недійсний токен моніторингу.", 403)
+    result = _run_monitor_topics()
+    return _ok(**result)
 
 
 @app.post("/api/search-all")
