@@ -31,7 +31,10 @@ from pathlib import Path
 from typing import Iterable
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "Data"
+# DIMS_DATA_DIR дозволяє винести журнал на постійний диск (напр. Render Disk),
+# щоб він НЕ стирався при перезапуску. За замовчуванням — тека Data/ у проєкті.
+import os as _os
+DATA_DIR = Path(_os.environ.get("DIMS_DATA_DIR") or (BASE_DIR / "Data"))
 LOG_FILE = DATA_DIR / "monitoring_log.jsonl"
 
 _WHITESPACE_RE = re.compile(r"\s+")
