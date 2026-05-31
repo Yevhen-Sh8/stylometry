@@ -953,12 +953,17 @@ def _source_score(
     return overall, per_source, source_details, component_breakdown
 
 
-def _coordination_score(dist_df: pd.DataFrame, threshold: float) -> float:
+# Ваги факторів координаційного індикатора I_coord відповідно до означення в
+# дисертації (розд. 2.5): I_coord = f(Δ_Burrows, S_time, S_theme, S_source) —
+# стилометрична близькість, синхронність появи, тематична повторюваність,
+# структурна пов'язаність джерел. Провізорні; калібруються апробацією.
+_COORD_FACTOR_WEIGHTS = {"stylo": 0.50, "time": 0.10, "theme": 0.20, "source": 0.20}
+
+
+def _stylo_coordination(dist_df: pd.DataFrame, threshold: float) -> float:
+    """Стилометрична складова I_coord на основі матриці Δ-Burrows."""
     labels = dist_df.index.tolist()
-    deltas = [
-        float(dist_df.loc[a, b])
-        for a, b in combinations(labels, 2)
-    ]
+    deltas = [float(dist_df.loc[a, b]) for a, b in combinations(labels, 2)]
     if not deltas:
         return 0.0
     min_delta = min(deltas)
@@ -967,6 +972,90 @@ def _coordination_score(dist_df: pd.DataFrame, threshold: float) -> float:
     top_k = sorted(deltas)[: min(3, len(deltas))]
     compactness = max(0.0, 1.0 - (float(np.mean(top_k)) / max(threshold, 1e-6)))
     return float(np.clip(0.5 * closest_score + 0.3 * flagged_ratio + 0.2 * compactness, 0.0, 1.0))
+
+
+def _theme_overlap_score(tokenised: dict[str, list[str]] | None, top_n: int = 50) -> float:
+    """S_theme — середня попарна тематична подібність (Jaccard за топ-N токенами)."""
+    if not tokenised or len(tokenised) < 2:
+        return 0.0
+    top_sets = []
+    for toks in tokenised.values():
+        top_sets.append({w for w, _ in Counter(toks).most_common(top_n)} if toks else set())
+    sims = []
+    for a, b in combinations(top_sets, 2):
+        union = a | b
+        if union:
+            sims.append(len(a & b) / len(union))
+    return float(np.clip(np.mean(sims), 0.0, 1.0)) if sims else 0.0
+
+
+def _source_linkage_score(source_meta: dict[str, dict] | None) -> float:
+    """S_source — структурна пов'язаність джерел: частка джерел, що належать до
+    спільної мережі підвищеного ризику (проксі мережевої когезії ретрансляції)."""
+    if not source_meta or len(source_meta) < 2:
+        return 0.0
+    risky = sum(
+        1 for meta in source_meta.values()
+        if _domain_risk_score((meta or {}).get("domain", "")) >= 0.55
+    )
+    return float(np.clip(risky / len(source_meta), 0.0, 1.0))
+
+
+def _time_sync_score(source_meta: dict[str, dict] | None) -> float | None:
+    """S_time — синхронність появи повідомлень. Потребує позначок часу публікацій.
+    Повертає None, якщо їх немає у метаданих (фактор виключається з ренормуванням
+    вагів), що чесно відображає поточну доступність даних."""
+    if not source_meta:
+        return None
+    stamps = [(m or {}).get("timestamp") or (m or {}).get("date") for m in source_meta.values()]
+    stamps = [s for s in stamps if s]
+    if len(stamps) < 2:
+        return None
+    try:
+        from datetime import datetime
+        def _parse(s):
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    return datetime.strptime(str(s)[:19], fmt)
+                except ValueError:
+                    continue
+            return None
+        dts = [d for d in (_parse(s) for s in stamps) if d]
+        if len(dts) < 2:
+            return None
+        span_h = (max(dts) - min(dts)).total_seconds() / 3600.0
+        # Чим тісніше вікно появи, тим вища синхронність (насичення на 48 год).
+        return float(np.clip(1.0 - min(span_h, 48.0) / 48.0, 0.0, 1.0))
+    except Exception:
+        return None
+
+
+def _coordination_score(
+    dist_df: pd.DataFrame,
+    threshold: float,
+    tokenised: dict[str, list[str]] | None = None,
+    source_meta: dict[str, dict] | None = None,
+) -> float:
+    """I_coord — багатофакторний індикатор координації між джерелами.
+
+    Відповідно до означення в дисертації поєднує: стилометричну близькість
+    (Δ-Burrows), синхронність появи (S_time), тематичну повторюваність (S_theme)
+    та структурну пов'язаність джерел (S_source). Якщо для якогось фактора немає
+    даних (зокрема позначок часу для S_time), він виключається, а ваги решти
+    ренормуються — тож I_coord завжди коректно нормований у [0, 1]."""
+    factors = {
+        "stylo": _stylo_coordination(dist_df, threshold),
+        "theme": _theme_overlap_score(tokenised),
+        "source": _source_linkage_score(source_meta),
+    }
+    t = _time_sync_score(source_meta)
+    if t is not None:
+        factors["time"] = t
+    wsum = sum(_COORD_FACTOR_WEIGHTS[k] for k in factors)
+    if wsum <= 0:
+        return 0.0
+    score = sum(_COORD_FACTOR_WEIGHTS[k] / wsum * v for k, v in factors.items())
+    return float(np.clip(score, 0.0, 1.0))
 
 
 # Точка насичення: стільки незалежних джерел, що висвітлюють подію, дає
@@ -1088,7 +1177,7 @@ def build_dims_assessment(
     doc_scores = _document_signal_scores(tokenised)
     content_score = float(np.mean([v["content"] for v in doc_scores.values()])) if doc_scores else 0.0
     impact_score = float(np.mean([v["impact"] for v in doc_scores.values()])) if doc_scores else 0.0
-    coord_score = _coordination_score(dist_df, threshold)
+    coord_score = _coordination_score(dist_df, threshold, tokenised=tokenised, source_meta=source_meta)
     dynamics_score = _dynamics_score(len(tokenised))
     source_score, source_breakdown, source_details, source_components = _source_score(source_meta, corpus)
     r_dims = (
@@ -1137,7 +1226,7 @@ def build_dims_assessment(
         },
         "notes": [
             "I_content: маркери маніпулятивного змісту у корпусі.",
-            "I_coord: стилометрична близькість і щільність підозрілих пар (єдиний носій сигналу координації).",
+            "I_coord: багатофакторна координація — Δ-Burrows + тематична подібність + структурна пов'язаність джерел (+ синхронність появи за наявності позначок часу).",
             "I_dynamics: інтенсивність (масштаб) незалежного висвітлення; часова синхронність — напрям подальшої роботи.",
             "I_impact: маркери потенційного впливу на безпекове середовище.",
             "I_source: доменний ризик джерела, прозорість, редакційні ознаки та якість роботи з джерелами.",
