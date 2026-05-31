@@ -969,12 +969,26 @@ def _coordination_score(dist_df: pd.DataFrame, threshold: float) -> float:
     return float(np.clip(0.5 * closest_score + 0.3 * flagged_ratio + 0.2 * compactness, 0.0, 1.0))
 
 
-def _dynamics_score(n_docs: int, flagged_pairs: int, n_pairs: int) -> float:
-    if n_pairs == 0:
+# Точка насичення: стільки незалежних джерел, що висвітлюють подію, дає
+# повний сигнал інтенсивності. Значення провізорне — калібрується апробацією.
+_DYNAMICS_SATURATION_DOCS = 8
+
+
+def _dynamics_score(n_docs: int) -> float:
+    """I_dynamics — інтенсивність (масштаб) висвітлення події, нормована до [0, 1].
+
+    Наукова коректність:
+    - НЕ використовує щільність підозрілих пар: цей сигнал належить I_coord,
+      і повторне врахування тут спричиняло б подвійний рахунок координації
+      в R_DIMS (адитивна модель вимагає розумної незалежності індикаторів).
+    - Часова динаміка (синхронність появи, S_time) потребує позначок часу
+      публікацій, які наразі не збираються, тому винесена в подальшу роботу
+      (див. розділ обмежень моделі). Поточна операціоналізація консервативна —
+      лише масштаб незалежного охоплення.
+    """
+    if n_docs <= 0:
         return 0.0
-    corpus_intensity = min(1.0, n_docs / 8.0)
-    flagged_density = flagged_pairs / n_pairs
-    return float(np.clip(0.45 * corpus_intensity + 0.55 * flagged_density, 0.0, 1.0))
+    return float(np.clip(n_docs / _DYNAMICS_SATURATION_DOCS, 0.0, 1.0))
 
 
 def dims_sensitivity(
@@ -1075,7 +1089,7 @@ def build_dims_assessment(
     content_score = float(np.mean([v["content"] for v in doc_scores.values()])) if doc_scores else 0.0
     impact_score = float(np.mean([v["impact"] for v in doc_scores.values()])) if doc_scores else 0.0
     coord_score = _coordination_score(dist_df, threshold)
-    dynamics_score = _dynamics_score(len(tokenised), flagged_pairs, n_pairs)
+    dynamics_score = _dynamics_score(len(tokenised))
     source_score, source_breakdown, source_details, source_components = _source_score(source_meta, corpus)
     r_dims = (
         DEFAULT_WEIGHTS["content"] * content_score
@@ -1123,8 +1137,8 @@ def build_dims_assessment(
         },
         "notes": [
             "I_content: маркери маніпулятивного змісту у корпусі.",
-            "I_coord: стилометрична близькість і щільність підозрілих пар.",
-            "I_dynamics: інтенсивність корпусу та щільність координаційних збігів.",
+            "I_coord: стилометрична близькість і щільність підозрілих пар (єдиний носій сигналу координації).",
+            "I_dynamics: інтенсивність (масштаб) незалежного висвітлення; часова синхронність — напрям подальшої роботи.",
             "I_impact: маркери потенційного впливу на безпекове середовище.",
             "I_source: доменний ризик джерела, прозорість, редакційні ознаки та якість роботи з джерелами.",
         ],
