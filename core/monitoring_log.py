@@ -59,6 +59,36 @@ def text_fingerprint(text: str) -> str:
     return f"sha256:{digest}"
 
 
+def simhash(text: str, bits: int = 64) -> int:
+    """64-бітний SimHash нормалізованого тексту за словесними 3-грамами.
+
+    Майже-дублікатні тексти (той самий матеріал з іншими футерами, обрізкою,
+    службовими рядками «Підписатись») мають малу відстань Геммінга між
+    SimHash'ами. Використовується для блокування технічних копій ПЕРЕД
+    стилометричним аналізом — інакше Δ-Burrows ≈ 0 між копіями штучно
+    завищує координаційний індикатор I_coord."""
+    norm = _normalise(text)
+    words = norm.split()
+    if not words:
+        return 0
+    shingles = [" ".join(words[i:i + 3]) for i in range(max(1, len(words) - 2))]
+    vector = [0] * bits
+    for sh in shingles:
+        h = int.from_bytes(hashlib.blake2b(sh.encode("utf-8"), digest_size=8).digest(), "big")
+        for b in range(bits):
+            vector[b] += 1 if (h >> b) & 1 else -1
+    out = 0
+    for b in range(bits):
+        if vector[b] > 0:
+            out |= (1 << b)
+    return out
+
+
+def hamming(a: int, b: int) -> int:
+    """Відстань Геммінга між двома SimHash-відбитками (к-ть різних бітів)."""
+    return bin(a ^ b).count("1")
+
+
 def _iter_records() -> Iterable[dict]:
     if not LOG_FILE.exists():
         return []
