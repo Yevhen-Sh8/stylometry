@@ -1030,7 +1030,7 @@ $("btnImportUnified").addEventListener("click", async () => {
     markResultStatus(idx, "loading", "завантаження…");
     status.textContent = `Імпорт ${i + 1}/${nonTgPicks.length}: ${r.title.slice(0, 60)}…`;
     try {
-      const data = await api("/api/add-url", "POST", { url: r.url, label: "" });
+      const data = await api("/api/add-url", "POST", { url: r.url, label: "", published: r.published || "" });
       if (data.ok) { addSource(data.source); imported++; markResultStatus(idx, "ok", "додано"); }
       else { failed++; markResultStatus(idx, "err", "помилка: " + (data.error || "помилка").slice(0, 120)); }
     } catch (e) { failed++; markResultStatus(idx, "err", "помилка: " + e.message.slice(0, 120)); }
@@ -1307,7 +1307,7 @@ async function importMonitorSelected() {
     markMonitorResultStatus(idx, "loading", "завантаження…");
     status.textContent = `Імпорт ${i + 1}/${nonTgPicks.length}: ${(r.title || "").slice(0, 60)}…`;
     try {
-      const data = await api("/api/add-url", "POST", { url: r.url, label: "" });
+      const data = await api("/api/add-url", "POST", { url: r.url, label: "", published: r.published || "" });
       if (data.ok) { addSource(data.source); imported++; markMonitorResultStatus(idx, "ok", "додано"); }
       else { failed++; markMonitorResultStatus(idx, "err", "помилка: " + (data.error || "помилка").slice(0, 120)); }
     } catch (e) { failed++; markMonitorResultStatus(idx, "err", "помилка: " + e.message.slice(0, 120)); }
