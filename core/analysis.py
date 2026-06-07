@@ -1212,6 +1212,73 @@ def classify_interest_grade(
     }
 
 
+def _r_dims_confidence(
+    z: pd.DataFrame,
+    threshold: float,
+    content_score: float,
+    impact_score: float,
+    dynamics_score: float,
+    source_score: float,
+    tokenised: dict[str, list[str]],
+    source_meta: dict[str, dict] | None,
+    manifestation: str | None = None,
+    n_iterations: int = 300,
+    confidence: float = 0.95,
+    random_state: int = 42,
+) -> dict:
+    """Bootstrap-довірчий інтервал для R_DIMS.
+
+    Ресемплюємо MFW-ознаки (колонки z) з заміщенням і на кожній ітерації
+    перераховуємо стилометричну складову I_coord → I_coord → R_DIMS. Інші
+    фактори I_coord (тематична/структурна/часова пов'язаність) та решта
+    індикаторів від ресемплу ознак не залежать, тож фіксуються. Повертає
+    [lo, hi], середнє та ЙМОВІРНІСТЬ кожного грейду — це дає відповідь на
+    закид «точкова оцінка без похибки» і кількісно оцінює стійкість грейду
+    на межі (напр. P(грейд ≥ S))."""
+    labels = z.index.tolist()
+    values = z.values.astype(float)
+    n_docs, n_features = values.shape
+    if n_docs < 2 or n_features < 2:
+        return {}
+
+    # Незмінні (щодо ресемплу ознак) фактори I_coord та фіксована частина R_DIMS.
+    theme = _theme_overlap_score(tokenised)
+    source_link = _source_linkage_score(source_meta)
+    t_sync = _time_sync_score(source_meta)
+    w = DEFAULT_WEIGHTS
+    fixed_part = (w["content"] * content_score + w["dynamics"] * dynamics_score
+                  + w["impact"] * impact_score + w["source"] * source_score)
+
+    rng = np.random.default_rng(random_state)
+    samples = np.empty(n_iterations, dtype=float)
+    for it in range(n_iterations):
+        cols = rng.integers(0, n_features, size=n_features)
+        dists = cdist(values[:, cols], values[:, cols], metric="cityblock") / n_features
+        stylo = _stylo_coordination(pd.DataFrame(dists, index=labels, columns=labels), threshold)
+        factors = {"stylo": stylo, "theme": theme, "source": source_link}
+        if t_sync is not None:
+            factors["time"] = t_sync
+        wsum = sum(_COORD_FACTOR_WEIGHTS[k] for k in factors)
+        i_coord = (sum(_COORD_FACTOR_WEIGHTS[k] / wsum * v for k, v in factors.items())
+                   if wsum > 0 else 0.0)
+        samples[it] = fixed_part + w["coord"] * float(np.clip(i_coord, 0.0, 1.0))
+
+    alpha = (1.0 - confidence) / 2.0
+    grades = [classify_interest_grade(float(s), manifestation=manifestation)["grade"]
+              for s in samples]
+    gc = Counter(grades)
+    grade_prob = {g: round(gc.get(g, 0) / n_iterations, 3) for g, _, _ in GRADE_THRESHOLDS}
+    return {
+        "lo": round(float(np.quantile(samples, alpha)), 4),
+        "hi": round(float(np.quantile(samples, 1.0 - alpha)), 4),
+        "mean": round(float(samples.mean()), 4),
+        "std": round(float(samples.std(ddof=1)) if n_iterations > 1 else 0.0, 4),
+        "confidence": confidence,
+        "grade_prob": grade_prob,
+        "n_iterations": n_iterations,
+    }
+
+
 def build_dims_assessment(
     tokenised: dict[str, list[str]],
     dist_df: pd.DataFrame,
@@ -1221,6 +1288,7 @@ def build_dims_assessment(
     source_meta: dict[str, dict] | None = None,
     corpus: dict[str, str] | None = None,
     manifestation: str | None = None,
+    z: pd.DataFrame | None = None,
 ) -> dict:
     _ = (flagged_pairs, n_pairs)  # навмисно не використовуються
     doc_scores = _document_signal_scores(tokenised)
@@ -1245,6 +1313,12 @@ def build_dims_assessment(
         "I_source": round(source_score, 4),
     }
     sensitivity = dims_sensitivity(indicators, DEFAULT_WEIGHTS)
+    confidence = (
+        _r_dims_confidence(z, threshold, content_score, impact_score,
+                           dynamics_score, source_score, tokenised, source_meta,
+                           manifestation=manifestation)
+        if z is not None else {}
+    )
     manifestation_key = manifestation if manifestation in DIMS_MANIFESTATION_TYPES else None
     manifestation_info = {
         "key": manifestation_key,
@@ -1255,6 +1329,7 @@ def build_dims_assessment(
         "weights": DEFAULT_WEIGHTS,
         "indicators": indicators,
         "r_dims": round(float(r_dims), 4),
+        "confidence": confidence,
         "grade": grade,
         "manifestation": manifestation_info,
         "sensitivity": sensitivity,
@@ -1394,6 +1469,7 @@ def run_pipeline(
         source_meta=source_meta,
         corpus=corpus,
         manifestation=manifestation,
+        z=z,
     )
 
     # ── Base64-encode chart images for HTML embedding ─────────────────────
