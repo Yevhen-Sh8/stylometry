@@ -41,7 +41,7 @@ from core.scraper import scrape_url_payload, _assert_public_url
 from core.analysis import (DIMS_MANIFESTATION_TYPES, detect_script,
                             run_pipeline)
 from core.monitoring_log import (append_record, find_duplicate, load_records,
-                                  text_fingerprint)
+                                  text_fingerprint, simhash, hamming)
 from core.monitoring_forms import build_daily_monitoring_form
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -253,6 +253,8 @@ def _register_source(
     try:
         fingerprint = text_fingerprint(clean_text)
         meta["fingerprint"] = fingerprint
+        meta["simhash"] = str(simhash(clean_text))  # кеш для near-duplicate перевірки
+        SOURCE_META[label] = meta
         append_record(
             label=label,
             source_type=source_type,
@@ -277,13 +279,39 @@ def _check_duplicate(clean_text: str) -> dict | None:
         return None
     fingerprint = text_fingerprint(clean_text)
     record = find_duplicate(fingerprint)
-    if not record:
+    # Точний збіг (SHA-256) — лише якщо відповідне джерело досі в сесії.
+    if record:
+        previous_label = record.get("label")
+        if previous_label and previous_label in SOURCES:
+            return record
+    # Точного збігу немає (або джерело видалене) → перевірка майже-дублікатів
+    # (технічні копії), щоб не завищувати координаційний індикатор.
+    return _check_near_duplicate(clean_text)
+
+
+# Поріг відстані Геммінга (з 64 біт SimHash) для near-duplicate. Емпірично:
+# та сама стаття з футером/обрізкою дає ~5–8, тоді як змістовно різні тексти —
+# 20+. Поріг 10 ловить технічні копії з запасом, НЕ чіпаючи відмінні джерела
+# (зокрема перефразовані координовані матеріали, які мають дійти до Burrows як
+# сигнал I_coord). Значення провізорне — калібрується. SimHash менш надійний
+# на дуже коротких текстах.
+_NEAR_DUP_HAMMING = 10
+
+
+def _check_near_duplicate(clean_text: str) -> dict | None:
+    """Виявляє майже-дублікати серед уже доданих джерел поточної сесії за
+    SimHash. Блокує технічні копії ПЕРЕД стилометрією, щоб Δ-Burrows ≈ 0 між
+    копіями не завищував координаційний індикатор I_coord."""
+    if not clean_text:
         return None
-    # Запис вважається дублікатом лише тоді, коли відповідне джерело
-    # досі присутнє у поточній сесії (тобто не було видалене).
-    previous_label = record.get("label")
-    if previous_label and previous_label in SOURCES:
-        return record
+    sh = simhash(clean_text)
+    if not sh:
+        return None
+    for label in list(SOURCES.keys()):
+        cached = (SOURCE_META.get(label) or {}).get("simhash")
+        other = int(cached) if cached is not None else simhash(SOURCES.get(label, ""))
+        if other and hamming(sh, other) <= _NEAR_DUP_HAMMING:
+            return {"label": label, "near_duplicate": True}
     return None
 
 
