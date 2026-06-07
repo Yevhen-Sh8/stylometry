@@ -200,6 +200,28 @@ def _derive_title_from_html(html: str, fallback: str = "") -> str:
     return fallback[:180]
 
 
+def _parse_pubdate(raw: str) -> str:
+    """Нормалізує дату публікації до ISO-8601. Приймає RFC822 (RSS pubDate),
+    ISO-8601 (Atom/Telegram). Повертає '' якщо не розпізнано.
+    Потрібно для S_time у I_coord (синхронність появи повідомлень)."""
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).isoformat()
+    except (ValueError, TypeError):
+        pass
+    try:
+        from email.utils import parsedate_to_datetime
+        dt = parsedate_to_datetime(raw)
+        if dt is not None:
+            return dt.isoformat()
+    except (ValueError, TypeError, IndexError):
+        pass
+    return ""
+
+
 def _build_source_meta(
     label: str,
     text: str,
@@ -208,12 +230,13 @@ def _build_source_meta(
     display_title: str = "",
     original_name: str = "",
     url: str = "",
+    published: str = "",
 ) -> dict:
     tokens = _token_count(text)
     domain = urlparse(url).netloc.replace("www.", "") if url else ""
     output_name = _safe_output_name(label)
     local_text_url = f"/output/clean_texts/{output_name}.txt"
-    return {
+    meta = {
         "label": label,
         "display_title": _derive_display_title(text, fallback=label, preferred=display_title),
         "tokens": tokens,
@@ -225,6 +248,11 @@ def _build_source_meta(
         "original_name": original_name,
         "local_text_url": local_text_url,
     }
+    # Дата публікації (НЕ час імпорту) — живить S_time у координаційному індикаторі.
+    iso = _parse_pubdate(published)
+    if iso:
+        meta["timestamp"] = iso
+    return meta
 
 
 def _register_source(
@@ -236,6 +264,7 @@ def _register_source(
     original_name: str = "",
     url: str = "",
     extractor: str = "",
+    published: str = "",
 ) -> dict:
     SOURCES[label] = clean_text
     _save_clean_text(label, clean_text)
@@ -246,6 +275,7 @@ def _register_source(
         display_title=display_title,
         original_name=original_name,
         url=url,
+        published=published,
     )
     SOURCE_META[label] = meta
 
@@ -479,6 +509,7 @@ def add_url():
         display_title=payload["title"] or label,
         url=payload["url"],
         extractor="scrape_url_payload",
+        published=(data.get("published") or "").strip(),
     ))
 
 
@@ -559,6 +590,7 @@ def add_html():
         display_title=html_title or label,
         url=url,
         extractor="manual_html",
+        published=(data.get("published") or "").strip(),
     ))
 
 
