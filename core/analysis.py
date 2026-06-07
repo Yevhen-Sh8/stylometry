@@ -813,22 +813,58 @@ def classify_severity(delta: float, threshold: float) -> dict:
                 "color": "#ca8a04", "icon": ""}
 
 
-def _marker_score(tokens: list[str], markers: set[str], scale: float) -> float:
+# Багатомовні маркери заперечення/спростування. Якщо такий токен стоїть
+# безпосередньо перед знайденим маркером (вікно 3 токени), маркер НЕ
+# зараховується — це усуває хибні спрацювання на кшталт «це не фейк»,
+# «спростування пропаганди», «нібито атака».
+_NEGATION_CUES = {
+    # укр.
+    "не", "ні", "без", "спростування", "спростовано", "спростовує", "спростують",
+    "нібито", "начебто", "буцімто",
+    # рос.
+    "нет", "без", "опровержение", "опровергнут", "опроверг", "якобы", "ложь",
+    # англ.
+    "no", "not", "without", "debunk", "debunked", "debunks", "false", "refute",
+    "refuted", "refutes", "denies", "denied",
+    # фр.
+    "non", "sans", "pas", "ne", "dément", "démenti",
+    # нім.
+    "kein", "keine", "nicht", "ohne", "dementiert", "widerlegt",
+}
+# Референсна щільність маркерів (частка токенів-маркерів), за якої частотний
+# сигнал виходить на насичення. Інтерпретовний параметр (калібрується),
+# замінює непрозорий лінійний множник scale. Гладке насичення 1 − exp(−rate/ref)
+# усуває «обрив» жорсткого min(1, …) і робить шкалу безрозмірною й порівнянною.
+_CONTENT_DENSITY_REF = 0.018
+_IMPACT_DENSITY_REF = 0.026
+_NEGATION_WINDOW = 3
+
+
+def _marker_score(tokens: list[str], markers: set[str], density_ref: float) -> float:
     total = len(tokens)
     if total == 0:
         return 0.0
-    hits = [t for t in tokens if t in markers]
-    freq_score = min(1.0, (len(hits) / total) * scale)
+    hits: list[str] = []
+    for i, t in enumerate(tokens):
+        if t not in markers:
+            continue
+        window = tokens[max(0, i - _NEGATION_WINDOW):i]
+        if any(w in _NEGATION_CUES for w in window):
+            continue  # заперечений маркер не зараховуємо
+        hits.append(t)
+    rate = len(hits) / total
+    # Гладке насичення замість лінійного scale з жорстким відсіканням.
+    freq_score = float(1.0 - np.exp(-rate / max(density_ref, 1e-9)))
     diversity_score = min(1.0, len(set(hits)) / max(1, min(len(markers), 8)))
-    return float(0.7 * freq_score + 0.3 * diversity_score)
+    return float(np.clip(0.7 * freq_score + 0.3 * diversity_score, 0.0, 1.0))
 
 
 def _document_signal_scores(tokenised: dict[str, list[str]]) -> dict[str, dict[str, float]]:
     scores: dict[str, dict[str, float]] = {}
     for label, tokens in tokenised.items():
         scores[label] = {
-            "content": _marker_score(tokens, CONTENT_MARKERS, scale=40.0),
-            "impact": _marker_score(tokens, IMPACT_MARKERS, scale=28.0),
+            "content": _marker_score(tokens, CONTENT_MARKERS, density_ref=_CONTENT_DENSITY_REF),
+            "impact": _marker_score(tokens, IMPACT_MARKERS, density_ref=_IMPACT_DENSITY_REF),
             "tokens": float(len(tokens)),
         }
     return scores
@@ -865,7 +901,19 @@ def _pattern_risk(text: str, patterns: tuple[str, ...], weight: float) -> float:
     if not text:
         return 0.0
     lower = text.lower()
-    hits = sum(1 for pattern in patterns if pattern and pattern in lower)
+    hits = 0
+    for pattern in patterns:
+        if not pattern:
+            continue
+        idx = lower.find(pattern)
+        while idx != -1:
+            # Не зараховуємо збіг, якщо безпосередньо перед ним стоїть
+            # заперечення/спростування (зменшує хибні спрацювання, особливо
+            # для етичних патернів у засуджувальному чи цитувальному контексті).
+            pre_words = lower[max(0, idx - 40):idx].split()[-_NEGATION_WINDOW:]
+            if not any(w in _NEGATION_CUES for w in pre_words):
+                hits += 1
+            idx = lower.find(pattern, idx + len(pattern))
     return float(np.clip(hits * weight, 0.0, 1.0))
 
 
@@ -1168,12 +1216,13 @@ def build_dims_assessment(
     tokenised: dict[str, list[str]],
     dist_df: pd.DataFrame,
     threshold: float,
-    flagged_pairs: int,
-    n_pairs: int,
+    flagged_pairs: int = 0,   # збережено для сумісності API; не використовується
+    n_pairs: int = 0,         # (сигнал координації повністю в I_coord)
     source_meta: dict[str, dict] | None = None,
     corpus: dict[str, str] | None = None,
     manifestation: str | None = None,
 ) -> dict:
+    _ = (flagged_pairs, n_pairs)  # навмисно не використовуються
     doc_scores = _document_signal_scores(tokenised)
     content_score = float(np.mean([v["content"] for v in doc_scores.values()])) if doc_scores else 0.0
     impact_score = float(np.mean([v["impact"] for v in doc_scores.values()])) if doc_scores else 0.0
