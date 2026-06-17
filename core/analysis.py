@@ -281,10 +281,40 @@ _STRIP_TABLE = str.maketrans(
 )
 
 
+# URL, e-mail та telegram-хендли видаляються ДО зняття пунктуації, інакше
+# "https://t.me/x" злипається в alpha-токен "httpstmex" і потрапляє в MFW.
+_URL_EMAIL_RE = re.compile(
+    r"https?://\S+|www\.\S+|t\.me/\S+|\S+@\S+\.\S+", re.IGNORECASE
+)
+
+# Веб-«хром»: інтерфейсні/рекламні/навігаційні слова, що не є частиною тексту
+# повідомлення. Засмічують MFW і — переживаючи culling — штучно завищують
+# близькість між джерелами зі схожою версткою. Перелік стартовий, розширюваний;
+# навмисно лише однозначно-нетекстові слова (щоб не вимити авторський сигнал).
+_BOILERPLATE_STOPWORDS = {
+    # UA
+    "читати", "читайте", "підписатися", "підписатись", "підписуйтесь", "підписка",
+    "передплата", "поділитися", "поділись", "поширити", "коментувати", "коментарі",
+    "реклама", "рекламний", "банер", "кукі", "кук", "меню", "увійти", "вхід",
+    "реєстрація", "зареєструватися", "детальніше", "докладніше", "більше",
+    # RU
+    "читать", "читайте", "подписаться", "подписка", "поделиться", "поделись",
+    "комментарии", "комментировать", "реклама", "рекламный", "баннер", "меню",
+    "войти", "регистрация", "подробнее", "далее",
+    # EN / web
+    "http", "https", "www", "com", "org", "net", "html", "cookie", "cookies",
+    "subscribe", "share", "comment", "comments", "advertisement", "newsletter",
+    "menu", "login", "signin", "signup", "readmore", "more",
+}
+
+
 def clean_and_tokenise(text: str) -> list[str]:
-    """Lowercase, strip punctuation/digits, return alphabetic tokens (len≥2)."""
-    text = text.lower().translate(_STRIP_TABLE)
-    return [t for t in text.split() if t.isalpha() and len(t) > 1]
+    """Lowercase, drop URLs/e-mails, strip punctuation/digits, return alphabetic
+    tokens (len≥2) without web boilerplate (нав./рекл. слова, URL-фрагменти)."""
+    text = _URL_EMAIL_RE.sub(" ", text.lower())
+    text = text.translate(_STRIP_TABLE)
+    return [t for t in text.split()
+            if t.isalpha() and len(t) > 1 and t not in _BOILERPLATE_STOPWORDS]
 
 
 _UA_SPECIFIC = set("іїєґІЇЄҐ")
