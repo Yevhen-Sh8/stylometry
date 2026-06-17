@@ -398,8 +398,8 @@ def _parse_analysis_params(data: dict) -> tuple[int, float, int, str, int, str]:
         raise ValueError("Поріг Delta має бути в діапазоні 0.1-2.0.")
     if not 1 <= min_doc_freq <= 20:
         raise ValueError("Параметр culling (min_doc_freq) має бути 1-20.")
-    if feature_type not in {"word", "char"}:
-        raise ValueError("feature_type має бути 'word' або 'char'.")
+    if feature_type not in {"word", "char", "function"}:
+        raise ValueError("feature_type має бути 'word', 'function' або 'char'.")
     if not 2 <= char_n <= 6:
         raise ValueError("char_n має бути в діапазоні 2-6.")
     if projection_method not in {"pca", "mds", "tsne"}:
@@ -1162,7 +1162,7 @@ def evidence():
     mfw_n        = min(int(data.get("mfw_n", 200)), 400)
     feature_type = str(data.get("feature_type", "word")).lower()
     char_n       = int(data.get("char_n", 3))
-    if feature_type not in {"word", "char"}:
+    if feature_type not in {"word", "char", "function"}:
         feature_type = "word"
 
     text_a = SOURCES[a_label]
