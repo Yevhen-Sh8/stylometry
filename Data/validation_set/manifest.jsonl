@@ -1,0 +1,9 @@
+// Реєстр розмічених подій для валідації DIMS. Один JSON-об'єкт = одна подія на рядок.
+// Рядки, що починаються з // — коментарі (ігноруються). Інструкції — у README.md цієї теки.
+// Грейд (експертний ground truth): F | B | S | SS | SSS. Мінімум 2 джерела на подію.
+// Перевірка: .venv/bin/python tools/validation.py --check --manifest Data/validation_set/manifest.jsonl
+//
+// --- ПРИКЛАД (заглушка; видали перед реальним прогоном) ---
+{"event_id": "ev001_EXAMPLE", "grade": "S", "manifestation": "fake", "sources": [{"text_path": "Data/validation_set/events/ev001_EXAMPLE/src_01_ria.txt", "domain": "ria.ru", "published": "2026-05-01T10:00:00"}, {"text_path": "Data/validation_set/events/ev001_EXAMPLE/src_02_tass.txt", "domain": "tass.ru", "published": "2026-05-01T10:35:00"}]}
+//
+// --- ДОДАВАЙ СВОЇ ПОДІЇ НИЖЧЕ (скопіюй рядок-приклад і заміни значення) ---

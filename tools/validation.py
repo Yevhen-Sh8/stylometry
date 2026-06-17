@@ -260,22 +260,84 @@ def _selftest_manifest(n: int = 60) -> list[dict]:
     return man
 
 
+def _load_manifest(path: str) -> list[dict]:
+    with open(path, encoding="utf-8") as f:
+        return [json.loads(line) for line in f
+                if line.strip() and not line.lstrip().startswith("//")]
+
+
+def check_manifest(manifest: list[dict]) -> bool:
+    """Лінт manifest перед прогоном: грейди, ≥2 джерела, наявність файлів,
+    розподіл грейдів. Повертає True, якщо помилок немає."""
+    errors, warnings = [], []
+    dist = {g: 0 for g in GRADES}
+    for i, ev in enumerate(manifest):
+        eid = ev.get("event_id", f"<рядок {i+1}>")
+        g = (ev.get("grade") or "").strip()
+        if g not in GRADE_IDX:
+            errors.append(f"{eid}: невідомий/відсутній грейд '{g}' (треба {'/'.join(GRADES)})")
+        else:
+            dist[g] += 1
+        srcs = ev.get("sources", [])
+        if len(srcs) < 2:
+            errors.append(f"{eid}: {len(srcs)} джерел (потрібно ≥ 2 для Burrows' Delta)")
+        for j, s in enumerate(srcs):
+            if not s.get("text") and not s.get("text_path"):
+                errors.append(f"{eid}: джерело #{j+1} без 'text' і 'text_path'")
+            elif s.get("text_path"):
+                p = Path(s["text_path"])
+                if not p.is_absolute():
+                    p = BASE / p
+                if not p.exists():
+                    errors.append(f"{eid}: файл не знайдено — {s['text_path']}")
+            if not s.get("domain"):
+                warnings.append(f"{eid}: джерело #{j+1} без 'domain' (I_source буде слабшим)")
+            if not s.get("published"):
+                warnings.append(f"{eid}: джерело #{j+1} без 'published' (S_time не врахується)")
+
+    n = len(manifest)
+    print(f"# Перевірка manifest: {n} подій\n")
+    print("Розподіл грейдів: " + ", ".join(f"{g}={dist[g]}" for g in GRADES))
+    rare = [g for g in ("SS", "SSS") if dist[g] < 5]
+    if rare:
+        warnings.append(f"мало подій рідкісних грейдів {rare} — ROC за верхніми межами буде нестійким")
+    if n < 30:
+        warnings.append(f"усього {n} подій — для стійких метрик бажано ≥ 100")
+    if warnings:
+        print(f"\n⚠ Попередження ({len(warnings)}):")
+        for w in warnings[:40]:
+            print(f"  - {w}")
+    if errors:
+        print(f"\n❌ Помилки ({len(errors)}):")
+        for e in errors[:40]:
+            print(f"  - {e}")
+        print("\nВердикт: НЕ готово до прогону — виправте помилки.")
+        return False
+    print("\n✅ Вердикт: структурно коректно, можна запускати валідацію.")
+    return True
+
+
 def main():
     ap = argparse.ArgumentParser(description="DIMS статистична валідація (Фаза 2)")
     ap.add_argument("--manifest", help="JSONL з розміченими подіями")
     ap.add_argument("--selftest", action="store_true",
                     help="згенерувати СИНТЕТИЧНІ дані для перевірки коду (НЕ валідація)")
+    ap.add_argument("--check", action="store_true",
+                    help="лише перевірити коректність manifest (без прогону)")
     args = ap.parse_args()
+
+    if args.check:
+        if not args.manifest:
+            ap.error("--check потребує --manifest")
+        check_manifest(_load_manifest(args.manifest))
+        return
 
     if args.selftest:
         print(">>> SELFTEST: синтетичні дані лише для перевірки працездатності коду.")
         print(">>> Це НЕ валідація методики — реальні висновки лише на розміченому корпусі.\n")
         report = run(_selftest_manifest())
     elif args.manifest:
-        with open(args.manifest, encoding="utf-8") as f:
-            manifest = [json.loads(line) for line in f if line.strip()
-                        and not line.lstrip().startswith("//")]
-        report = run(manifest)
+        report = run(_load_manifest(args.manifest))
     else:
         ap.error("вкажіть --manifest <файл.jsonl> або --selftest")
 
