@@ -1,0 +1,9 @@
+// ШАБЛОН розмічного набору для статистичної валідації DIMS (Фаза 2).
+// Формат: JSONL — по одному об'єкту-ПОДІЇ на рядок. Рядки, що починаються з // — коментарі.
+// Кожна подія = набір джерел на одну тему + ЕКСПЕРТНИЙ грейд (F/B/S/SS/SSS).
+// Запуск: .venv/bin/python tools/validation.py --manifest Data/validation_set.jsonl
+// Поля джерела: "text" АБО "text_path"; "domain" (для I_source); "published" (ISO/RFC822, для S_time).
+// Рядки нижче — ПРИКЛАДИ-ЗАГЛУШКИ, замінити реальними подіями (рекомендовано ≥ 100–200 подій).
+{"event_id": "TEMPLATE_001", "grade": "S", "manifestation": "fake", "sources": [{"text_path": "Data/val/ev001/src_a.txt", "domain": "ria.ru", "published": "2026-05-01T10:00:00"}, {"text_path": "Data/val/ev001/src_b.txt", "domain": "tass.ru", "published": "2026-05-01T10:40:00"}]}
+{"event_id": "TEMPLATE_002", "grade": "F", "sources": [{"text_path": "Data/val/ev002/src_a.txt", "domain": "bbc.com", "published": "2026-05-02T09:00:00"}, {"text_path": "Data/val/ev002/src_b.txt", "domain": "suspilne.media", "published": "2026-05-02T12:00:00"}]}
+{"event_id": "TEMPLATE_003", "grade": "SS", "manifestation": "taboo", "sources": [{"text": "Повний текст повідомлення замість файлу, якщо так зручніше...", "domain": "sputniknews.ru", "published": "2026-05-03T08:00:00"}, {"text_path": "Data/val/ev003/src_b.txt", "domain": "pravda.ru"}]}
