@@ -1851,6 +1851,17 @@ function _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle) 
     ? `char-${evData.char_n ?? 3}-gram`
     : `word (MFW ${evData.mfw_n ?? 100})`;
 
+  const featureNote = featureType === "char"
+    ? `<div style="margin:6px 0;padding:8px 10px;border-radius:6px;background:rgba(221,107,32,.12);color:var(--text-2);font-size:12px;line-height:1.4">
+         ⚠ Ознаки — <b>символьні ${evData.char_n ?? 3}-грами</b> (фрагменти літер, напр. «пос»), а <b>не цілі слова</b>.
+         Для слов'янських мов (укр/рос) вони можуть збігатися на спільному корені/префіксі різних слів
+         («<b>ПО</b>сол» ↔ «<b>ПО</b>сле»). Для методики DIMS рекомендовано режим «Слова».
+       </div>`
+    : `<div style="margin:6px 0;padding:8px 10px;border-radius:6px;background:rgba(43,108,176,.10);color:var(--text-2);font-size:12px;line-height:1.4">
+         Ознаки — <b>цілі слова</b>. Спільні короткі слова (на, по, що, для) — це <b>функціональні слова</b>:
+         саме їхня частота є носієм авторського стилю за методом Burrows, а не збігом по літерах.
+       </div>`;
+
   drawer.innerHTML = `
     <div class="evidence-drawer-head">
       <div>
@@ -1874,6 +1885,7 @@ function _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle) 
           <span class="evidence-overlap-pct">${overlapPct.toFixed(0)}%</span>
         </div>
       </div>
+      ${featureNote}
       <div class="evidence-section">
         <div class="evidence-section-title">Токени</div>
         <div class="evidence-tokens" id="evidenceTokensPanel"></div>

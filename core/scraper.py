@@ -164,7 +164,8 @@ def _extract_from_html(html: str, url: str) -> str:
         text = trafilatura.extract(
             html, url=url,
             include_comments=False, include_tables=False,
-            no_fallback=False, favor_recall=True,
+            include_links=False, include_images=False,
+            no_fallback=False, favor_precision=True,
         )
         if text and len(text.split()) >= _MIN_WORDS:
             return clean_extracted_text(text)
