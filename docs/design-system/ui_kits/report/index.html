@@ -1,0 +1,141 @@
+<!-- @dsCard group="Report" viewport="900x680" -->
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Аналітичний звіт — DIMS</title>
+<link rel="stylesheet" href="../../styles.css" />
+<link rel="stylesheet" href="report.css" />
+</head>
+<body>
+<div class="page">
+
+  <header class="report-header">
+    <div class="report-kicker">DIMS · АНАЛІТИЧНИЙ ЗВІТ</div>
+    <h1>Інтегральна оцінка дезінформаційних ризиків за стилометричними ознаками</h1>
+    <p class="subtitle">Аналітичний звіт за удосконаленою методикою моніторингу інформації у відкритих джерелах із застосуванням <span class="math-inline">Δ<sub>Burrows</sub></span> та інтегральної оцінки DIMS.</p>
+    <div class="report-meta">
+      <span>17 червня 2026, 09:22</span>
+      <span>Джерел 3</span>
+      <span>MFW 100</span>
+      <span><span class="math-inline">θ<sub>Δ</sub></span> 0.80</span>
+      <span>Пар 3</span>
+      <span>word tokens</span>
+      <span>culling ≥ 2</span>
+    </div>
+  </header>
+
+  <div class="alert" style="padding:16px 22px; border-left:3px solid var(--navy); background:var(--navy-soft); margin-bottom:32px; font-family:var(--font-report-sans); font-size:13px; line-height:1.6; color:var(--ink-soft)">
+    <strong>Примітка про корпус.</strong> Усі три джерела — російськомовні; стилометричний компонент порівнює стиль у межах однієї мови, що підвищує достовірність <span class="math-inline">Δ<sub>Burrows</sub></span>.
+  </div>
+
+  <!-- KPI -->
+  <section class="section">
+    <div class="kpi-grid">
+      <div class="kpi-card info"><div class="kpi-value">3</div><div class="kpi-label">Джерел</div></div>
+      <div class="kpi-card info"><div class="kpi-value">3</div><div class="kpi-label">Пар порівняно</div></div>
+      <div class="kpi-card danger"><div class="kpi-value">2</div><div class="kpi-label">Підозрілих пар</div></div>
+      <div class="kpi-card danger"><div class="kpi-value">0.241</div><div class="kpi-label">Мін. <span class="math-inline">Δ</span></div></div>
+      <div class="kpi-card info"><div class="kpi-value">0.7400</div><div class="kpi-label"><span class="math-inline">R<sub>DIMS</sub></span></div></div>
+      <div class="kpi-card danger"><div class="kpi-value" style="display:flex; align-items:center"><span class="grade-badge is-lg" data-grade="SS">SS</span></div><div class="kpi-label">Грейд DIMS</div></div>
+    </div>
+  </section>
+
+  <!-- Exec summary -->
+  <section class="section">
+    <div class="exec-summary">
+      <strong>Виявлено підвищений DIMS-ризик.</strong> Інтегральна оцінка <strong>0.7400</strong> → грейд <span class="grade-badge is-md" data-grade="SS">SS</span>. Домінуючі індикатори — змістовий та координаційний аналіз. Дві пари джерел демонструють аномально низьку стилістичну відстань. Рекомендується пріоритетне експертне опрацювання та перевірка скоординованих джерел.
+    </div>
+  </section>
+
+  <!-- Recommendations -->
+  <section class="section">
+    <h2 class="section-title">Рекомендації</h2>
+    <ol class="rec-list">
+      <li>Провести детальний контент-аналіз пари <strong>RT ↔ ТАСС</strong> (критичний рівень) для підтвердження координації.</li>
+      <li>Порівняти часові мітки публікацій підозрілих джерел — синхронність підсилює аргумент координації.</li>
+      <li>Встановити власників ресурсів через OSINT (WHOIS, MediaOwnership).</li>
+      <li>Повторити аналіз з різними MFW (50 / 100 / 200) для перевірки стабільності результатів.</li>
+      <li>Результати є індикативними — інтерпретувати в комплексі з іншими методами.</li>
+    </ol>
+  </section>
+
+  <!-- Flagged pairs -->
+  <section class="section">
+    <h2 class="section-title">Підозрілі пари — 2 із 3</h2>
+    <article class="pair-card">
+      <div><span class="pair-badge critical">⚑ Критичний</span></div>
+      <div>
+        <div class="pair-sources">RT (Telegram) &nbsp;↔&nbsp; ТАСС — Политика</div>
+        <div class="pair-delta"><span class="math-inline">Δ<sub>Burrows</sub></span> = 0.2410 <span class="ci-chip">95% CI [0.198, 0.284]</span> &nbsp;·&nbsp; <span class="math-inline">θ<sub>Δ</sub></span> = 0.80 &nbsp;·&nbsp; −69.9% від порогу</div>
+        <p class="pair-interp"><strong>Висока ймовірність координації або спільного авторства.</strong> Стилістична відстань аномально низька. Потребує першочергової перевірки.</p>
+      </div>
+    </article>
+    <article class="pair-card">
+      <div><span class="pair-badge high">Високий</span></div>
+      <div>
+        <div class="pair-sources">ТАСС — Политика &nbsp;↔&nbsp; Sputnik</div>
+        <div class="pair-delta"><span class="math-inline">Δ<sub>Burrows</sub></span> = 0.4510 <span class="ci-chip">95% CI [0.402, 0.503]</span> &nbsp;·&nbsp; <span class="math-inline">θ<sub>Δ</sub></span> = 0.80 &nbsp;·&nbsp; −43.6% від порогу</div>
+        <p class="pair-interp"><strong>Значна стилістична подібність.</strong> Ймовірна координація або схожа редакційна політика.</p>
+      </div>
+    </article>
+  </section>
+
+  <div class="section-divider"><span>Аналітичний розділ</span></div>
+
+  <!-- Indicators -->
+  <section class="section">
+    <h2 class="section-title">Індикатори DIMS</h2>
+    <table class="ind-table">
+      <thead><tr><th>Індикатор</th><th>Значення</th><th>Опис</th></tr></thead>
+      <tbody>
+        <tr><td><span class="math-inline">I<sub>content</sub></span></td><td>0.8100</td><td>Змістові ознаки дезінформації</td></tr>
+        <tr><td><span class="math-inline">I<sub>coord</sub></span></td><td>0.7600</td><td>Координаційні ознаки (вкл. <span class="math-inline">Δ<sub>Burrows</sub></span>)</td></tr>
+        <tr><td><span class="math-inline">I<sub>dynamics</sub></span></td><td>0.6200</td><td>Динаміка поширення</td></tr>
+        <tr><td><span class="math-inline">I<sub>impact</sub></span></td><td>0.7000</td><td>Потенційний вплив</td></tr>
+        <tr><td><span class="math-inline">I<sub>source</sub></span></td><td>0.7300</td><td>Ризик джерела: домен, прозорість, редакційні ознаки</td></tr>
+        <tr><td><span class="math-inline">R<sub>DIMS</sub></span></td><td>0.7400</td><td>Інтегральна оцінка → грейд <span class="grade-badge is-md" data-grade="SS">SS</span> (Високий)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Distance matrix -->
+  <section class="section">
+    <h2 class="section-title">Матриця відстаней <span class="math-inline">Δ<sub>Burrows</sub></span></h2>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead><tr><th></th><th>S1</th><th>S2</th><th>S3</th></tr></thead>
+        <tbody>
+          <tr><th style="text-align:left">S1</th><td class="self">—</td><td style="background:rgba(155,27,27,.32)">0.241</td><td style="background:rgba(155,27,27,.14)">0.612</td></tr>
+          <tr><th style="text-align:left">S2</th><td style="background:rgba(155,27,27,.32)">0.241</td><td class="self">—</td><td style="background:rgba(155,27,27,.22)">0.451</td></tr>
+          <tr><th style="text-align:left">S3</th><td style="background:rgba(155,27,27,.14)">0.612</td><td style="background:rgba(155,27,27,.22)">0.451</td><td class="self">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alias-legend">
+      <div class="alias-row"><span class="alias-pill">S1</span><span>RT (Telegram)</span></div>
+      <div class="alias-row"><span class="alias-pill">S2</span><span>ТАСС — Политика</span></div>
+      <div class="alias-row"><span class="alias-pill">S3</span><span>Sputnik</span></div>
+    </div>
+  </section>
+
+  <!-- Methodology -->
+  <section class="section">
+    <h2 class="section-title">Методологія</h2>
+    <div class="method-box">
+      <p><strong>Базова модель:</strong> інтегроване DIMS-оцінювання з <span class="math-inline">Δ<sub>Burrows</sub></span> як індикатором координації.</p>
+      <div class="method-formula">R<sub>DIMS</sub> = w<sub>1</sub>I<sub>content</sub> + w<sub>2</sub>I<sub>coord</sub> + w<sub>3</sub>I<sub>dynamics</sub> + w<sub>4</sub>I<sub>impact</sub> + w<sub>5</sub>I<sub>source</sub></div>
+      <p class="method-note"><strong>Обмеження.</strong> Стилометрія є індикатором, а не доказом. Жанрова схожість або спільна тематика можуть підвищувати подібність незалежних текстів. Результати потребують доповнення контент-аналізом та OSINT.</p>
+    </div>
+  </section>
+
+  <footer class="report-footer">DIMS · Аналітичний звіт · 17.06.2026 · <span class="math-inline">Δ<sub>Burrows</sub></span></footer>
+</div>
+
+<div class="print-bar">
+  <a class="btn" href="../workspace/index.html">← Назад</a>
+  <button class="btn btn-primary" onclick="window.print()">Друкувати / PDF</button>
+</div>
+</body>
+</html>

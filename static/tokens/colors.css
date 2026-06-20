@@ -1,0 +1,124 @@
+/* ═══════════════════════════════════════════════════════════════
+   DIMS — Color system
+   Restrained, government-grade operations palette.
+   Default :root = light. [data-theme="dark"] overrides the layers.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Background layers (light) ── */
+  --bg-0: #f7f9fc;   /* app canvas        */
+  --bg-1: #ffffff;   /* panels / cards    */
+  --bg-2: #eef3f8;   /* recessed surfaces */
+  --bg-3: #e2e9f2;   /* deepest fill      */
+
+  /* ── Borders ── */
+  --border-0: #dbe3ee;  /* hairline divider */
+  --border-1: #c7d2df;  /* control border   */
+  --border-2: #9fb0c3;  /* emphasis border  */
+
+  /* ── Text ── */
+  --text-0: #162033;  /* primary / headings */
+  --text-1: #334155;  /* body               */
+  --text-2: #64748b;  /* secondary / meta   */
+  --text-3: #94a3b8;  /* tertiary / hint    */
+
+  /* ── Accent ── */
+  --accent:   #1f6feb;  /* primary action — signal blue */
+  --accent-2: #0f766e;  /* links / supporting — teal    */
+
+  /* ── Signal colors (operational status) ── */
+  --signal-green:  #15803d;
+  --signal-amber:  #b7791f;
+  --signal-red:    #b91c1c;
+  --signal-orange: #c2410c;
+  --signal-blue:   #1d4ed8;
+  --signal-violet: #6d28d9;
+
+  /* ── Semantic aliases ── */
+  --ok:     var(--signal-green);
+  --warn:   var(--signal-amber);
+  --danger: var(--signal-red);
+  --crit:   var(--signal-orange);
+
+  /* ── Threat-grade scale (Наказ МО України № 46): F → B → S → SS → SSS ── */
+  --grade-f-bg:   #4b5563; --grade-f-fg:   #ffffff;
+  --grade-b-bg:   #0ea5e9; --grade-b-fg:   #ffffff;
+  --grade-s-bg:   #c27803; --grade-s-fg:   #1b1205;
+  --grade-ss-bg:  #ef4444; --grade-ss-fg:  #ffffff;
+  --grade-sss-bg: #7f1d1d; --grade-sss-fg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg-0: #0f172a;
+  --bg-1: #111c2f;
+  --bg-2: #1d2a3f;
+  --bg-3: #29384f;
+  --border-0: #223148;
+  --border-1: #33445f;
+  --border-2: #52657f;
+  --text-0: #f8fafc;
+  --text-1: #cbd5e1;
+  --text-2: #94a3b8;
+  --text-3: #64748b;
+  --accent:   #60a5fa;
+  --accent-2: #2dd4bf;
+  --signal-green:  #4ade80;
+  --signal-amber:  #facc15;
+  --signal-red:    #f87171;
+  --signal-orange: #fb923c;
+  --signal-blue:   #60a5fa;
+  --signal-violet: #a78bfa;
+  /* grade scale keeps full-saturation badges in both themes */
+  --grade-f-bg:   #6b7280;
+  --grade-s-bg:   #f59e0b; --grade-s-fg: #1b1205;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"] {
+    --bg-0: #0f172a;
+    --bg-1: #111c2f;
+    --bg-2: #1d2a3f;
+    --bg-3: #29384f;
+    --border-0: #223148;
+    --border-1: #33445f;
+    --border-2: #52657f;
+    --text-0: #f8fafc;
+    --text-1: #cbd5e1;
+    --text-2: #94a3b8;
+    --text-3: #64748b;
+    --accent:   #60a5fa;
+    --accent-2: #2dd4bf;
+    --signal-green:  #4ade80;
+    --signal-amber:  #facc15;
+    --signal-red:    #f87171;
+    --signal-orange: #fb923c;
+    --signal-blue:   #60a5fa;
+    --signal-violet: #a78bfa;
+    --grade-f-bg:   #6b7280;
+    --grade-s-bg:   #f59e0b; --grade-s-fg: #1b1205;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EDITORIAL REPORT PALETTE
+   Warm-paper long-form surface (FT / Economist / scientific journal).
+   Scoped so it never collides with the workspace layers.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --paper:        #FDFDF8;
+  --paper-alt:    #F6F2EA;
+  --paper-dim:    #EEE8DB;
+  --ink:          #14110F;
+  --ink-soft:     #2F2A24;
+  --report-body:  #3B3530;
+  --muted:        #6E665C;
+  --subtle:       #9B9285;
+  --rule:         #D9D2C2;
+  --rule-soft:    #E8E2D2;
+
+  --navy:        #0F2A4A; --navy-soft:    #DAE2EE;
+  --crimson:     #9B1B1B; --crimson-soft: #F0D8D8;
+  --amber:       #9A6A10; --amber-soft:   #F3E6C7;
+  --forest:      #2F5E3A; --forest-soft:  #D8E6D9;
+  --teal:        #175863; --teal-soft:    #D2E2E4;
+}

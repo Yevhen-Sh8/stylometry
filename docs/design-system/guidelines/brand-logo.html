@@ -1,0 +1,25 @@
+<!-- @dsCard group="Brand" viewport="700x150" name="Logo & wordmark" subtitle="The D mark + DIMS wordmark, dark and light" -->
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin:0; font-family: var(--font-sans); display:grid; grid-template-columns:1fr 1fr; }
+  .pane { padding:26px; display:flex; align-items:center; gap:14px; }
+  .dark { background:#0f172a; }
+  .light { background:#f7f9fc; border-left:1px solid #dbe3ee; }
+  .badge { width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:800; font-size:17px; border-radius:var(--r-sm); flex-shrink:0; }
+  .wm { font-family:var(--font-heading); font-size:22px; font-weight:800; letter-spacing:-0.01em; line-height:1; }
+  .sub { font-family:var(--font-mono); font-size:10px; letter-spacing:.03em; margin-top:4px; }
+</style></head>
+<body>
+  <div class="pane dark">
+    <div class="badge" style="background:#f8fafc; color:#111c2f">D</div>
+    <div><div class="wm" style="color:#f8fafc">DIM<span style="color:#60a5fa">S</span></div>
+      <div class="sub" style="color:#64748b">стилометричний аналіз · Δ-Бурровс</div></div>
+  </div>
+  <div class="pane light">
+    <div class="badge" style="background:#162033; color:#ffffff">D</div>
+    <div><div class="wm" style="color:#162033">DIM<span style="color:#1f6feb">S</span></div>
+      <div class="sub" style="color:#94a3b8">стилометричний аналіз · Δ-Бурровс</div></div>
+  </div>
+</body></html>

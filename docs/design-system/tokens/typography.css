@@ -1,0 +1,41 @@
+/* ═══════════════════════════════════════════════════════════════
+   DIMS — Typography tokens
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Families ── */
+  --font-heading: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-sans:    'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+  --font-math:    'STIX Two Text', 'Cambria Math', 'Latin Modern Math', 'Times New Roman', serif;
+
+  /* Editorial report families */
+  --font-serif:        'Source Serif 4', 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  --font-report-sans:  'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* ── Workspace type scale (dense ops UI) ── */
+  --fs-micro: 10px;  /* labels / sub-meta, uppercase tracked */
+  --fs-meta:  11px;  /* mono metadata, hints                 */
+  --fs-body:  13px;  /* default body                         */
+  --fs-input: 13px;  /* form controls                        */
+  --fs-h2:    14px;  /* card titles                          */
+  --fs-h1:    16px;  /* wordmark / page heading              */
+  --fs-stat:  22px;  /* KPI numerals                         */
+
+  /* ── Weights ── */
+  --fw-regular: 400;  /* @kind font */
+  --fw-medium:  500;  /* @kind font */
+  --fw-semibold:600;  /* @kind font */
+  --fw-bold:    700;  /* @kind font */
+  --fw-black:   800;  /* @kind font */
+
+  /* ── Line heights ── */
+  --lh-tight: 1.2;   /* @kind font */
+  --lh-snug:  1.4;   /* @kind font */
+  --lh-base:  1.5;   /* @kind font */
+  --lh-loose: 1.65;  /* @kind font */
+
+  /* ── Tracking ── */
+  --tracking-caps: 0.08em;  /* uppercase labels   */
+  --tracking-meta: 0.04em;  /* mono metadata      */
+}

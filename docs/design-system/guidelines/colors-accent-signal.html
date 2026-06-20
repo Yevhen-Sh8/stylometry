@@ -1,0 +1,27 @@
+<!-- @dsCard group="Colors" viewport="700x160" name="Accent & signal" subtitle="Signal-blue action, teal links, operational status colors" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8" /><link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin:0; font-family: var(--font-sans); background: var(--bg-1); padding: 18px; }
+  .cap { font-family: var(--font-mono); font-size:10px; color: var(--text-3); text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; }
+  .row { display:flex; gap:10px; margin-bottom:14px; }
+  .sw { flex:1; }
+  .chip { height:44px; border-radius: var(--r-sm); }
+  .name { font-family: var(--font-mono); font-size:10px; color: var(--text-2); margin-top:6px; text-align:center; }
+</style></head>
+<body>
+<p class="cap">Accent</p>
+<div class="row">
+  <div class="sw"><div class="chip" style="background:var(--accent)"></div><div class="name">--accent · #60a5fa</div></div>
+  <div class="sw"><div class="chip" style="background:var(--accent-2)"></div><div class="name">--accent-2 · #2dd4bf</div></div>
+</div>
+<p class="cap">Signal — operational status</p>
+<div class="row">
+  <div class="sw"><div class="chip" style="background:var(--signal-green)"></div><div class="name">green / ok</div></div>
+  <div class="sw"><div class="chip" style="background:var(--signal-amber)"></div><div class="name">amber / warn</div></div>
+  <div class="sw"><div class="chip" style="background:var(--signal-orange)"></div><div class="name">orange / crit</div></div>
+  <div class="sw"><div class="chip" style="background:var(--signal-red)"></div><div class="name">red / danger</div></div>
+  <div class="sw"><div class="chip" style="background:var(--signal-violet)"></div><div class="name">violet</div></div>
+</div>
+</body></html>

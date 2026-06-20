@@ -1,0 +1,50 @@
+<!-- @dsCard group="Components" viewport="700x220" name="Grade & Badges" subtitle="Threat-grade scale F→B→S→SS→SSS and status chips" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-0); color: var(--text-1); font-family: var(--font-sans); padding: 22px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .cap { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); width: 100%; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { GradeBadge, Badge } = window.DIMSDesignSystem_175874;
+function Demo() {
+  return (
+    <div>
+      <div className="row"><span className="cap">Grade scale</span>
+        <GradeBadge grade="F" size="lg" />
+        <GradeBadge grade="B" size="lg" />
+        <GradeBadge grade="S" size="lg" />
+        <GradeBadge grade="SS" size="lg" />
+        <GradeBadge grade="SSS" size="lg" flag />
+      </div>
+      <div className="row"><span className="cap">With R_DIMS · sizes</span>
+        <GradeBadge grade="SSS" meta="0.91" flag />
+        <GradeBadge grade="SS" meta="0.78" />
+        <GradeBadge grade="S" size="sm" meta="0.62" />
+        <GradeBadge grade="F" size="sm" meta="0.14" />
+      </div>
+      <div className="row"><span className="cap">Status badges</span>
+        <Badge>0</Badge>
+        <Badge tone="info">PCA</Badge>
+        <Badge tone="ok">OK</Badge>
+        <Badge tone="warn">Високий</Badge>
+        <Badge tone="danger">Критичний</Badge>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>
