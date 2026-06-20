@@ -1,0 +1,20 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Radius & elevation" subtitle="Tight instrument radii · two shadow levels" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8" /><link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin:0; font-family: var(--font-sans); background: var(--bg-0); padding: 22px; color: var(--text-1); }
+  .wrap { display:flex; gap:22px; align-items:flex-end; }
+  .item { text-align:center; }
+  .box { width:90px; height:60px; background: var(--bg-1); border:1px solid var(--border-1); }
+  .name { font-family: var(--font-mono); font-size:10px; color: var(--text-2); margin-top:8px; }
+</style></head>
+<body>
+<div class="wrap">
+  <div class="item"><div class="box" style="border-radius:var(--r-sm)"></div><div class="name">--r-sm · 4px<br>controls</div></div>
+  <div class="item"><div class="box" style="border-radius:var(--r-md)"></div><div class="name">--r-md · 8px<br>containers</div></div>
+  <div class="item"><div class="box" style="border-radius:var(--r-pill); width:120px"></div><div class="name">--r-pill · 20px<br>toggles</div></div>
+  <div class="item"><div class="box" style="border-radius:var(--r-md); box-shadow:var(--shadow-sm); border-color:var(--border-0)"></div><div class="name">--shadow-sm</div></div>
+  <div class="item"><div class="box" style="border-radius:var(--r-md); box-shadow:var(--shadow-md); border-color:var(--border-0)"></div><div class="name">--shadow-md</div></div>
+</div>
+</body></html>

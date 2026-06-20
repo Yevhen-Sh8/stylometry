@@ -1,0 +1,30 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Text & border scale" subtitle="Dark theme · text-0 heading → text-3 hint, 3 border weights" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8" /><link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin:0; font-family: var(--font-sans); background: var(--bg-1); padding: 18px; color: var(--text-1); }
+  .wrap { display:flex; gap: 28px; }
+  .col { flex:1; }
+  .line { display:flex; align-items:baseline; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border-0); }
+  .name { font-family: var(--font-mono); font-size:11px; }
+  .bd { display:flex; gap:10px; margin-top:6px; }
+  .bbox { flex:1; height:34px; border-radius: var(--r-sm); background: var(--bg-2); }
+  .cap { font-family: var(--font-mono); font-size:10px; color: var(--text-3); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; }
+</style></head>
+<body>
+<div class="wrap">
+  <div class="col">
+    <div class="cap">Text</div>
+    <div class="line"><span style="color:var(--text-0); font-weight:700">Текст 0 — заголовок</span><span class="name" style="color:var(--text-2)">--text-0</span></div>
+    <div class="line"><span style="color:var(--text-1)">Текст 1 — тіло</span><span class="name" style="color:var(--text-2)">--text-1</span></div>
+    <div class="line"><span style="color:var(--text-2)">Текст 2 — вторинний</span><span class="name" style="color:var(--text-2)">--text-2</span></div>
+    <div class="line" style="border:0"><span style="color:var(--text-3)">Текст 3 — підказка</span><span class="name" style="color:var(--text-2)">--text-3</span></div>
+  </div>
+  <div class="col">
+    <div class="cap">Borders</div>
+    <div class="bd"><div class="bbox" style="border:1px solid var(--border-0)"></div><div class="bbox" style="border:1px solid var(--border-1)"></div><div class="bbox" style="border:1px solid var(--border-2)"></div></div>
+    <div class="bd" style="font-family:var(--font-mono); font-size:10px; color:var(--text-3)"><div style="flex:1; text-align:center">--border-0</div><div style="flex:1; text-align:center">--border-1</div><div style="flex:1; text-align:center">--border-2</div></div>
+  </div>
+</div>
+</body></html>

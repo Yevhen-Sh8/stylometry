@@ -1,0 +1,45 @@
+<!-- @dsCard group="Components" viewport="700x340" name="Data & Feedback" subtitle="Stat strip, source rows, alerts" -->
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; background: var(--bg-0); color: var(--text-1); font-family: var(--font-sans); padding: 22px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 1px; background: var(--border-0); border: 1px solid var(--border-1); border-radius: var(--r-sm); overflow: hidden; margin-bottom: 18px; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script type="text/babel">
+const { StatCard, GradeBadge, SourceItem, Alert } = window.DIMSDesignSystem_175874;
+function Demo() {
+  return (
+    <div>
+      <div className="stats">
+        <StatCard value="14" label="Джерел" tone="info" />
+        <StatCard value="91" label="Пар порівняно" tone="info" />
+        <StatCard value="3" label="Підозрілих пар" tone="danger" />
+        <StatCard value="0.241" label="Мін. Δ" tone="warn" />
+        <StatCard value="0.78" label="R DIMS"><GradeBadge grade="SS" /></StatCard>
+      </div>
+      <div className="stack">
+        <SourceItem type="TELEGRAM" label="rt_russian (об'єднано 18 постів)" meta="t.me · 4 210 ток. · 09:14" onRemove={()=>{}} />
+        <SourceItem type="RSS" label="ТАСС — Политика" meta="tass.ru · 1 240 ток. · 08:51" onRemove={()=>{}} />
+        <SourceItem type="PDF" label="Аналітична записка №7" meta="312 ток." warn onRemove={()=>{}} />
+        <Alert tone="critical" title="Підозріла пара — критичний рівень">
+          Δ = 0.241 &lt; θ = 0.80. Висока ймовірність координації.
+        </Alert>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo />);
+</script>
+</body>
+</html>

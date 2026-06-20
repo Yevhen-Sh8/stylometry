@@ -3,133 +3,15 @@
    Aesthetic: restrained government-grade operations interface
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* Design tokens — canonical DIMS Design System (docs/design-system/, tokens/*.css). */
+@import url("tokens/fonts.css");
+@import url("tokens/colors.css");
+@import url("tokens/typography.css");
+@import url("tokens/spacing.css");
 
-:root {
-  /* ── Background layers ── */
-  --bg-0: #f7f9fc;
-  --bg-1: #ffffff;
-  --bg-2: #eef3f8;
-  --bg-3: #e2e9f2;
-
-  /* ── Borders ── */
-  --border-0: #dbe3ee;
-  --border-1: #c7d2df;
-  --border-2: #9fb0c3;
-
-  /* ── Text ── */
-  --text-0: #162033;
-  --text-1: #334155;
-  --text-2: #64748b;
-  --text-3: #94a3b8;
-
-  /* ── Accent ── */
-  --accent:   #1f6feb;
-  --accent-2: #0f766e;
-
-  /* ── Signal colors ── */
-  --signal-green:  #15803d;
-  --signal-amber:  #b7791f;
-  --signal-red:    #b91c1c;
-  --signal-orange: #c2410c;
-  --signal-blue:   #1d4ed8;
-  --signal-violet: #6d28d9;
-
-  /* ── Semantic aliases ── */
-  --ok:     var(--signal-green);
-  --warn:   var(--signal-amber);
-  --danger: var(--signal-red);
-  --crit:   var(--signal-orange);
-
-  /* ── Typography ── */
-  --font-heading: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-sans:    'DM Sans', system-ui, -apple-system, sans-serif;
-  --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
-  --font-math:    'Cambria Math', 'Latin Modern Math', 'Times New Roman', serif;
-
-  /* ── Spacing ── */
-  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
-  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px;
-
-  /* ── Radius ── */
-  --r-sm: 4px;
-  --r-md: 8px;
-  --r-lg: 8px;
-
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.10);
-}
-
-/* ═══════════════ LIGHT THEME ═══════════════ */
-[data-theme="light"] {
-  --bg-0: #f7f9fc;
-  --bg-1: #ffffff;
-  --bg-2: #eef3f8;
-  --bg-3: #e2e9f2;
-  --border-0: #dbe3ee;
-  --border-1: #c7d2df;
-  --border-2: #9fb0c3;
-  --text-0: #162033;
-  --text-1: #334155;
-  --text-2: #64748b;
-  --text-3: #94a3b8;
-  --accent:   #1f6feb;
-  --accent-2: #0f766e;
-  --signal-green:  #15803d;
-  --signal-amber:  #b7791f;
-  --signal-red:    #b91c1c;
-  --signal-orange: #c2410c;
-  --signal-blue:   #1d4ed8;
-  --signal-violet: #6d28d9;
-}
-
-[data-theme="dark"] {
-  --bg-0: #0f172a;
-  --bg-1: #111c2f;
-  --bg-2: #1d2a3f;
-  --bg-3: #29384f;
-  --border-0: #223148;
-  --border-1: #33445f;
-  --border-2: #52657f;
-  --text-0: #f8fafc;
-  --text-1: #cbd5e1;
-  --text-2: #94a3b8;
-  --text-3: #64748b;
-  --accent:   #60a5fa;
-  --accent-2: #2dd4bf;
-  --signal-green:  #4ade80;
-  --signal-amber:  #facc15;
-  --signal-red:    #f87171;
-  --signal-orange: #fb923c;
-  --signal-blue:   #60a5fa;
-  --signal-violet: #a78bfa;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
-  --shadow-md: 0 16px 34px rgba(0, 0, 0, 0.28);
-}
-
-@media (prefers-color-scheme: dark) {
-  [data-theme="auto"] {
-    --bg-0: #0f172a;
-    --bg-1: #111c2f;
-    --bg-2: #1d2a3f;
-    --bg-3: #29384f;
-    --border-0: #223148;
-    --border-1: #33445f;
-    --border-2: #52657f;
-    --text-0: #f8fafc;
-    --text-1: #cbd5e1;
-    --text-2: #94a3b8;
-    --text-3: #64748b;
-    --accent:   #60a5fa;
-    --accent-2: #2dd4bf;
-    --signal-green:  #4ade80;
-    --signal-amber:  #facc15;
-    --signal-red:    #f87171;
-    --signal-orange: #fb923c;
-    --signal-blue:   #60a5fa;
-    --signal-violet: #a78bfa;
-  }
-}
+/* Усі токени теми (:root світла за замовчуванням, [data-theme="dark"] та
+   [data-theme="auto"]) тепер живуть у tokens/colors.css + tokens/spacing.css
+   (імпортовані вище) — єдине канонічне джерело дизайн-системи DIMS. */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
