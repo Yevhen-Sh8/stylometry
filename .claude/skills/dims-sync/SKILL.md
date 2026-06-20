@@ -27,9 +27,18 @@ ls -la "$DST/templates/" "$DST/static/" | head -20
 ## Після синку
 
 Якщо preview-сервер запущений з `TEMPLATES_AUTO_RELOAD=True`, Flask підхопить шаблони автоматично.
-Для змін у Python-коді (`app.py`, `core/*.py`) — рестартуй сервер:
+Для змін у Python-коді (`app.py`, `core/*.py`) — рестартуй сервер.
+
+## Після перезавантаження (інтерфейс «без стилів»)
+
+macOS чистить `/tmp` при ребуті → зникають і копія проєкту, і лоунчер
+`run.py`, а панель показує сирий `index.html` без CSS. Відновити одним кроком:
 
 ```bash
-lsof -ti :5001 | xargs kill -9 2>/dev/null
-/usr/bin/python3 /tmp/stylometry_preview/run.py &
+bash .claude/restore_preview.sh
 ```
+
+Скрипт пересинхронізує `/tmp/dims_project` і відтворить
+`/tmp/stylometry_preview/run.py`. Далі запустити сервер через
+`preview_start "Стилометрія (Flask)"`. Це стосується **лише локального
+прев'ю** — деплой на Render не залежить від `/tmp`.
