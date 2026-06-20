@@ -304,6 +304,7 @@
           <label for="featureType">Тип ознак</label>
           <select id="featureType" class="form-control">
             <option value="word" selected>Слова (word tokens)</option>
+            <option value="function">Функціональні слова (стиль)</option>
             <option value="char">Символьні n-грами</option>
           </select>
           <div class="param-row" id="charNRow" style="display:none; margin-top:8px">
@@ -313,7 +314,7 @@
             <input type="number" id="charN" class="form-control param-number"
                    min="2" max="6" value="3" />
           </div>
-          <p class="hint">Для методики DIMS рекомендовано <b>«Слова»</b> (порівняння цілих слів/функціональних слів за Burrows). Символьні n-грами (3–4) корисні для коротких/міжмовних текстів (Kestemont 2014), але для укр/рос можуть <b>перезбігати різні слова зі спільним коренем</b> («ПОсол»↔«ПОсле») — застосовувати обережно.</p>
+          <p class="hint"><b>Слова</b> — усі слова. <b>Функціональні слова</b> — канонічний Burrows: порівняння лише службових слів (прийменники, сполучники, частки, займенники) ізолює авторський стиль від теми й сміття; рекомендовано для DIMS. <b>Символьні n-грами</b> (3–4) — для коротких/міжмовних текстів (Kestemont 2014), але для укр/рос можуть перезбігати корені різних слів («ПОсол»↔«ПОсле»).</p>
           <details class="param-help">
             <summary>Коли використовувати char n-грами?</summary>
             <p>Короткі тексти, OCR-помилки, або порівняння перекладів. Для UA/RU новин — слова, n=100.</p>
