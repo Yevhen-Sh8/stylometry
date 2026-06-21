@@ -496,8 +496,44 @@ function showOverlay(text = "Аналіз...") {
 }
 function hideOverlay() { els.overlay.classList.add("hidden"); }
 
-async function api(path, method = "GET", body = null) {
+const ADMIN_TOKEN_KEY = "dims-admin-token";
+
+function mutationRequiresAdminToken(method) {
+  return !["GET", "HEAD", "OPTIONS"].includes(String(method || "GET").toUpperCase());
+}
+
+function getStoredAdminToken() {
+  try {
+    return localStorage.getItem(ADMIN_TOKEN_KEY) || "";
+  } catch (_) {
+    return "";
+  }
+}
+
+function storeAdminToken(token) {
+  try {
+    if (token) localStorage.setItem(ADMIN_TOKEN_KEY, token);
+    else localStorage.removeItem(ADMIN_TOKEN_KEY);
+  } catch (_) {
+    // Private browsing or blocked storage: keep working with per-request prompt.
+  }
+}
+
+function promptAdminToken() {
+  const token = window.prompt("Адміністративний токен");
+  if (!token) return "";
+  const trimmed = token.trim();
+  storeAdminToken(trimmed);
+  return trimmed;
+}
+
+async function api(path, method = "GET", body = null, retryAuth = true) {
   const opts = { method, headers: {} };
+  const needsAdminToken = mutationRequiresAdminToken(method);
+  if (needsAdminToken) {
+    const token = getStoredAdminToken();
+    if (token) opts.headers["X-DIMS-Admin-Token"] = token;
+  }
   if (body && !(body instanceof FormData)) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(body);
@@ -505,7 +541,19 @@ async function api(path, method = "GET", body = null) {
     opts.body = body;
   }
   const resp = await fetch(path, opts);
-  return resp.json();
+  let data;
+  try {
+    data = await resp.json();
+  } catch (_) {
+    data = { ok: false, error: `HTTP ${resp.status}` };
+  }
+  if ((resp.status === 401 || resp.status === 403) && needsAdminToken && retryAuth) {
+    storeAdminToken("");
+    const token = promptAdminToken();
+    if (token) return api(path, method, body, false);
+    throw new Error("Адміністративний токен не введено.");
+  }
+  return data;
 }
 
 function typeIcon(type) {

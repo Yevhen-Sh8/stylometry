@@ -13,6 +13,7 @@ jobs:
         env:
           MONITOR_URL: ${{ secrets.MONITOR_URL }}
           MONITOR_TOKEN: ${{ secrets.MONITOR_TOKEN }}
+          DIMS_ADMIN_TOKEN: ${{ secrets.DIMS_ADMIN_TOKEN }}
         run: |
           if [ -z "$MONITOR_URL" ]; then
             echo "MONITOR_URL secret is not configured; skipping."
@@ -20,10 +21,11 @@ jobs:
           fi
 
           endpoint="${MONITOR_URL%/}/api/monitor/cron"
-          if [ -n "$MONITOR_TOKEN" ]; then
+          token="${MONITOR_TOKEN:-$DIMS_ADMIN_TOKEN}"
+          if [ -n "$token" ]; then
             curl -fsS -X POST "$endpoint" \
               -H "Content-Type: application/json" \
-              -H "X-Monitor-Token: $MONITOR_TOKEN" \
+              -H "X-Monitor-Token: $token" \
               -d '{}'
           else
             curl -fsS -X POST "$endpoint" \

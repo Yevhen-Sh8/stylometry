@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import os
 import hashlib
+import hmac
 import traceback
 from datetime import datetime
 from pathlib import Path
@@ -379,6 +380,34 @@ def _err(msg: str, code: int = 400):
 
 def _ok(**kwargs):
     return jsonify({"ok": True, **kwargs})
+
+
+def _admin_token() -> str:
+    return os.environ.get("DIMS_ADMIN_TOKEN", "").strip()
+
+
+def _supplied_admin_token() -> str:
+    return (
+        request.headers.get("X-DIMS-Admin-Token", "")
+        or request.args.get("admin_token", "")
+    ).strip()
+
+
+@app.before_request
+def require_admin_token_for_mutations():
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+    if request.path == "/api/monitor/cron":
+        return None
+
+    expected = _admin_token()
+    if not expected:
+        return None
+
+    supplied = _supplied_admin_token()
+    if not supplied or not hmac.compare_digest(supplied, expected):
+        return _err("Потрібен адміністративний токен.", 401)
+    return None
 
 
 def _parse_analysis_params(data: dict) -> tuple[int, float, int, str, int, str]:
@@ -1455,13 +1484,16 @@ def monitor_run():
 
 @app.post("/api/monitor/cron")
 def monitor_cron():
-    token = os.environ.get("MONITOR_TOKEN", "").strip()
+    token = os.environ.get("MONITOR_TOKEN", "").strip() or _admin_token()
+    payload = request.get_json(silent=True) or {}
+    if not isinstance(payload, dict):
+        payload = {}
     supplied = (
         request.headers.get("X-Monitor-Token", "")
         or request.args.get("token", "")
-        or (request.get_json(silent=True) or {}).get("token", "")
+        or payload.get("token", "")
     )
-    if token and supplied != token:
+    if token and not hmac.compare_digest(str(supplied), token):
         return _err("Недійсний токен моніторингу.", 403)
     result = _run_monitor_topics()
     return _ok(**result)

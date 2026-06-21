@@ -142,11 +142,19 @@ gunicorn app:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-1} --timeout 
    - `WEB_CONCURRENCY=1`
    - `WEB_TIMEOUT=180`
    - `MPLCONFIGDIR=/tmp/matplotlib`
+   - `DIMS_ADMIN_TOKEN=<довгий випадковий токен для змін у застосунку>`
+   - `MONITOR_TOKEN=<окремий токен для cron, опційно>`
 7. Створити сервіс і дочекатися deploy.
 8. Перевірити `https://<service>.onrender.com/healthz`.
 
 Render free instance може засинати після простою, тому перший запит після паузи
 буде повільним.
+
+Якщо `DIMS_ADMIN_TOKEN` заданий, усі дії, що змінюють стан застосунку
+(завантаження файлів, додавання URL/тексту, очищення корпусу, запуск аналізу,
+збереження налаштувань і запуск моніторингу), потребують заголовок
+`X-DIMS-Admin-Token`. Вебінтерфейс попросить цей токен при першій такій дії та
+збереже його локально в браузері.
 
 ### Автоматичний моніторинг
 
@@ -161,8 +169,9 @@ RSS-стрічках і збережених Telegram-каналах, після
 POST /api/monitor/cron
 ```
 
-Якщо на Render задано змінну `MONITOR_TOKEN`, cron-запит має передавати такий
-самий токен у заголовку:
+Якщо на Render задано `MONITOR_TOKEN`, cron-запит має передавати такий самий
+токен у заголовку. Якщо `MONITOR_TOKEN` не задано, endpoint приймає
+`DIMS_ADMIN_TOKEN`:
 
 ```bash
 X-Monitor-Token: <token>
@@ -172,8 +181,10 @@ X-Monitor-Token: <token>
 викликає цей endpoint кожні 6 годин. Для нього потрібно додати GitHub Secrets:
 
 - `MONITOR_URL` — наприклад `https://stylometry-vjxv.onrender.com`
-- `MONITOR_TOKEN` — той самий токен, що в Render; можна не задавати, якщо токен
-  не використовується
+- `MONITOR_TOKEN` — той самий токен, що в Render; опційно, якщо замість нього
+  використовується `DIMS_ADMIN_TOKEN`
+- `DIMS_ADMIN_TOKEN` — запасний токен для cron і той самий токен, який заданий
+  на Render
 
 ---
 

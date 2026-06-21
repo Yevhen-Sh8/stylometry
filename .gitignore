@@ -11,6 +11,14 @@ __pycache__/
 # Generated output (charts, reports, cleaned texts)
 output/
 
+# Runtime state (local/Render container state; keep curated Data fixtures tracked)
+Data/monitoring_log.jsonl
+Data/search_config.json
+Data/monitoring_config.json
+Data/monitoring_queue.json
+Data/state.db
+Data/state.db-*
+
 # Temp files
 _tmp_*
 
