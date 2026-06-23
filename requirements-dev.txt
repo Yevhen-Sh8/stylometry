@@ -1,0 +1,7 @@
+# Dev-залежності (не потрібні в production / на Render).
+# Тести самодостатні й запускаються без pytest:
+#   .venv/bin/python tests/test_analysis.py
+# pytest — лише для CI / зручного запуску:
+#   pip install -r requirements-dev.txt && pytest -q
+-r requirements.txt
+pytest>=7.0

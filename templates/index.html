@@ -38,6 +38,8 @@
 <!-- ═══════════════════════ WORKSPACE ═══════════════════════ -->
 <main class="app-main workspace" id="main-content" tabindex="-1">
 
+  <h1 class="sr-only">DIMS — робоче середовище стилометричного аналізу</h1>
+
   <!-- ══════════════════ LEFT PANEL ══════════════════ -->
   <aside class="panel-left">
 
@@ -93,6 +95,7 @@
           </div>
           <div class="form-group">
             <textarea id="manualInput" class="form-control textarea-large"
+                      aria-label="Текст, HTML або URL джерела для аналізу"
                       placeholder="Вставте текст, HTML або URL (https://…)&#10;&#10;Ctrl+Enter — швидке додавання"></textarea>
           </div>
           <button class="btn btn-primary" id="btnAddManual" type="button">
@@ -113,8 +116,8 @@
 
           <!-- Languages for Google News -->
           <div class="form-group">
-            <label>Мови Google News</label>
-            <div class="search-lang-row">
+            <span class="form-label" id="langGroupLabel">Мови Google News</span>
+            <div class="search-lang-row" role="group" aria-labelledby="langGroupLabel">
               <label class="chk-inline chk-priority"><input type="checkbox" value="ru" checked id="langRu"> RU</label>
               <label class="chk-inline"><input type="checkbox" value="de" checked id="langDe"> DE</label>
               <label class="chk-inline"><input type="checkbox" value="fr" checked id="langFr"> FR</label>
@@ -128,6 +131,7 @@
             <label>RSS-стрічки <span class="hint-text">(пошук по ключових словах)</span></label>
             <div class="tag-input-row">
               <input type="url" id="rssAddInput" class="form-control"
+                     aria-label="URL RSS-стрічки"
                      placeholder="https://tass.ru/rss/v2.xml" />
               <button class="btn btn-ghost btn-sm" id="btnAddRssFeed" type="button" title="Додати стрічку">+</button>
             </div>
@@ -139,6 +143,7 @@
             <label>Telegram-канали <span class="hint-text">(пошук по ключових словах)</span></label>
             <div class="tag-input-row">
               <input type="text" id="tgAddInput" class="form-control"
+                     aria-label="Імена Telegram-каналів"
                      placeholder="rt_russian, tass_agency, ria_novosti" />
               <button class="btn btn-ghost btn-sm" id="btnAddTgChannel" type="button" title="Додати канал">+</button>
             </div>
@@ -257,6 +262,19 @@
 
   <!-- ══════════════════ RIGHT PANEL ══════════════════ -->
   <section class="panel-right">
+
+    <section class="workspace-hero" aria-labelledby="workspaceHeroTitle">
+      <div class="workspace-hero-copy">
+        <p class="eyebrow">Аналітична панель DIMS</p>
+        <h2 id="workspaceHeroTitle">Виявлення координованих інформаційних матеріалів</h2>
+        <p>Завантажте джерела, налаштуйте стилометричні параметри та отримайте ризиковий грейд із пояснюваними індикаторами.</p>
+      </div>
+      <ol class="workflow-steps" aria-label="Основний сценарій роботи">
+        <li><span>01</span><strong>Джерела</strong><small>Файли, текст, новини</small></li>
+        <li><span>02</span><strong>Параметри</strong><small>MFW, поріг, ознаки</small></li>
+        <li><span>03</span><strong>Звіт</strong><small>Ризики, пари, CSV</small></li>
+      </ol>
+    </section>
 
     <!-- Parameters -->
     <div class="panel-card" id="sectionParams" aria-labelledby="paramsHeading">
