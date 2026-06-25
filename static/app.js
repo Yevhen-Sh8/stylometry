@@ -339,6 +339,8 @@ function initLogDrawer() {
   const closeBtn = document.getElementById("logDrawerClose");
   if (!btn || !drawer) return;
 
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea, select, [tabindex]:not([tabindex="-1"])';
+
   const open = async () => {
     drawer.hidden = false; backdrop.hidden = false;
     requestAnimationFrame(() => {
@@ -347,6 +349,7 @@ function initLogDrawer() {
     });
     drawer.setAttribute("aria-hidden", "false");
     btn.setAttribute("aria-expanded", "true");
+    closeBtn.focus();                       // перевести фокус усередину діалогу
     await loadMonitoringLog();
   };
   const close = () => {
@@ -355,13 +358,22 @@ function initLogDrawer() {
     drawer.setAttribute("aria-hidden", "true");
     btn.setAttribute("aria-expanded", "false");
     setTimeout(() => { drawer.hidden = true; backdrop.hidden = true; }, 220);
+    btn.focus();                            // повернути фокус на тригер
   };
 
   btn.addEventListener("click", open);
   closeBtn.addEventListener("click", close);
   backdrop.addEventListener("click", close);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && drawer.classList.contains("is-open")) close();
+    if (!drawer.classList.contains("is-open")) return;
+    if (e.key === "Escape") { close(); return; }
+    if (e.key === "Tab") {                   // утримати фокус усередині діалогу
+      const items = [...drawer.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null);
+      if (!items.length) { e.preventDefault(); closeBtn.focus(); return; }
+      const first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
   });
 }
 
@@ -751,11 +763,17 @@ async function handleFiles(fileList) {
 
   els.uploadProg.style.display = "block";
   els.uploadFill.style.width   = "30%";
+  els.uploadProg.setAttribute("aria-valuenow", "30");
 
   try {
     const data = await api("/api/upload", "POST", fd);
     els.uploadFill.style.width = "100%";
-    setTimeout(() => { els.uploadProg.style.display = "none"; els.uploadFill.style.width = "0"; }, 600);
+    els.uploadProg.setAttribute("aria-valuenow", "100");
+    setTimeout(() => {
+      els.uploadProg.style.display = "none";
+      els.uploadFill.style.width = "0";
+      els.uploadProg.setAttribute("aria-valuenow", "0");
+    }, 600);
 
     if (!data.ok) { showToast(data.error, "error"); return; }
 
@@ -1527,6 +1545,8 @@ els.btnAnalyze.addEventListener("click", async () => {
     renderResults(data);
     els.sectionResults.classList.remove("hidden");
     els.sectionResults.scrollIntoView({ behavior: "smooth", block: "start" });
+    const resultsHeading = document.getElementById("resultsHeading");
+    if (resultsHeading) resultsHeading.focus({ preventScroll: true });  // оголосити результати без масивного aria-live
     showToast("Аналіз завершено", "success");
 
   } catch (e) {

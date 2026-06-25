@@ -81,7 +81,7 @@
           </div>
           <div id="uploadProgress" class="progress-bar" style="display:none"
                role="progressbar" aria-label="Прогрес завантаження"
-               aria-valuemin="0" aria-valuemax="100">
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
             <div class="progress-fill" id="uploadProgressFill"></div>
           </div>
         </div>
@@ -133,7 +133,7 @@
               <input type="url" id="rssAddInput" class="form-control"
                      aria-label="URL RSS-стрічки"
                      placeholder="https://tass.ru/rss/v2.xml" />
-              <button class="btn btn-ghost btn-sm" id="btnAddRssFeed" type="button" title="Додати стрічку">+</button>
+              <button class="btn btn-ghost btn-sm" id="btnAddRssFeed" type="button" aria-label="Додати RSS-стрічку" title="Додати стрічку"><span aria-hidden="true">+</span></button>
             </div>
             <div id="rssFeedTags" class="tag-list"></div>
           </div>
@@ -145,7 +145,7 @@
               <input type="text" id="tgAddInput" class="form-control"
                      aria-label="Імена Telegram-каналів"
                      placeholder="rt_russian, tass_agency, ria_novosti" />
-              <button class="btn btn-ghost btn-sm" id="btnAddTgChannel" type="button" title="Додати канал">+</button>
+              <button class="btn btn-ghost btn-sm" id="btnAddTgChannel" type="button" aria-label="Додати Telegram-канал" title="Додати канал"><span aria-hidden="true">+</span></button>
             </div>
             <div id="tgChannelTags" class="tag-list"></div>
           </div>
@@ -193,16 +193,16 @@
                    min="3" max="25" value="12" />
           </div>
 
-          <div class="monitor-keywords" aria-label="Ключові слова за мовами">
-            <label>RU <textarea id="monitorKwRu" class="form-control" rows="2"
+          <div class="monitor-keywords" role="group" aria-label="Ключові слова за мовами">
+            <label>RU <textarea id="monitorKwRu" class="form-control" rows="2" aria-label="Ключові слова (RU)"
               placeholder="прекращение огня, переговоры"></textarea></label>
-            <label>UA <textarea id="monitorKwUk" class="form-control" rows="2"
+            <label>UA <textarea id="monitorKwUk" class="form-control" rows="2" aria-label="Ключові слова (UA)"
               placeholder="припинення вогню, переговори"></textarea></label>
-            <label>EN <textarea id="monitorKwEn" class="form-control" rows="2"
+            <label>EN <textarea id="monitorKwEn" class="form-control" rows="2" aria-label="Ключові слова (EN)"
               placeholder="ceasefire, peace talks"></textarea></label>
-            <label>DE <textarea id="monitorKwDe" class="form-control" rows="2"
+            <label>DE <textarea id="monitorKwDe" class="form-control" rows="2" aria-label="Ключові слова (DE)"
               placeholder="Waffenruhe, Friedensgespräche"></textarea></label>
-            <label>FR <textarea id="monitorKwFr" class="form-control" rows="2"
+            <label>FR <textarea id="monitorKwFr" class="form-control" rows="2" aria-label="Ключові слова (FR)"
               placeholder="cessez-le-feu, pourparlers"></textarea></label>
           </div>
 
@@ -251,7 +251,7 @@
         </button>
       </div>
 
-      <div id="sourcesList" class="sources-list" role="list" aria-live="polite">
+      <div id="sourcesList" class="sources-list" role="list" aria-live="polite" aria-relevant="additions">
         <div class="sources-empty" id="sourcesEmpty">
           <p>Ще немає доданих джерел</p>
         </div>
@@ -402,9 +402,8 @@
     </div>
 
     <!-- Results -->
-    <div class="panel-card hidden" id="sectionResults" aria-labelledby="resultsHeading"
-         aria-live="polite">
-      <h2 id="resultsHeading" class="panel-card-title">Результати аналізу</h2>
+    <div class="panel-card hidden" id="sectionResults" aria-labelledby="resultsHeading">
+      <h2 id="resultsHeading" class="panel-card-title" tabindex="-1">Результати аналізу</h2>
 
       <!-- Language / data warnings -->
       <div id="languageAlert"></div>
@@ -442,7 +441,7 @@
       <h3 id="logDrawerTitle">Журнал моніторингу</h3>
       <p class="hint">Протокол опрацьованих джерел — Методика НУЗРКС МОУ № 46 від 28.11.2022.</p>
     </div>
-    <button class="log-drawer-close" id="logDrawerClose" type="button" aria-label="Закрити">x</button>
+    <button class="log-drawer-close" id="logDrawerClose" type="button" aria-label="Закрити"><span aria-hidden="true">✕</span></button>
   </div>
   <div id="logTimelineStrip"></div>
   <div class="log-drawer-body" id="logDrawerBody">
