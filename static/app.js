@@ -579,10 +579,6 @@ function truncate(str, n = 90) {
   return str.length > n ? str.slice(0, n - 1) + "…" : str;
 }
 
-function sourcePrimaryText(source) {
-  return escHtml(truncate(source.display_title || source.label, 90));
-}
-
 function sourceChipHtml(source, className = "source-chip") {
   const alias = source.alias || "";
   const domain = source.domain || source.label || "";
@@ -603,7 +599,7 @@ function sourceChipHtml(source, className = "source-chip") {
 
 // Backward-compatible alias for existing call sites
 function sourceLinkHtml(source, className = "source-link") {
-  return sourceChipHtml(source, className === "source-link" ? "source-chip" : "source-chip flagged-chip");
+  return sourceChipHtml(source, "source-chip");
 }
 
 function sourceContextHtml(source) {
@@ -633,28 +629,6 @@ function sourceBreakdownHtml(rows) {
             ${row.components ? `<div class="source-table-row-meta">R_domain=${(row.components.domain || 0).toFixed(2)} · R_owner=${(row.components.owner || 0).toFixed(2)} · R_cred=${(row.components.cred || 0).toFixed(2)}</div>` : ""}
           </div>
           <div class="source-table-row-score ${scoreClass(row.score)}">${row.score.toFixed(3)}</div>
-        </div>
-      `).join("")}
-    </div>`;
-}
-
-function sourceComponentHtml(components) {
-  if (!components) return "";
-  const rows = Object.entries(components);
-  if (!rows.length) return "";
-  return `
-    <div class="source-table">
-      <div class="source-table-title">Складові ${MATH.iSource}</div>
-      ${rows.map(([label, item]) => `
-        <div class="source-table-row">
-          <div class="source-table-row-main">
-            <div style="font-weight:600">${escHtml(label)}</div>
-            <div class="source-table-row-meta">${escHtml(item.description || "")}</div>
-          </div>
-          <div class="source-table-row-score">
-            <div>${Number(item.score || 0).toFixed(3)}</div>
-            <div class="source-table-row-meta">w = ${Number(item.weight || 0).toFixed(2)}</div>
-          </div>
         </div>
       `).join("")}
     </div>`;

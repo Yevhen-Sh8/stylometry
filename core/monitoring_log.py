@@ -151,9 +151,3 @@ def append_record(
 def load_records() -> list[dict]:
     """Повертає всі записи протоколу (для експорту або відображення)."""
     return list(_iter_records())
-
-
-def clear_log() -> None:
-    """Повне очищення протоколу. Викликається лише свідомо (напр., CLI-утиліта)."""
-    if LOG_FILE.exists():
-        LOG_FILE.unlink()

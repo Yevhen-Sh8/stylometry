@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import html as html_module
 import re
-import string
-import subprocess
 from pathlib import Path
 
 # ─────────────────────────────────────────────────────────────────────────────
