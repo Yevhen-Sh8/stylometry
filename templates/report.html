@@ -813,7 +813,7 @@
     <div style="margin-top:24px">
       <details>
         <summary style="cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px;">
-          <h2 class="section-title" style="margin:0; display:inline">Розклад <span class="math-inline">I<sub>source</sub></span> за джерелами</h2>
+          <span class="section-title" style="margin:0; display:inline">Розклад <span class="math-inline">I<sub>source</sub></span> за джерелами</span>
           <span style="font-size:12px; color:var(--text-muted, #888); font-weight:400">({{ source_breakdown_rows|length }} джерел — розгорнути)</span>
         </summary>
         <table class="corpus-table" style="margin-top:12px">
@@ -846,8 +846,8 @@
       {% if dendrogram_b64 %}
       <div class="chart-block">
         <div class="chart-block-title">Дендрограма кластеризації</div>
-        <img src="data:image/png;base64,{{ dendrogram_b64 }}" alt="Дендрограма" />
-        <div class="chart-caption">
+        <img src="data:image/png;base64,{{ dendrogram_b64 }}" alt="Дендрограма стилометричної кластеризації джерел за відстанню Burrows Delta; чим нижче злиття гілок, тим більша стилістична схожість" aria-describedby="dendroCaption" />
+        <div class="chart-caption" id="dendroCaption">
           Вертикальна вісь — стилістична відстань <span class="math-inline">&Delta;<sub>Burrows</sub></span> при злитті груп. Нижче злиття — більша схожість. Пунктир — поріг <span class="math-inline">&theta;<sub>&Delta;</sub></span>.
         </div>
       </div>
@@ -857,8 +857,8 @@
         <div class="chart-block-title">
           {{ (projection_meta.method | upper) if projection_meta and projection_meta.method else 'PCA' }}-карта джерел
         </div>
-        <img src="data:image/png;base64,{{ pca_b64 }}" alt="Проєкція джерел" />
-        <div class="chart-caption">
+        <img src="data:image/png;base64,{{ pca_b64 }}" alt="Двовимірна проєкція джерел за стилометричною близькістю; розташовані поруч точки мають подібний стиль, колір позначає кластер" aria-describedby="pcaCaption" />
+        <div class="chart-caption" id="pcaCaption">
           Кожна точка — джерело. Близькі точки — подібний стиль; кольори — кластери дендрограми.
           {% if projection_meta and projection_meta.subtitle %} {{ projection_meta.subtitle }}{% endif %}
         </div>
@@ -869,8 +869,8 @@
     {% if heatmap_b64 %}
     <div class="chart-block" style="margin-top:20px">
       <div class="chart-block-title">Теплокарта відстаней <span class="math-inline">&Delta;<sub>Burrows</sub></span></div>
-      <img src="data:image/png;base64,{{ heatmap_b64 }}" alt="Теплокарта відстаней" style="height:auto; max-height:420px" />
-      <div class="chart-caption">
+      <img src="data:image/png;base64,{{ heatmap_b64 }}" alt="Теплокарта попарних стилометричних відстаней Burrows Delta між джерелами; комірки нижче порогу обведено червоним" aria-describedby="heatCaption" style="height:auto; max-height:420px" />
+      <div class="chart-caption" id="heatCaption">
         Комірки, що перетинають поріг <span class="math-inline">&theta;<sub>&Delta;</sub> = {{ threshold }}</span>, обведено червоним.
       </div>
     </div>
