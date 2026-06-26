@@ -855,11 +855,6 @@ def save_projection_plot(
     return {"method": method, "subtitle": subtitle, "explained_variance": explained}
 
 
-# Backward-compatible alias
-def save_pca_plot(z: pd.DataFrame, dist_df: pd.DataFrame, output_path: Path) -> None:
-    save_projection_plot(z, dist_df, output_path, method="pca")
-
-
 def save_distance_heatmap(
     dist_df: pd.DataFrame,
     output_path: Path,

@@ -104,7 +104,7 @@ function renderCriticalAlert(dims, flagged) {
   if (cta) cta.addEventListener("click", () => {
     const first = document.querySelector("#flaggedQuick .flagged-item");
     if (first) {
-      first.scrollIntoView({ behavior: "smooth", block: "center" });
+      first.scrollIntoView({ behavior: _reduceMotion() ? "auto" : "smooth", block: "center" });
       first.classList.add("flagged-pair-hot");
       setTimeout(() => first.classList.remove("flagged-pair-hot"), 2000);
     }
@@ -358,7 +358,7 @@ function initLogDrawer() {
     drawer.setAttribute("aria-hidden", "true");
     btn.setAttribute("aria-expanded", "false");
     setTimeout(() => { drawer.hidden = true; backdrop.hidden = true; }, 220);
-    btn.focus();                            // повернути фокус на тригер
+    if (drawer.contains(document.activeElement)) btn.focus();  // повертати фокус лише якщо він усередині дровера
   };
 
   btn.addEventListener("click", open);
@@ -579,10 +579,6 @@ function truncate(str, n = 90) {
   return str.length > n ? str.slice(0, n - 1) + "…" : str;
 }
 
-function sourcePrimaryText(source) {
-  return escHtml(truncate(source.display_title || source.label, 90));
-}
-
 function sourceChipHtml(source, className = "source-chip") {
   const alias = source.alias || "";
   const domain = source.domain || source.label || "";
@@ -603,7 +599,7 @@ function sourceChipHtml(source, className = "source-chip") {
 
 // Backward-compatible alias for existing call sites
 function sourceLinkHtml(source, className = "source-link") {
-  return sourceChipHtml(source, className === "source-link" ? "source-chip" : "source-chip flagged-chip");
+  return sourceChipHtml(source, "source-chip");
 }
 
 function sourceContextHtml(source) {
@@ -633,28 +629,6 @@ function sourceBreakdownHtml(rows) {
             ${row.components ? `<div class="source-table-row-meta">R_domain=${(row.components.domain || 0).toFixed(2)} · R_owner=${(row.components.owner || 0).toFixed(2)} · R_cred=${(row.components.cred || 0).toFixed(2)}</div>` : ""}
           </div>
           <div class="source-table-row-score ${scoreClass(row.score)}">${row.score.toFixed(3)}</div>
-        </div>
-      `).join("")}
-    </div>`;
-}
-
-function sourceComponentHtml(components) {
-  if (!components) return "";
-  const rows = Object.entries(components);
-  if (!rows.length) return "";
-  return `
-    <div class="source-table">
-      <div class="source-table-title">Складові ${MATH.iSource}</div>
-      ${rows.map(([label, item]) => `
-        <div class="source-table-row">
-          <div class="source-table-row-main">
-            <div style="font-weight:600">${escHtml(label)}</div>
-            <div class="source-table-row-meta">${escHtml(item.description || "")}</div>
-          </div>
-          <div class="source-table-row-score">
-            <div>${Number(item.score || 0).toFixed(3)}</div>
-            <div class="source-table-row-meta">w = ${Number(item.weight || 0).toFixed(2)}</div>
-          </div>
         </div>
       `).join("")}
     </div>`;
@@ -788,11 +762,21 @@ async function handleFiles(fileList) {
   }
 }
 
+// Чи користувач просив зменшити анімацію (для JS-ініційованого smooth-scroll) — WCAG 2.3.3
+function _reduceMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 els.fileInput.addEventListener("change", e => handleFiles(e.target.files));
 els.dropzone.addEventListener("click", e => {
   // Clicking the embedded label already opens the picker; avoid double-open.
   if (e.target.closest("label")) return;
   els.fileInput.click();
+});
+// role="button" вимагає клавіатурної активації (Enter/Space) — WCAG 2.1.1
+els.dropzone.addEventListener("keydown", e => {
+  if (e.target.closest("label")) return;      // вкладена file-label має власну активацію
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); els.fileInput.click(); }
 });
 els.dropzone.addEventListener("dragover", e => { e.preventDefault(); els.dropzone.classList.add("drag-over"); });
 els.dropzone.addEventListener("dragleave", () => els.dropzone.classList.remove("drag-over"));
@@ -1061,6 +1045,9 @@ $("btnSelectAllUnified").addEventListener("click", () => {
     if (!allChecked) unifiedState.selected.add(idx);
     else unifiedState.selected.delete(idx);
   });
+  const selAllU = $("btnSelectAllUnified");
+  selAllU.setAttribute("aria-pressed", String(!allChecked));
+  selAllU.textContent = !allChecked ? "Зняти вибір" : "Обрати всі";
   updateUnifiedImportButton();
 });
 
@@ -1470,6 +1457,9 @@ function initMonitoring() {
       if (!allChecked) monitorState.selected.add(idx);
       else monitorState.selected.delete(idx);
     });
+    const selAllM = $("btnSelectAllMonitor");
+    selAllM.setAttribute("aria-pressed", String(!allChecked));
+    selAllM.textContent = !allChecked ? "Зняти вибір" : "Обрати всі";
     updateMonitorImportButton();
   });
   $("btnImportMonitor").addEventListener("click", importMonitorSelected);
@@ -1544,7 +1534,7 @@ els.btnAnalyze.addEventListener("click", async () => {
 
     renderResults(data);
     els.sectionResults.classList.remove("hidden");
-    els.sectionResults.scrollIntoView({ behavior: "smooth", block: "start" });
+    els.sectionResults.scrollIntoView({ behavior: _reduceMotion() ? "auto" : "smooth", block: "start" });
     const resultsHeading = document.getElementById("resultsHeading");
     if (resultsHeading) resultsHeading.focus({ preventScroll: true });  // оголосити результати без масивного aria-live
     showToast("Аналіз завершено", "success");
@@ -1784,6 +1774,19 @@ function renderConfidenceMeterHtml(sourceComponents) {
 //  Відкривається кнопкою «Докази ↗» на кожній flagged-pair картці.
 // ─────────────────────────────────────────────────────────────
 let _evidenceDrawerOpen = false;
+let _evidenceTrigger = null;   // елемент, що відкрив дровер — для повернення фокусу
+const EVIDENCE_FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea, select, [tabindex]:not([tabindex="-1"])';
+
+// Фокус на кнопку закриття (innerHTML-перебудова дровера щоразу її пересоздає)
+function _focusEvidenceClose() {
+  const c = document.querySelector("#evidenceDrawer .evidence-drawer-close");
+  if (c) c.focus();
+}
+// Оголошення async-стану дровера через persistent live-region — WCAG 4.1.3
+function _setEvidenceStatus(msg) {
+  const s = document.getElementById("evidenceStatus");
+  if (s) s.textContent = msg;
+}
 
 function _getOrCreateEvidenceDrawer() {
   let overlay = document.getElementById("evidenceOverlay");
@@ -1803,12 +1806,29 @@ function _getOrCreateEvidenceDrawer() {
     drawer.setAttribute("aria-hidden", "true");
     drawer.setAttribute("hidden", "");
 
+    // Persistent live-region поза drawer.innerHTML (innerHTML-rebuild його не стирає)
+    const status = document.createElement("div");
+    status.id = "evidenceStatus";
+    status.className = "sr-only";
+    status.setAttribute("role", "status");
+    status.setAttribute("aria-live", "polite");
+
     document.body.appendChild(overlay);
     document.body.appendChild(drawer);
+    document.body.appendChild(status);
 
     overlay.addEventListener("click", closeEvidenceDrawer);
     document.addEventListener("keydown", e => {
-      if (e.key === "Escape" && _evidenceDrawerOpen) closeEvidenceDrawer();
+      if (!_evidenceDrawerOpen) return;
+      if (e.key === "Escape") { closeEvidenceDrawer(); return; }
+      if (e.key === "Tab") {                       // утримати фокус усередині модалки
+        const d = document.getElementById("evidenceDrawer");
+        const items = [...d.querySelectorAll(EVIDENCE_FOCUSABLE)].filter(el => el.offsetParent !== null);
+        if (!items.length) { e.preventDefault(); return; }
+        const first = items[0], last = items[items.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     });
   }
   return { overlay, drawer: document.getElementById("evidenceDrawer") };
@@ -1816,6 +1836,7 @@ function _getOrCreateEvidenceDrawer() {
 
 function closeEvidenceDrawer() {
   const { overlay, drawer } = _getOrCreateEvidenceDrawer();
+  const wasInside = drawer.contains(document.activeElement) || overlay.contains(document.activeElement);
   _evidenceDrawerOpen = false;
   drawer.classList.remove("is-open");
   setTimeout(() => {
@@ -1825,10 +1846,12 @@ function closeEvidenceDrawer() {
     drawer.setAttribute("aria-hidden", "true");
     drawer.innerHTML = "";
   }, 260);
+  if (wasInside && _evidenceTrigger) _evidenceTrigger.focus();  // повернути фокус на «Докази»
 }
 
-async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle) {
+async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle, trigger) {
   const { overlay, drawer } = _getOrCreateEvidenceDrawer();
+  _evidenceTrigger = trigger || document.activeElement;  // запам'ятати тригер для повернення фокусу
 
   overlay.style.display = "block";
   overlay.removeAttribute("aria-hidden");
@@ -1842,9 +1865,9 @@ async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle) {
         <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">Докази збігу</h3>
         <div class="evidence-drawer-subtitle">${escHtml(aTitle || aLabel)} ↔ ${escHtml(bTitle || bLabel)}</div>
       </div>
-      <button class="evidence-drawer-close" type="button" aria-label="Закрити">x</button>
+      <button class="evidence-drawer-close" type="button" aria-label="Закрити"><span aria-hidden="true">✕</span></button>
     </div>
-    <div class="evidence-drawer-body">
+    <div class="evidence-drawer-body" aria-busy="true">
       <div class="evidence-loading">
         <div class="spinner" style="width:18px;height:18px" aria-hidden="true"></div>
         Завантаження доказів…
@@ -1858,6 +1881,8 @@ async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle) {
     requestAnimationFrame(() => drawer.classList.add("is-open"));
   });
   _evidenceDrawerOpen = true;
+  _focusEvidenceClose();                       // фокус усередину модалки при відкритті
+  _setEvidenceStatus("Завантаження доказів…");
 
   // Fetch evidence from backend
   let evData = null;
@@ -1868,12 +1893,18 @@ async function openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle) {
   }
 
   if (!evData || !evData.ok) {
-    drawer.querySelector(".evidence-drawer-body").innerHTML = `
+    const body = drawer.querySelector(".evidence-drawer-body");
+    body.setAttribute("aria-busy", "false");
+    body.innerHTML = `
       <div class="evidence-empty">Увага: ${escHtml((evData && evData.error) || "Не вдалося отримати дані")}</div>`;
+    _setEvidenceStatus(`Помилка: ${(evData && evData.error) || "не вдалося отримати дані"}`);
+    _focusEvidenceClose();                     // innerHTML-rebuild стер фокус — повернути
     return;
   }
 
   _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle);
+  _setEvidenceStatus("Докази завантажено");
+  _focusEvidenceClose();                       // після повної перебудови дровера
 }
 
 function _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle) {
@@ -1889,9 +1920,11 @@ function _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle) 
 
   function filterTokens(mode) {
     currentFilter = mode;
-    drawer.querySelectorAll(".evidence-filter-btn").forEach(b =>
-      b.classList.toggle("is-active", b.dataset.filter === mode)
-    );
+    drawer.querySelectorAll(".evidence-filter-btn").forEach(b => {
+      const active = b.dataset.filter === mode;
+      b.classList.toggle("is-active", active);
+      b.setAttribute("aria-pressed", String(active));   // стан кнопки-фільтра — WCAG 4.1.2
+    });
     const tokensDiv = drawer.querySelector("#evidenceTokensPanel");
     if (!tokensDiv) return;
 
@@ -1936,13 +1969,13 @@ function _renderEvidenceContent(drawer, evData, aLabel, bLabel, aTitle, bTitle) 
         <h3 class="evidence-drawer-title" id="evidenceDrawerTitle">Докази збігу</h3>
         <div class="evidence-drawer-subtitle">${escHtml(aTitle || aLabel)} ↔ ${escHtml(bTitle || bLabel)}</div>
       </div>
-      <button class="evidence-drawer-close" type="button" aria-label="Закрити">x</button>
+      <button class="evidence-drawer-close" type="button" aria-label="Закрити"><span aria-hidden="true">✕</span></button>
     </div>
-    <div class="evidence-filter-bar" role="tablist">
-      <button class="evidence-filter-btn is-active" data-filter="all" role="tab">Всі токени</button>
-      <button class="evidence-filter-btn" data-filter="shared" role="tab">Спільні (${sharedTokens.length})</button>
-      <button class="evidence-filter-btn" data-filter="a_only" role="tab">Лише A (${aTopTokens.length})</button>
-      <button class="evidence-filter-btn" data-filter="b_only" role="tab">Лише B (${bTopTokens.length})</button>
+    <div class="evidence-filter-bar" role="group" aria-label="Фільтр токенів">
+      <button class="evidence-filter-btn is-active" data-filter="all" aria-pressed="true">Всі токени</button>
+      <button class="evidence-filter-btn" data-filter="shared" aria-pressed="false">Спільні (${sharedTokens.length})</button>
+      <button class="evidence-filter-btn" data-filter="a_only" aria-pressed="false">Лише A (${aTopTokens.length})</button>
+      <button class="evidence-filter-btn" data-filter="b_only" aria-pressed="false">Лише B (${bTopTokens.length})</button>
     </div>
     <div class="evidence-drawer-body">
       <div class="evidence-section">
@@ -2003,7 +2036,7 @@ function addEvidenceButtons() {
     btn.className = "btn-evidence";
     btn.type = "button";
     btn.innerHTML = "Докази";
-    btn.addEventListener("click", () => openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle));
+    btn.addEventListener("click", () => openEvidenceDrawer(aLabel, bLabel, aTitle, bTitle, btn));
     card.appendChild(btn);
   });
 }

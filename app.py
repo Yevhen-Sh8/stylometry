@@ -1753,7 +1753,6 @@ def analyze():
         char_n=char_n,
         projection_method=projection_method,
         projection_meta=results.get("projection_meta", {}),
-        branch_support=results.get("branch_support", {}),
         language_report=results.get("language_report", {}),
     )
 
@@ -1859,7 +1858,6 @@ def report():
         heatmap_b64=r.get("heatmap_b64", ""),
         projection_meta=r.get("projection_meta", {}),
         language_report=r.get("language_report", {}),
-        branch_support=r.get("branch_support", {}),
         feature_type=r.get("feature_type", "word"),
         char_n=r.get("char_n", 3),
         min_doc_freq=r.get("min_doc_freq", 2),

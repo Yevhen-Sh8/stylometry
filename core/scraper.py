@@ -298,8 +298,3 @@ def scrape_url_payload(url: str) -> dict[str, str]:
         "Альтернативи: скористайтеся RSS-стрічкою або Telegram-каналом цього ресурсу; "
         "або відкрийте сторінку в браузері, скопіюйте текст і вставте у вкладку «Текст»."
     )
-
-
-def scrape_url(url: str) -> str:
-    """Compatibility wrapper returning only article text."""
-    return scrape_url_payload(url)["text"]
