@@ -35,6 +35,7 @@ from urllib.parse import urlparse
 
 from flask import (Flask, jsonify, render_template, request,
                    send_from_directory)
+from werkzeug.exceptions import HTTPException
 
 from core.extractors import (SUPPORTED_EXTENSIONS, clean_extracted_text,
                               extract_from_file)
@@ -380,6 +381,42 @@ def _err(msg: str, code: int = 400):
 
 def _ok(**kwargs):
     return jsonify({"ok": True, **kwargs})
+
+
+def _int_param(data, key, default, lo=None, hi=None):
+    """Безпечно дістати ціле з JSON-тіла: некоректний ввід → default,
+    із клампом у [lo, hi]. Уникає неконтрольованого 500 на int('abc')."""
+    raw = data.get(key)
+    try:
+        val = int(raw if raw not in (None, "") else default)
+    except (TypeError, ValueError):
+        val = default
+    if lo is not None:
+        val = max(lo, val)
+    if hi is not None:
+        val = min(hi, val)
+    return val
+
+
+# ── Централізована обробка помилок (без витоку внутрішніх деталей у проді) ──
+@app.errorhandler(413)
+def _handle_too_large(e):
+    return _err("Завеликий запит (ліміт 50 МБ).", code=413)
+
+
+@app.errorhandler(404)
+def _handle_not_found(e):
+    if request.path.startswith("/api/"):
+        return _err("Невідомий ендпоінт.", code=404)
+    return e  # звичайні сторінки — стандартний 404
+
+
+@app.errorhandler(Exception)
+def _handle_unexpected(e):
+    if isinstance(e, HTTPException):
+        return e  # 405/400/413/... — власні коди й обробники
+    app.logger.exception("Необроблена помилка")
+    return _err("Внутрішня помилка сервера.", code=500)
 
 
 def _admin_token() -> str:
@@ -1262,7 +1299,7 @@ def fetch_rss():
 
     data = request.get_json(silent=True) or {}
     feed_url = (data.get("url") or "").strip()
-    limit = min(int(data.get("limit") or 30), 50)
+    limit = _int_param(data, "limit", 30, lo=1, hi=50)
 
     if not feed_url:
         return _err("URL RSS-стрічки порожній.")
@@ -1328,7 +1365,7 @@ def fetch_telegram():
 
     data = request.get_json(silent=True) or {}
     raw = (data.get("channel") or "").strip()
-    limit = min(int(data.get("limit") or 20), 40)
+    limit = _int_param(data, "limit", 20, lo=1, hi=40)
 
     if not raw:
         return _err("Назва каналу порожня.")
@@ -1395,7 +1432,7 @@ def search_news():
     data = request.get_json(silent=True) or {}
     query = (data.get("query") or "").strip()
     langs = data.get("languages") or ["uk", "ru", "en"]
-    limit = int(data.get("limit") or 15)
+    limit = _int_param(data, "limit", 15, lo=1, hi=50)
 
     if not query:
         return _err("Пошуковий запит порожній.")
@@ -1515,7 +1552,7 @@ def search_all():
     data   = request.get_json(silent=True) or {}
     query  = (data.get("query") or "").strip()
     langs  = data.get("languages") or ["ru", "uk", "en"]
-    limit  = int(data.get("limit") or 15)
+    limit = _int_param(data, "limit", 15, lo=1, hi=50)
     if not query:
         return _err("Пошуковий запит порожній.")
     langs = [l for l in langs if l in _GN_LOCALES]
@@ -1693,9 +1730,9 @@ def analyze():
             projection_method=projection_method,
             manifestation=manifestation,
         )
-    except Exception as exc:
-        traceback.print_exc()
-        return _err(f"Помилка аналізу: {exc}", code=500)
+    except Exception:
+        app.logger.exception("Помилка аналізу")
+        return _err("Помилка аналізу. Перевірте вхідні дані та спробуйте ще раз.", code=500)
 
     # Store for /report (спільне сховище між воркерами)
     results["timestamp"] = datetime.now().strftime("%d.%m.%Y %H:%M")
