@@ -116,8 +116,11 @@ def build_matrix(spec: dict) -> dict:
                 flagged += 1
             cells.append({"level": level, "text": f"{d:.2f}", "index": i * n + j})
         rows.append({"label": labels[i], "cells": cells})
+    pairs = sorted(({"a": i, "b": j, "delta": values[i][j], "level": severity(values[i][j], thr)}
+                    for i in range(n) for j in range(i + 1, n) if values[i][j] < thr),
+                   key=lambda p: p["delta"])
     return {"labels": labels, "rows": rows, "n_pairs": n * (n - 1) // 2,
-            "n_flagged": flagged, "threshold_text": f"{thr:g}"}
+            "n_flagged": flagged, "threshold_text": f"{thr:g}", "pairs": pairs}
 
 
 # ── шляхи ───────────────────────────────────────────────────────────────────
@@ -181,7 +184,9 @@ def language_vars(cfg: dict, t: dict) -> dict:
     p = cfg["pricing"]
     money = lambda n: t["price_format"].replace("{n}", f"{n:g}")  # noqa: E731
     provider = cfg["waitlist"].get("provider_name", "")
+    matrix = build_matrix(cfg["demo_matrix"])
     return {
+        "other_pairs": matrix["n_pairs"] - matrix["n_flagged"],
         "early_limit": p["pro_early_limit"],
         "early_price": money(p["pro_early_price"]),
         "price_year": money(p["pro_price_year"]),
@@ -194,8 +199,12 @@ def language_vars(cfg: dict, t: dict) -> dict:
     }
 
 
-def render_site(out: Path, flat: bool = False) -> list[Path]:
+def render_site(out: Path, flat: bool = False, only: list[str] | None = None) -> list[Path]:
     cfg = load_json(ROOT / "config.json")
+    if only:  # чернетковий перегляд окремих мов
+        cfg["languages"] = [l for l in cfg["languages"] if l in only]
+        if cfg["default_lang"] not in cfg["languages"]:
+            cfg["default_lang"] = cfg["languages"][0]
     raw = load_translations(cfg)
     langs = cfg["languages"]
     site_url = "" if flat else cfg.get("site_url", "").strip()
@@ -309,6 +318,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Збірка лендингу DIMS")
     parser.add_argument("--check", action="store_true", help="перевірити актуальність dist/")
     parser.add_argument("--flat", metavar="DIR", help="плаский попередній перегляд у DIR")
+    parser.add_argument("--out", metavar="DIR", help="зібрати в DIR замість landing/dist")
+    parser.add_argument("--langs", metavar="CODES", help="лише ці мови через кому (чернетка)")
     args = parser.parse_args(argv)
 
     if args.check:
@@ -321,10 +332,13 @@ def main(argv: list[str] | None = None) -> int:
         print("dist/ актуальний")
         return 0
 
-    out = Path(args.flat) if args.flat else DIST
+    only = args.langs.split(",") if args.langs else None
+    if only and not (args.flat or args.out):
+        parser.error("--langs потребує --out або --flat, щоб не зіпсувати dist/")
+    out = Path(args.flat or args.out) if (args.flat or args.out) else DIST
     if out.exists():
         shutil.rmtree(out)
-    files = render_site(out, flat=bool(args.flat))
+    files = render_site(out, flat=bool(args.flat), only=only)
     print(f"Зібрано {len(files)} файлів у {out}")
     return 0
 

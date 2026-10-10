@@ -71,7 +71,7 @@ r = Image.open(f"{tmp}/results.png")
 save(r.crop((0, 520, r.width, 1840)), "indicators-dark", 1400)
 save(r.crop((0, 1840, r.width, r.height - 190)), "pairs-dark", 1400)
 rep = Image.open(f"{tmp}/report.png")
-save(rep.crop((634, 58, 2246, 1650)), "report", 1200)
+save(rep.crop((634, 58, 2246, 1135)), "report", 1200)  # шапка й цифри, без підсумку (у демо немає даних охоплення)
 `], { stdio: 'inherit' });
 
   // 3. Прев'ю для соцмереж 1200×630 з головного блоку лендингу.

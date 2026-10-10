@@ -9,6 +9,17 @@
     });
   });
 
+  // The specialists' block is collapsed; a link to #experts should open it.
+  var experts = document.getElementById("experts");
+  function openExperts() {
+    if (experts && location.hash === "#experts") experts.open = true;
+  }
+  openExperts();
+  window.addEventListener("hashchange", openExperts);
+  document.querySelectorAll('a[href="#experts"]').forEach(function (a) {
+    a.addEventListener("click", function () { if (experts) experts.open = true; });
+  });
+
   // Hovering or focusing a term in the formula highlights its indicator card, and back.
   var terms = document.querySelectorAll("[data-ind]");
   function mark(key, on) {
@@ -68,6 +79,10 @@
     data.delete("company");
     data.set("email", value);
     data.set("page", location.pathname);
+    // Ad tracking tags (?utm_source=…) show which campaign brought the sign-up.
+    new URLSearchParams(location.search).forEach(function (value, key) {
+      if (/^utm_[a-z]+$/.test(key)) data.set(key, value.slice(0, 100));
+    });
     submit.disabled = true;
     say(msg.msgSending);
     fetch(endpoint, { method: "POST", body: data, headers: { Accept: "application/json" } })
