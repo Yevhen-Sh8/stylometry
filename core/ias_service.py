@@ -60,6 +60,18 @@ MAX_TEXT_CHARS = int(os.environ.get("DIMS_MAX_TEXT_CHARS", "200000"))
 
 FEATURE_TYPES = {"word", "function", "char"}
 
+# Походження тексту: написаний текст чи ШІ-транскрипт відео/аудіо.
+# Транскрипт — усне мовлення після розпізнавання; його «стиль» частково
+# відображає модальність (усна vs письмова мова) і систему розпізнавання,
+# а не автора. Тому пари «транскрипт ↔ текст» позначаються окремо.
+TEXT_ORIGINS = {"text", "transcript"}
+
+
+def _transcript_platforms() -> set[str]:
+    """Платформи, матеріали яких без явного text_origin вважаються транскриптами."""
+    raw = os.environ.get("DIMS_TRANSCRIPT_PLATFORMS", "youtube,tiktok")
+    return {p.strip().lower() for p in raw.split(",") if p.strip()}
+
 
 class AssessmentError(ValueError):
     """Некоректні вхідні дані події (повідомлення придатне для показу клієнту)."""
@@ -142,6 +154,7 @@ def _normalise_materials(materials) -> list[dict]:
             f"Забагато матеріалів у події ({len(materials)} > {MAX_MATERIALS_PER_EVENT})."
         )
     out = []
+    transcript_platforms = _transcript_platforms()
     for i, m in enumerate(materials):
         if not isinstance(m, dict):
             raise AssessmentError(f"materials[{i}] має бути об'єктом.")
@@ -153,10 +166,19 @@ def _normalise_materials(materials) -> list[dict]:
             raise AssessmentError(
                 f"materials[{i}]: потрібне поле source (канал / акаунт / домен)."
             )
+        platform = str(m.get("platform") or "").strip().lower()
+        origin = str(m.get("text_origin") or "").strip().lower()
+        if not origin:
+            origin = "transcript" if platform in transcript_platforms else "text"
+        if origin not in TEXT_ORIGINS:
+            raise AssessmentError(
+                f"materials[{i}]: text_origin має бути 'text' або 'transcript'."
+            )
         out.append({
             "id": str(m.get("id") or f"m{i + 1}"),
             "source": source,
-            "platform": str(m.get("platform") or "").strip().lower(),
+            "platform": platform,
+            "text_origin": origin,
             "domain": str(m.get("domain") or "").strip(),
             "url": str(m.get("url") or "").strip(),
             "published_at": str(m.get("published_at") or "").strip(),
@@ -198,6 +220,7 @@ def _dedupe(materials: list[dict]) -> tuple[list[dict], list[dict]]:
             "material_ids": [x["id"] for x in members],
             "sources": sources,
             "n_sources": len(sources),
+            "text_origins": sorted({x["text_origin"] for x in members}),
             "first_published_at": members[0]["published_at"] or None,
             "last_published_at": members[-1]["published_at"] or None,
         })
@@ -218,11 +241,16 @@ def _aggregate_by_source(materials: list[dict]) -> tuple[dict[str, str], dict[st
                 "type": "url" if m["url"] else "text",
                 "platform": m["platform"],
                 "n_materials": 0,
+                "_origins": set(),
             }
             if m["published_at"]:
                 # Найраніша поява джерела в події — для S_time.
                 meta[src]["timestamp"] = m["published_at"]
         meta[src]["n_materials"] += 1
+        meta[src]["_origins"].add(m["text_origin"])
+    for m in meta.values():
+        origins = m.pop("_origins")
+        m["text_origin"] = origins.pop() if len(origins) == 1 else "mixed"
     corpus = {src: "\n\n".join(parts) for src, parts in texts.items()}
     return corpus, meta
 
@@ -275,8 +303,10 @@ def assess_event(
             d = float(dist.loc[a, b])
             if d < threshold:
                 sev = classify_severity(d, threshold)
+                oa, ob = meta[a]["text_origin"], meta[b]["text_origin"]
                 flagged.append({"a": a, "b": b, "delta": round(d, 4),
-                                "severity": sev["en"].lower()})
+                                "severity": sev["en"].lower(),
+                                "cross_origin": oa != ob or "mixed" in (oa, ob)})
         flagged.sort(key=lambda p: p["delta"])
     else:
         # Одне джерело: Δ-Burrows неможлива; стилометрична частина I_coord = 0.
@@ -304,6 +334,13 @@ def assess_event(
             "навіть після агрегації; Δ-Burrows на коротких текстах нестійка "
             "(Eder 2015: надійно від ~2500 слів) — орієнтуйтеся на довірчий інтервал."
         )
+    origins = {m["text_origin"] for m in meta.values()}
+    if coordination_assessable and len(origins) > 1:
+        warnings.append(
+            "Подія поєднує написані тексти та ШІ-транскрипти відео — стилометрична "
+            "відстань між ними частково відображає різницю усної/письмової мови й "
+            "розпізнавання; пари з cross_origin=true інтерпретуйте обережно."
+        )
     lang = detect_corpus_languages(corpus)
     if lang.get("is_mixed"):
         warnings.append("Змішані системи письма в корпусі — стилометрія менш достовірна.")
@@ -330,6 +367,7 @@ def assess_event(
             "n_unique_materials": len(unique),
             "n_sources": len(corpus),
             "sources": {s: m["n_materials"] for s, m in meta.items()},
+            "text_origins": {s: m["text_origin"] for s, m in meta.items()},
         },
         "params": {"mfw_n": int(mfw_n), "threshold": float(threshold),
                    "feature_type": feature_type},

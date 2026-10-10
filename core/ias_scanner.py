@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -73,7 +74,7 @@ class SqlEventSource:
 
     changed_events_sql: параметр :since → колонки event_id, updated_at
     event_materials_sql: параметр :event_id → колонки source, text
-        (+ опційно id, platform, domain, url, published_at)
+        (+ опційно id, platform, domain, url, published_at, text_origin)
     """
 
     def __init__(self, db_url: str, changed_events_sql: str, event_materials_sql: str,
@@ -125,6 +126,7 @@ class SqlEventSource:
                 "id": str(r.get("id") or r.get("material_id") or ""),
                 "source": str(r.get("source") or ""),
                 "platform": str(r.get("platform") or ""),
+                "text_origin": str(r.get("text_origin") or ""),
                 "domain": str(r.get("domain") or ""),
                 "url": str(r.get("url") or ""),
                 "published_at": _iso(r.get("published_at")),
@@ -167,14 +169,22 @@ def alert_message(alert_id: int, result: dict, public_url: str = "") -> dict:
     return msg
 
 
+def sign_payload(secret: str, timestamp: str, body: bytes) -> str:
+    """HMAC-SHA256 підпис «<timestamp>.<body>» — ІАС перевіряє автентичність
+    і свіжість сповіщення (захист від підробки та повторного відтворення)."""
+    mac = hmac.new(secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256)
+    return "sha256=" + mac.hexdigest()
+
+
 class WebhookNotifier:
     def __init__(self, url: str, token: str = "", timeout_s: int = 10,
-                 public_url: str = "", verify: bool | str = True):
+                 public_url: str = "", verify: bool | str = True, secret: str = ""):
         self.url = url
         self.token = token
         self.timeout = timeout_s
         self.public_url = public_url
         self.verify = verify
+        self.secret = secret
 
     @classmethod
     def from_env(cls) -> "WebhookNotifier | None":
@@ -184,15 +194,27 @@ class WebhookNotifier:
         ca = os.environ.get("DIMS_ALERT_WEBHOOK_CA_BUNDLE", "").strip()
         return cls(url, os.environ.get("DIMS_ALERT_WEBHOOK_TOKEN", "").strip(),
                    public_url=os.environ.get("DIMS_PUBLIC_URL", "").strip(),
-                   verify=ca or True)
+                   verify=ca or True,
+                   secret=os.environ.get("DIMS_ALERT_WEBHOOK_SECRET", "").strip())
 
     def send(self, alert_id: int, result: dict) -> bool:
-        headers = {"Content-Type": "application/json"}
+        body = json.dumps(alert_message(alert_id, result, self.public_url),
+                          ensure_ascii=False).encode("utf-8")
+        timestamp = str(int(time.time()))
+        headers = {
+            "Content-Type": "application/json; charset=utf-8",
+            # Ключ ідемпотентності: повторна доставка того самого сповіщення
+            # (після збою мережі) має той самий id — ІАС не створює дубль.
+            "X-DIMS-Alert-Id": str(alert_id),
+            "X-DIMS-Timestamp": timestamp,
+        }
         if self.token:
             headers["Authorization"] = f"Bearer {self.token}"
+        if self.secret:
+            headers["X-DIMS-Signature"] = sign_payload(self.secret, timestamp, body)
         try:
-            resp = requests.post(self.url, json=alert_message(alert_id, result, self.public_url),
-                                 headers=headers, timeout=self.timeout, verify=self.verify)
+            resp = requests.post(self.url, data=body, headers=headers,
+                                 timeout=self.timeout, verify=self.verify)
             if 200 <= resp.status_code < 300:
                 return True
             log.warning("Webhook відповів %s для сповіщення %s", resp.status_code, alert_id)

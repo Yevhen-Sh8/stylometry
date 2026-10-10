@@ -302,3 +302,87 @@ def test_status_reports_last_run_as_json(scanner_env, client):
     st = client.get("/api/v1/status", headers=AUTH).get_json()["scanner"]
     assert st["last_run_stats"]["assessed"] == 2
     assert st["watermark"] == "2026-10-10T11:30:00"
+
+
+# ── ШІ-транскрипти відео ────────────────────────────────────────────────────
+
+def test_video_platforms_default_to_transcript_and_pairs_are_marked():
+    mats = [_material("y1", "yt_chan", _text(2), platform="youtube"),
+            _material("t1", "tg_chan", _text(4), platform="telegram"),
+            _material("t2", "tg_other", _text(3), platform="telegram")]
+    r = assess_event(mats, alert_policy=POLICY, threshold=2.0)
+    assert r["stats"]["text_origins"] == {"yt_chan": "transcript", "tg_chan": "text",
+                                          "tg_other": "text"}
+    assert any("транскрипт" in w for w in r["warnings"])
+    origins = r["stats"]["text_origins"]
+    pairs = r["coordination"]["flagged_pairs"]
+    assert pairs  # при θ = 2.0 є пари для перевірки
+    for p in pairs:
+        assert p["cross_origin"] is (origins[p["a"]] != origins[p["b"]])
+
+
+def test_explicit_text_origin_overrides_platform_and_is_validated():
+    mats = [_material("y1", "yt", _text(2), platform="youtube", text_origin="text"),
+            _material("t1", "tg", _text(3), platform="telegram")]
+    r = assess_event(mats, alert_policy=POLICY)
+    assert set(r["stats"]["text_origins"].values()) == {"text"}
+    assert not any("транскрипт" in w for w in r["warnings"])
+    with pytest.raises(AssessmentError):
+        assess_event([_material("x", "s", _text(1), text_origin="audio")])
+
+
+def test_source_with_both_origins_is_mixed():
+    mats = [_material("a", "chan", _text(2), platform="youtube"),
+            _material("b", "chan", _text(3), platform="telegram"),
+            _material("c", "other", _text(4))]
+    r = assess_event(mats, alert_policy=POLICY)
+    assert r["stats"]["text_origins"]["chan"] == "mixed"
+
+
+# ── Webhook у ІАС: підпис та ідемпотентність ────────────────────────────────
+
+def test_webhook_sends_signed_idempotent_request(monkeypatch):
+    import json as _json
+    from core import ias_scanner
+    captured = {}
+
+    class _Resp:
+        status_code = 202
+
+    def fake_post(url, data=None, headers=None, timeout=None, verify=None):
+        captured.update(url=url, data=data, headers=headers)
+        return _Resp()
+
+    monkeypatch.setattr(ias_scanner.requests, "post", fake_post)
+    same = _text(1)
+    mats = [_material(f"c{i}", f"chan{i}", same) for i in range(3)]
+    result = assess_event(mats, event_id="ev-9", alert_policy=POLICY)
+    n = ias_scanner.WebhookNotifier("https://ias.local/hook", token="t", secret="s3cret",
+                                    public_url="https://dims.local")
+    assert n.send(7, result) is True
+
+    h = captured["headers"]
+    assert h["X-DIMS-Alert-Id"] == "7" and h["Authorization"] == "Bearer t"
+    expected = ias_scanner.sign_payload("s3cret", h["X-DIMS-Timestamp"], captured["data"])
+    assert h["X-DIMS-Signature"] == expected
+    # Підпис змінюється при будь-якій зміні тіла (захист від підробки).
+    assert ias_scanner.sign_payload("s3cret", h["X-DIMS-Timestamp"], captured["data"] + b" ") != expected
+    body = _json.loads(captured["data"].decode("utf-8"))
+    assert body["alert_id"] == 7 and body["event_id"] == "ev-9"
+    assert body["url"] == "https://dims.local/api/v1/alerts/7"
+    assert "text" not in _json.dumps(body["copy_clusters"])  # тексти не передаються
+
+
+def test_webhook_without_secret_has_no_signature(monkeypatch):
+    from core import ias_scanner
+    captured = {}
+
+    class _Resp:
+        status_code = 500
+
+    monkeypatch.setattr(ias_scanner.requests, "post",
+                        lambda url, **kw: captured.update(kw) or _Resp())
+    mats = [_material(f"m{i}", f"s{i}", _text(i)) for i in range(2)]
+    result = assess_event(mats, alert_policy=POLICY)
+    assert ias_scanner.WebhookNotifier("https://ias.local/hook").send(1, result) is False
+    assert "X-DIMS-Signature" not in captured["headers"]

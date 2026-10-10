@@ -157,6 +157,10 @@ components:
         domain: {type: string, description: 'Домен для I_source (якщо відмінний від source)'}
         url: {type: string}
         published_at: {type: string, format: date-time}
+        text_origin:
+          type: string
+          enum: [text, transcript]
+          description: 'Написаний текст чи ШІ-транскрипт відео/аудіо. Якщо не задано — transcript для платформ із DIMS_TRANSCRIPT_PLATFORMS (youtube, tiktok), інакше text'
         text: {type: string}
     AssessRequest:
       type: object
@@ -226,6 +230,7 @@ components:
                   b: {type: string}
                   delta: {type: number}
                   severity: {type: string, enum: [critical, high, moderate]}
+                  cross_origin: {type: boolean, description: 'Пара «транскрипт ↔ написаний текст» — інтерпретувати обережно'}
             copy_clusters:
               type: array
               items:
@@ -236,8 +241,36 @@ components:
                   first_source: {type: string}
                   first_published_at: {type: string, nullable: true}
                   material_ids: {type: array, items: {type: string}}
+                  text_origins: {type: array, items: {type: string}}
         stats: {type: object}
         warnings: {type: array, items: {type: string}}
+    AlertWebhook:
+      description: |
+        Тіло POST-запиту, який DIMS надсилає на DIMS_ALERT_WEBHOOK_URL (приймач у ІАС).
+        Заголовки: X-DIMS-Alert-Id (ключ ідемпотентності), X-DIMS-Timestamp
+        (Unix-секунди), X-DIMS-Signature: sha256=HMAC_SHA256(secret, "<timestamp>.<body>")
+        за наявності DIMS_ALERT_WEBHOOK_SECRET, Authorization: Bearer за наявності
+        DIMS_ALERT_WEBHOOK_TOKEN. Будь-яка відповідь 2xx = доставлено; інакше повтор
+        у наступному проході сканера. Тексти матеріалів не передаються.
+      type: object
+      properties:
+        type: {type: string, enum: [dims.coordinated_activity_alert]}
+        alert_id: {type: integer}
+        event_id: {type: string}
+        grade: {$ref: '#/components/schemas/Grade'}
+        grade_label: {type: string}
+        r_dims: {type: number}
+        confidence: {type: object, nullable: true}
+        indicators: {type: object, additionalProperties: {type: number}}
+        kinds: {type: array, items: {type: string, enum: [dims, copy_paste]}}
+        signals: {type: array, items: {type: string}}
+        top_pairs: {type: array, items: {type: object}}
+        copy_clusters: {type: array, items: {type: object}}
+        n_sources: {type: integer}
+        n_materials: {type: integer}
+        warnings: {type: array, items: {type: string}}
+        assessed_at: {type: string, format: date-time}
+        url: {type: string, description: 'Посилання на повну оцінку в API DIMS (якщо задано DIMS_PUBLIC_URL)'}
     Alert:
       type: object
       properties:
