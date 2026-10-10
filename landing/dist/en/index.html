@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DIMS — stylometric analysis of coordinated publications</title>
+<meta name="description" content="DIMS compares the writing style of texts from different channels and sites using Burrows&#39; Delta and shows which publications follow the same template. An integrated risk score R_DIMS and a grade from F to SSS.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DIMS">
+<meta property="og:title" content="DIMS — stylometric analysis of coordinated publications">
+<meta property="og:description" content="DIMS compares the writing style of texts from different channels and sites using Burrows&#39; Delta and shows which publications follow the same template. An integrated risk score R_DIMS and a grade from F to SSS.">
+<meta property="og:locale" content="en_US">
+<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../static/fonts.css?v=9975e92a09">
+<link rel="stylesheet" href="../static/landing.css?v=11327934a0">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="./" aria-label="DIMS">
+      <span class="brand-mark" aria-hidden="true">D</span>
+      <span class="brand-text">
+        <span class="brand-word">DIM<span>S</span></span>
+        <span class="brand-sub">stylometric analysis · Burrows&#39; Δ</span>
+      </span>
+    </a>
+    
+    <nav class="mainnav" aria-label="DIMS">
+      <a href="#how">How it works</a>
+      <a href="#method">Score</a>
+      <a href="#screens">Interface</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <a class="btn btn-primary btn-sm topbar-cta" href="#waitlist">Early access</a>
+
+    <nav class="langs" aria-label="Site language">
+      <a href="../uk/" hreflang="uk" lang="uk" data-lang="uk" title="Українська">UA</a><a href="./" hreflang="en" lang="en" data-lang="en" aria-current="true" title="English">EN</a><a href="../pl/" hreflang="pl" lang="pl" data-lang="pl" title="Polski">PL</a><a href="../de/" hreflang="de" lang="de" data-lang="de" title="Deutsch">DE</a>
+    </nav>
+  </div>
+</header>
+<main id="main" tabindex="-1">
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker">Stylometry for fact-checking and monitoring</p>
+      <h1>Find publications written from the same template</h1>
+      <p class="lead">DIMS compares the writing style of texts from different channels and sites and flags pairs that are too similar to be independent. You get an integrated risk score with an explanation for every indicator.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#waitlist">Get early access</a>
+        
+        <a class="btn btn-ghost" href="#how">How it works</a>
+      </div>
+      <p class="offer"><span class="offer-mark" aria-hidden="true"></span>The first 100 users get Pro for $9 a year.</p>
+    </div>
+
+    <figure class="matrix-card">
+      <div class="matrix-head">
+        <span class="matrix-title">Burrows&#39; Δ matrix</span>
+        <span class="chip">demo set</span>
+      </div>
+      <div class="matrix-scroll">
+        <table class="matrix" aria-label="Table of Burrows&#39; Delta distances between the five sources of the demo set">
+          <thead>
+            <tr><td></td><th scope="col">A</th><th scope="col">B</th><th scope="col">C</th><th scope="col">N1</th><th scope="col">N2</th></tr>
+          </thead>
+          <tbody>
+          
+            <tr>
+              <th scope="row">A</th>
+              <td class="cell cell-self" style="--i: 0"><span aria-hidden="true">·</span></td><td class="cell cell-critical" style="--i: 1">0.16</td><td class="cell cell-critical" style="--i: 2">0.21</td><td class="cell cell-clear" style="--i: 3">1.85</td><td class="cell cell-clear" style="--i: 4">1.87</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">B</th>
+              <td class="cell cell-critical" style="--i: 5">0.16</td><td class="cell cell-self" style="--i: 6"><span aria-hidden="true">·</span></td><td class="cell cell-critical" style="--i: 7">0.12</td><td class="cell cell-clear" style="--i: 8">1.92</td><td class="cell cell-clear" style="--i: 9">1.98</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">C</th>
+              <td class="cell cell-critical" style="--i: 10">0.21</td><td class="cell cell-critical" style="--i: 11">0.12</td><td class="cell cell-self" style="--i: 12"><span aria-hidden="true">·</span></td><td class="cell cell-clear" style="--i: 13">1.90</td><td class="cell cell-clear" style="--i: 14">1.97</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">N1</th>
+              <td class="cell cell-clear" style="--i: 15">1.85</td><td class="cell cell-clear" style="--i: 16">1.92</td><td class="cell cell-clear" style="--i: 17">1.90</td><td class="cell cell-self" style="--i: 18"><span aria-hidden="true">·</span></td><td class="cell cell-high" style="--i: 19">0.44</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">N2</th>
+              <td class="cell cell-clear" style="--i: 20">1.87</td><td class="cell cell-clear" style="--i: 21">1.98</td><td class="cell cell-clear" style="--i: 22">1.97</td><td class="cell cell-high" style="--i: 23">0.44</td><td class="cell cell-self" style="--i: 24"><span aria-hidden="true">·</span></td>
+            </tr>
+          
+          </tbody>
+        </table>
+      </div>
+      <div class="matrix-stats">
+        <div><span class="stat-num">10</span><span class="stat-label">pairs compared</span></div>
+        <div><span class="stat-num stat-alert">4</span><span class="stat-label">suspicious pairs</span></div>
+        <div><span class="stat-num"><i class="math">θ<sub>Δ</sub></i> 0.8</span><span class="stat-label">threshold</span></div>
+      </div>
+      <p class="matrix-verdict"><span class="dot dot-crit" aria-hidden="true"></span>Channels A, B, C: Δ from 0.12 to 0.21, critical similarity</p>
+      <figcaption class="matrix-caption">A, B, C are anonymous channels, N1 and N2 are news sites. The texts are synthetic; the Δ values come from a real DIMS run.<span class="matrix-legend">lower Δ means more similar</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band problem" aria-labelledby="problem-title">
+  <div class="wrap two-col">
+    <h2 id="problem-title">A coordinated campaign gives itself away through style, not topic</h2>
+    <div class="prose">
+      <p>When several channels post the same text with minor edits, checking each post separately takes hours. A shared topic proves nothing on its own: everyone writes about the same event.</p>
+      <p>Stylometry compares the frequencies of the most common words. This fingerprint barely depends on the topic and survives reordering and word swaps, so a shared template or a shared author shows up within seconds.</p>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="section" aria-labelledby="how-title">
+  <div class="wrap">
+    <h2 id="how-title">Three steps from sources to report</h2>
+    <ol class="steps">
+      
+      <li class="step">
+        <span class="step-num" aria-hidden="true">01</span>
+        <h3>Add sources</h3>
+        <p>TXT, PDF, DOCX, RTF and HTML files, article links or pasted text. Or collect material through Google News, RSS feeds and public Telegram channels.</p>
+      </li>
+      
+      <li class="step">
+        <span class="step-num" aria-hidden="true">02</span>
+        <h3>Run the analysis</h3>
+        <p>DIMS computes the Burrows&#39; Delta distance for every pair of texts, builds a dendrogram, a heatmap and a projection of sources, and flags pairs below the <i class="math">θ<sub>Δ</sub></i> threshold.</p>
+      </li>
+      
+      <li class="step">
+        <span class="step-num" aria-hidden="true">03</span>
+        <h3>Get the report</h3>
+        <p>An integrated <i class="math">R<sub>DIMS</sub></i> score, a grade from F to SSS, confidence intervals for every pair and a report ready to print or save as PDF.</p>
+      </li>
+      
+    </ol>
+  </div>
+</section>
+
+<section id="method" class="section method" aria-labelledby="method-title">
+  <div class="wrap">
+    <h2 id="method-title">One score, five explainable indicators</h2>
+    <p class="section-lead">Stylometric similarity is only one signal. DIMS weighs five indicators and shows the contribution of each, so the analyst can see where the score comes from.</p>
+    <div class="formula" role="img" aria-label="R_DIMS = w1·I_content + w2·I_coord + w3·I_dynamics + w4·I_impact + w5·I_source">
+      <span class="f-lhs"><i>R</i><sub>DIMS</sub></span><span class="f-op">=</span>
+      <span class="f-term" data-ind="content"><i>w</i><sub>1</sub>·<i>I</i><sub>content</sub></span><span class="f-op">+</span><span class="f-term" data-ind="coord"><i>w</i><sub>2</sub>·<i>I</i><sub>coord</sub></span><span class="f-op">+</span><span class="f-term" data-ind="dynamics"><i>w</i><sub>3</sub>·<i>I</i><sub>dynamics</sub></span><span class="f-op">+</span><span class="f-term" data-ind="impact"><i>w</i><sub>4</sub>·<i>I</i><sub>impact</sub></span><span class="f-op">+</span><span class="f-term" data-ind="source"><i>w</i><sub>5</sub>·<i>I</i><sub>source</sub></span>
+    </div>
+    <ul class="indicators">
+      
+      <li class="indicator" data-ind="content">
+        <span class="ind-sym"><i>I</i><sub>content</sub></span>
+        <h3>Content</h3>
+        <p>Manipulative markers, emotional vocabulary, tone.</p>
+      </li>
+      
+      <li class="indicator" data-ind="coord">
+        <span class="ind-sym"><i>I</i><sub>coord</sub></span>
+        <h3>Coordination</h3>
+        <p>Stylometric similarity and synchronised publishing.</p>
+      </li>
+      
+      <li class="indicator" data-ind="dynamics">
+        <span class="ind-sym"><i>I</i><sub>dynamics</sub></span>
+        <h3>Dynamics</h3>
+        <p>Spread rate and timing patterns.</p>
+      </li>
+      
+      <li class="indicator" data-ind="impact">
+        <span class="ind-sym"><i>I</i><sub>impact</sub></span>
+        <h3>Impact</h3>
+        <p>Reach and replication of the material.</p>
+      </li>
+      
+      <li class="indicator" data-ind="source">
+        <span class="ind-sym"><i>I</i><sub>source</sub></span>
+        <h3>Source</h3>
+        <p>Domain, owner, signs of editorial policy.</p>
+      </li>
+      
+    </ul>
+    <div class="grades">
+      <h3 class="label">Grade scale</h3>
+      <ol class="grade-scale">
+        
+        <li><span class="grade grade-f">F</span><span class="grade-label">Low interest</span></li>
+        
+        <li><span class="grade grade-b">B</span><span class="grade-label">Limited interest</span></li>
+        
+        <li><span class="grade grade-s">S</span><span class="grade-label">Clear interest</span></li>
+        
+        <li><span class="grade grade-ss">SS</span><span class="grade-label">Significant interest</span></li>
+        
+        <li><span class="grade grade-sss">SSS</span><span class="grade-label">Critical interest</span></li>
+        
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="screens" class="section screens" aria-labelledby="screens-title">
+  <div class="wrap">
+    <h2 id="screens-title">What it looks like</h2>
+    <figure class="shot shot-wide">
+      <img src="../static/img/workspace-dark.webp" width="1600" height="1000" alt="DIMS workspace with five sources and analysis settings" loading="lazy" decoding="async">
+      <figcaption>Workspace: sources, MFW and <i class="math">θ<sub>Δ</sub></i> threshold settings, feature type.</figcaption>
+    </figure>
+    <div class="shot-grid">
+      <figure class="shot">
+        <img src="../static/img/pairs-dark.webp" width="1400" height="762" alt="List of suspicious pairs with Burrows&#39; Delta values" loading="lazy" decoding="async">
+        <figcaption>Suspicious pairs with confidence intervals and similarity level.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="../static/img/indicators-dark.webp" width="1400" height="959" alt="Radar chart of DIMS indicators and source risk components" loading="lazy" decoding="async">
+        <figcaption>DIMS indicator profile and source risk breakdown.</figcaption>
+      </figure>
+    </div>
+    <figure class="shot shot-report">
+      <img src="../static/img/report.webp" width="1200" height="1185" alt="First page of a DIMS analytical report" loading="lazy" decoding="async">
+      <figcaption>An analytical report ready to print.</figcaption>
+    </figure>
+    <p class="note">Screenshots use the synthetic demo set. The app interface is currently in Ukrainian; an English version is planned.</p>
+  </div>
+</section>
+
+<section class="section audience" aria-labelledby="audience-title">
+  <div class="wrap">
+    <h2 id="audience-title">Who it is for</h2>
+    <ul class="audience-list">
+      
+      <li><h3>Fact-checkers</h3><p>Separate a coordinated push from independent coverage of the same story.</p></li>
+      
+      <li><h3>Journalists and editors</h3><p>Check whether an “exclusive” was rewritten from someone else&#39;s template.</p></li>
+      
+      <li><h3>Researchers and educators</h3><p>Reproducible calculations with parameters you can document in a methodology.</p></li>
+      
+      <li><h3>OSINT analysts</h3><p>Topic monitoring across news, RSS and Telegram with a session log.</p></li>
+      
+      <li><h3>NGOs</h3><p>Reports you can share with partners and donors.</p></li>
+      
+    </ul>
+  </div>
+</section>
+
+<section class="band limits" aria-labelledby="limits-title">
+  <div class="wrap two-col">
+    <div>
+      <h2 id="limits-title">Limits of the method</h2>
+      <div class="source-note">
+        <h3 class="label">Scientific basis</h3>
+        <p>The method builds on Burrows&#39; Delta and was developed as part of doctoral research in information systems and technologies.</p>
+        <p class="citation">Burrows, J. (2002). ‘Delta’: a Measure of Stylistic Difference and a Guide to Likely Authorship. Literary and Linguistic Computing, 17(3), 267–287.</p>
+      </div>
+    </div>
+    <ul class="limits-list">
+      <li>Stylometric similarity is an indicator, not proof. A low Δ can mean a shared author, a shared template or simply the same genre. In the demo set, two independent news reports also scored Δ = 0.44.</li><li>Reliable results need texts of 500 words or more. DIMS flags shorter ones with a warning.</li><li>All-word analysis works with any language. Function-word mode currently supports Ukrainian, Russian and English.</li><li>A person decides whether something is disinformation, after checking the facts and the context.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="pricing" class="section pricing" aria-labelledby="pricing-title">
+  <div class="wrap">
+    <h2 id="pricing-title">Pricing</h2>
+    <p class="section-lead">Pay by card, Apple Pay or Google Pay. Plans start at launch; the early access list is open now.</p>
+    <div class="plans">
+      <article class="plan">
+        <h3>Basic</h3>
+        <p class="plan-price"><span class="price">$0</span></p>
+        <ul class="plan-features"><li>Analyses per month: 3</li><li>Up to 5 sources per analysis</li><li>Files, links and pasted text</li><li>In-browser report</li></ul>
+        <a class="btn btn-secondary" href="#waitlist">Join the list</a>
+      </article>
+      <article class="plan plan-pro">
+        <div class="plan-top"><h3>Pro</h3><span class="chip chip-accent">Early access</span></div>
+        <p class="plan-price"><span class="price">$9</span> <span class="per">per year</span></p>
+        <p class="plan-note">for the first 100 users</p>
+        <p class="plan-regular">Regular price: $36 a year or $4 a month</p>
+        <ul class="plan-features"><li>Unlimited analyses</li><li>Up to 50 sources per analysis</li><li>Google News, RSS and Telegram search</li><li>PDF report and DOCX monitoring form</li><li>Session log and topic monitoring</li></ul>
+        <a class="btn btn-primary" href="#waitlist">Join the list</a>
+      </article>
+      <article class="plan">
+        <h3>Team</h3>
+        <p class="plan-price"><span class="price price-text">On request</span></p>
+        <ul class="plan-features"><li>Multiple accounts</li><li>Shared log and monitoring topics</li><li>Deployment on your own server</li><li>Training and support</li></ul>
+        <a class="btn btn-secondary" href="#waitlist">Join the list</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="waitlist" class="band waitlist" aria-labelledby="waitlist-title">
+  <div class="wrap two-col">
+    <div>
+      <h2 id="waitlist-title">Early access</h2>
+      <p class="section-lead">Leave your email and we will write as soon as DIMS opens. The first 100 users get Pro for $9 a year.</p>
+    </div>
+    <form class="form" id="waitlist-form" novalidate
+          data-endpoint=""
+          data-msg-sending="Sending…"
+          data-msg-success="Thank you. You are on the early access list; we will write before launch."
+          data-msg-error="The request could not be sent. Check your connection and try again."
+          data-msg-invalid="Check the email address."
+          data-msg-consent="Tick the consent box to join."
+          data-msg-unconfigured="Sign-up is not connected yet: this is a page preview.">
+      <input type="hidden" name="language" value="en">
+      <input type="hidden" name="subject" value="DIMS waitlist (en)">
+      
+      <div class="hp" aria-hidden="true"><label for="wl-company">Company</label><input type="text" id="wl-company" name="company" tabindex="-1" autocomplete="off"></div>
+      <div class="field">
+        <label for="wl-email">Email</label>
+        <input type="email" id="wl-email" name="email" required autocomplete="email" inputmode="email" placeholder="name@example.com">
+      </div>
+      <div class="field">
+        <label for="wl-role">Your role</label>
+        <select id="wl-role" name="role">
+          <option>Fact-checker</option><option>Journalist or editor</option><option>Researcher or educator</option><option>OSINT analyst</option><option>NGO</option><option>Other</option>
+        </select>
+      </div>
+      <label class="consent" for="wl-consent">
+        <input type="checkbox" id="wl-consent" name="consent" value="yes" required>
+        <span>I agree to receive emails about the DIMS launch. I can unsubscribe at any time. <a href="privacy/">Privacy policy</a></span>
+      </label>
+      <button class="btn btn-primary" type="submit" id="wl-submit">Join the list</button>
+      <p class="form-status" id="wl-status" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
+<section id="faq" class="section faq" aria-labelledby="faq-title">
+  <div class="wrap two-col">
+    <h2 id="faq-title">FAQ</h2>
+    <div class="faq-list">
+      
+      <details open>
+        <summary>Does DIMS prove that a text is disinformation?</summary>
+        <p>No. DIMS shows stylistic similarity and an overall risk level. A person draws the conclusion after checking the facts and the context.</p>
+      </details>
+      
+      <details>
+        <summary>Which text languages are supported?</summary>
+        <p>All-word analysis works with any language that separates words with spaces. Function-word mode currently supports Ukrainian, Russian and English. Compare texts written in the same language.</p>
+      </details>
+      
+      <details>
+        <summary>What language is the interface in?</summary>
+        <p>Ukrainian for now. An English interface is planned.</p>
+      </details>
+      
+      <details>
+        <summary>What happens to my texts?</summary>
+        <p>Texts are used only for analysis in your account and are not shared with third parties.</p>
+      </details>
+      
+      <details>
+        <summary>How do I pay and cancel?</summary>
+        <p>By Visa or Mastercard, Apple Pay or Google Pay. You can cancel at any time and keep access until the end of the paid period.</p>
+      </details>
+      
+      <details>
+        <summary>Can DIMS run on our own server?</summary>
+        <p>Yes. The Team plan includes deployment on your infrastructure.</p>
+      </details>
+      
+    </div>
+  </div>
+</section>
+
+</main>
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <span class="brand-word">DIM<span>S</span></span>
+      <span class="footer-copy">© 2026</span>
+    </div>
+    <p class="footer-note">A DIMS score is an analytical indicator, not a legal finding about any source or person.</p>
+    <ul class="footer-links">
+      <li><a href="privacy/">Privacy</a></li>
+      
+    </ul>
+  </div>
+</footer>
+<script src="../static/landing.js?v=0c39c3a5b9" defer></script>
+</body>
+</html>

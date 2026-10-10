@@ -1,0 +1,269 @@
+{
+  "lang_name": "Polski",
+  "lang_short": "PL",
+  "locale": "pl_PL",
+  "price_format": "{n} $",
+
+  "meta": {
+    "title": "DIMS — analiza stylometryczna skoordynowanych publikacji",
+    "description": "DIMS porównuje styl tekstów z różnych kanałów i serwisów za pomocą miary Delta Burrowsa i pokazuje publikacje napisane według jednego szablonu. Zintegrowana ocena ryzyka R_DIMS i ocena od F do SSS.",
+    "og_alt": "DIMS: macierz odległości Delta Burrowsa między źródłami"
+  },
+
+  "brand_sub": "analiza stylometryczna · Δ Burrowsa",
+  "skip": "Przejdź do treści",
+
+  "nav": {
+    "how": "Jak to działa",
+    "method": "Ocena",
+    "screens": "Interfejs",
+    "pricing": "Cennik",
+    "faq": "Pytania",
+    "cta": "Wczesny dostęp",
+    "lang_label": "Język strony"
+  },
+
+  "hero": {
+    "kicker": "Stylometria dla fact-checkingu i monitoringu",
+    "title": "Znajdź publikacje napisane według jednego szablonu",
+    "lead": "DIMS porównuje styl tekstów z różnych kanałów i serwisów i wskazuje pary zbyt podobne, by były niezależne. Wynikiem jest zintegrowana ocena ryzyka z wyjaśnieniem każdego wskaźnika.",
+    "cta_primary": "Uzyskaj wczesny dostęp",
+    "cta_secondary": "Jak to działa",
+    "cta_demo": "Otwórz demo",
+    "offer": "Pierwszych {early_limit} użytkowników otrzyma Pro za {early_price} rocznie."
+  },
+
+  "matrix": {
+    "title": "Macierz Δ Burrowsa",
+    "tag": "zestaw demo",
+    "caption": "A, B, C to anonimowe kanały, N1 i N2 to serwisy informacyjne. Teksty są syntetyczne, wartości Δ pochodzą z rzeczywistego uruchomienia DIMS.",
+    "legend_low": "mniejsza Δ oznacza większe podobieństwo",
+    "threshold": "próg",
+    "flagged": "podejrzanych par",
+    "pairs": "porównanych par",
+    "verdict": "Kanały A, B, C: Δ od 0.12 do 0.21, krytyczne podobieństwo",
+    "aria": "Tabela odległości Delta Burrowsa między pięcioma źródłami zestawu demonstracyjnego"
+  },
+
+  "problem": {
+    "title": "Skoordynowaną kampanię zdradza styl, a nie temat",
+    "p1": "Gdy kilka kanałów publikuje ten sam tekst z drobnymi poprawkami, sprawdzanie każdego wpisu osobno zajmuje godziny. Wspólny temat niczego nie dowodzi: o jednym wydarzeniu piszą wszyscy.",
+    "p2": "Stylometria porównuje częstości najczęściej używanych słów. Taki odcisk prawie nie zależy od tematu i dobrze znosi przestawienia oraz zamianę pojedynczych słów, więc wspólny szablon lub wspólnego autora widać w kilka sekund."
+  },
+
+  "how": {
+    "title": "Trzy kroki od źródeł do raportu",
+    "steps": [
+      {
+        "title": "Dodaj źródła",
+        "text": "Pliki TXT, PDF, DOCX, RTF i HTML, linki do artykułów lub wklejony tekst. Możesz też wyszukać materiały w Google News, kanałach RSS i publicznych kanałach Telegram."
+      },
+      {
+        "title": "Uruchom analizę",
+        "text": "DIMS oblicza odległość Delta Burrowsa dla każdej pary tekstów, tworzy dendrogram, mapę ciepła i projekcję źródeł oraz oznacza pary poniżej progu θΔ."
+      },
+      {
+        "title": "Odbierz raport",
+        "text": "Zintegrowana ocena R_DIMS, ocena od F do SSS, przedziały ufności dla każdej pary i raport gotowy do druku lub zapisu w PDF."
+      }
+    ]
+  },
+
+  "method": {
+    "title": "Jedna ocena, pięć wyjaśnialnych wskaźników",
+    "lead": "Podobieństwo stylometryczne to tylko jeden z sygnałów. DIMS waży pięć wskaźników i pokazuje wkład każdego z nich, żeby analityk widział, skąd wzięła się ocena.",
+    "indicators": [
+      { "key": "content",  "name": "Treść",        "text": "Znaczniki manipulacji, emocjonalne słownictwo, wydźwięk." },
+      { "key": "coord",    "name": "Koordynacja",  "text": "Podobieństwo stylometryczne i synchroniczność publikacji." },
+      { "key": "dynamics", "name": "Dynamika",     "text": "Tempo rozprzestrzeniania i wzorce czasowe." },
+      { "key": "impact",   "name": "Wpływ",        "text": "Zasięg i powielanie materiału." },
+      { "key": "source",   "name": "Źródło",       "text": "Domena, właściciel, oznaki polityki redakcyjnej." }
+    ],
+    "grades_title": "Skala ocen",
+    "grades": [
+      { "code": "F",   "label": "Niskie zainteresowanie" },
+      { "code": "B",   "label": "Punktowe zainteresowanie" },
+      { "code": "S",   "label": "Jednoznaczne zainteresowanie" },
+      { "code": "SS",  "label": "Istotne zainteresowanie" },
+      { "code": "SSS", "label": "Krytyczne zainteresowanie" }
+    ]
+  },
+
+  "screens": {
+    "title": "Jak to wygląda",
+    "note": "Zrzuty ekranu wykonano na syntetycznym zestawie demo. Interfejs aplikacji jest obecnie po ukraińsku, wersja angielska jest planowana.",
+    "captions": {
+      "workspace": "Obszar roboczy: źródła, ustawienia MFW i progu θΔ, typ cech.",
+      "pairs": "Podejrzane pary z przedziałami ufności i poziomem podobieństwa.",
+      "indicators": "Profil wskaźników DIMS i rozkład ryzyka źródeł.",
+      "report": "Raport analityczny gotowy do druku."
+    },
+    "alt": {
+      "workspace": "Obszar roboczy DIMS z pięcioma źródłami i ustawieniami analizy",
+      "pairs": "Lista podejrzanych par z wartościami Delta Burrowsa",
+      "indicators": "Wykres radarowy wskaźników DIMS i składowe ryzyka źródła",
+      "report": "Pierwsza strona raportu analitycznego DIMS"
+    }
+  },
+
+  "audience": {
+    "title": "Dla kogo",
+    "entries": [
+      { "title": "Fact-checkerzy", "text": "Szybko oddzielić skoordynowany wrzut od niezależnych publikacji na ten sam temat." },
+      { "title": "Dziennikarze i redaktorzy", "text": "Sprawdzić, czy „ekskluzywny” materiał nie powstał z cudzego szablonu." },
+      { "title": "Badacze i wykładowcy", "text": "Powtarzalne obliczenia z parametrami, które można opisać w metodologii." },
+      { "title": "Analitycy OSINT", "text": "Monitoring tematów w wiadomościach, RSS i Telegramie z dziennikiem sesji." },
+      { "title": "Organizacje pozarządowe", "text": "Raporty, które można pokazać partnerom i darczyńcom." }
+    ]
+  },
+
+  "limits": {
+    "title": "Granice metody",
+    "entries": [
+      "Podobieństwo stylometryczne to wskaźnik, a nie dowód. Niska Δ może oznaczać wspólnego autora, wspólny szablon albo po prostu ten sam gatunek. W zestawie demo dwa niezależne artykuły również uzyskały Δ = 0.44.",
+      "Wiarygodny wynik wymaga tekstów liczących co najmniej 500 słów. Krótsze DIMS oznacza ostrzeżeniem.",
+      "Analiza wszystkich słów działa w każdym języku. Tryb słów funkcyjnych obsługuje obecnie ukraiński, rosyjski i angielski.",
+      "O tym, czy coś jest dezinformacją, decyduje człowiek po sprawdzeniu faktów i kontekstu."
+    ],
+    "source_title": "Podstawa naukowa",
+    "source_text": "Metoda opiera się na mierze Delta Burrowsa i powstała w ramach badań doktorskich z zakresu systemów i technologii informacyjnych.",
+    "citation": "Burrows J. ‘Delta’: a Measure of Stylistic Difference and a Guide to Likely Authorship. Literary and Linguistic Computing. 2002; 17(3): 267–287."
+  },
+
+  "pricing": {
+    "title": "Cennik",
+    "lead": "Płatność kartą, Apple Pay lub Google Pay. Plany ruszą po starcie, a lista wczesnego dostępu jest już otwarta.",
+    "per_year": "rocznie",
+    "per_month": "miesięcznie",
+    "free": {
+      "name": "Podstawowy",
+      "price": "0 $",
+      "features": [
+        "Analiz miesięcznie: {free_analyses}",
+        "Do {free_sources} źródeł w jednej analizie",
+        "Pliki, linki i wklejony tekst",
+        "Raport w przeglądarce"
+      ]
+    },
+    "pro": {
+      "name": "Pro",
+      "badge": "Wczesny dostęp",
+      "early_note": "dla pierwszych {early_limit} użytkowników",
+      "regular": "Cena standardowa: {price_year} rocznie lub {price_month} miesięcznie",
+      "features": [
+        "Bez limitu analiz",
+        "Do {pro_sources} źródeł w jednej analizie",
+        "Wyszukiwanie w Google News, RSS i Telegramie",
+        "Raport PDF i formularz monitoringu DOCX",
+        "Dziennik sesji i monitoring tematów"
+      ]
+    },
+    "team": {
+      "name": "Zespół",
+      "price": "Na zapytanie",
+      "features": [
+        "Wiele kont",
+        "Wspólny dziennik i tematy monitoringu",
+        "Wdrożenie na własnym serwerze",
+        "Szkolenie i wsparcie"
+      ]
+    },
+    "cta": "Zapisz się"
+  },
+
+  "waitlist": {
+    "title": "Wczesny dostęp",
+    "lead": "Zostaw adres email, a napiszemy, gdy tylko DIMS wystartuje. Pierwszych {early_limit} użytkowników otrzyma Pro za {early_price} rocznie.",
+    "email": "Email",
+    "email_placeholder": "name@example.com",
+    "role": "Twoja rola",
+    "roles": [
+      "Fact-checker",
+      "Dziennikarz lub redaktor",
+      "Badacz lub wykładowca",
+      "Analityk OSINT",
+      "Organizacja pozarządowa",
+      "Inne"
+    ],
+    "consent": "Zgadzam się na otrzymywanie wiadomości o starcie DIMS. Mogę zrezygnować w dowolnym momencie.",
+    "privacy_link": "Polityka prywatności",
+    "submit": "Zapisz się",
+    "sending": "Wysyłanie…",
+    "success": "Dziękujemy. Jesteś na liście wczesnego dostępu, napiszemy przed startem.",
+    "error": "Nie udało się wysłać zgłoszenia. Sprawdź połączenie i spróbuj ponownie.",
+    "invalid": "Sprawdź adres email.",
+    "consent_required": "Zaznacz zgodę, aby się zapisać.",
+    "not_configured": "Zapisy nie są jeszcze podłączone: to podgląd strony."
+  },
+
+  "faq": {
+    "title": "Pytania",
+    "entries": [
+      {
+        "q": "Czy DIMS dowodzi, że tekst jest dezinformacją?",
+        "a": "Nie. DIMS pokazuje podobieństwo stylistyczne i łączny poziom ryzyka. Wniosek wyciąga człowiek po sprawdzeniu faktów i kontekstu."
+      },
+      {
+        "q": "Jakie języki tekstów są obsługiwane?",
+        "a": "Analiza wszystkich słów działa w każdym języku, w którym słowa oddziela spacja. Tryb słów funkcyjnych obsługuje obecnie ukraiński, rosyjski i angielski. Porównuj teksty w tym samym języku."
+      },
+      {
+        "q": "W jakim języku jest interfejs?",
+        "a": "Obecnie po ukraińsku. Angielska wersja interfejsu jest planowana."
+      },
+      {
+        "q": "Co dzieje się z moimi tekstami?",
+        "a": "Teksty służą wyłącznie do analizy na Twoim koncie i nie są przekazywane osobom trzecim."
+      },
+      {
+        "q": "Jak zapłacić i anulować subskrypcję?",
+        "a": "Kartą Visa lub Mastercard, przez Apple Pay albo Google Pay. Subskrypcję można anulować w dowolnym momencie, a dostęp pozostaje do końca opłaconego okresu."
+      },
+      {
+        "q": "Czy DIMS można uruchomić na własnym serwerze?",
+        "a": "Tak. Plan Zespół obejmuje wdrożenie na Twojej infrastrukturze."
+      }
+    ]
+  },
+
+  "footer": {
+    "disclaimer": "Ocena DIMS jest wskaźnikiem analitycznym, a nie opinią prawną o jakimkolwiek źródle lub osobie.",
+    "privacy": "Prywatność",
+    "contact": "Kontakt"
+  },
+
+  "privacy": {
+    "title": "Polityka prywatności",
+    "updated": "Wersja z 10 października 2026 r.",
+    "back": "Strona główna",
+    "sections": [
+      {
+        "h": "Jakie dane zbieramy",
+        "p": "Przy zapisie na listę wczesnego dostępu: adres email, wybraną rolę, język strony i czas zgłoszenia. Strona nie zbiera innych danych osobowych i nie używa trackerów reklamowych."
+      },
+      {
+        "h": "W jakim celu",
+        "p": "Aby poinformować o starcie DIMS i zapewnić cenę wczesnego dostępu. Adresy nie są sprzedawane ani przekazywane osobom trzecim w celach marketingowych."
+      },
+      {
+        "h": "Podstawa prawna",
+        "p": "Twoja zgoda wyrażona zaznaczeniem pola w formularzu. Możesz ją wycofać w dowolnym momencie, odpowiadając na naszą wiadomość lub pisząc na adres kontaktowy."
+      },
+      {
+        "h": "Gdzie przechowujemy dane",
+        "p": "Zgłoszenia trafiają przez usługę obsługi formularzy{provider_suffix} i są przechowywane nie dłużej niż 12 miesięcy po starcie DIMS lub do wycofania zgody."
+      },
+      {
+        "h": "Twoje prawa",
+        "p": "Możesz poprosić o dostęp do swoich danych, ich sprostowanie lub usunięcie. Przysługują Ci prawa wynikające z RODO, w tym prawo wniesienia skargi do Prezesa UODO."
+      }
+    ],
+    "contact": "Kontakt w sprawie danych: {contact}.",
+    "contact_fallback": "przez formularz na stronie głównej"
+  },
+
+  "notfound": {
+    "title": "Nie znaleziono strony",
+    "back": "Strona główna"
+  }
+}

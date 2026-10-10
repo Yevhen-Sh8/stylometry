@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block nav %}
+    <nav class="mainnav" aria-label="DIMS">
+      <a href="#how">{{ t.nav.how }}</a>
+      <a href="#method">{{ t.nav.method }}</a>
+      <a href="#screens">{{ t.nav.screens }}</a>
+      <a href="#pricing">{{ t.nav.pricing }}</a>
+      <a href="#faq">{{ t.nav.faq }}</a>
+    </nav>
+    <a class="btn btn-primary btn-sm topbar-cta" href="#waitlist">{{ t.nav.cta }}</a>
+{% endblock %}
+{% block main %}
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker">{{ t.hero.kicker }}</p>
+      <h1>{{ t.hero.title }}</h1>
+      <p class="lead">{{ t.hero.lead }}</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#waitlist">{{ t.hero.cta_primary }}</a>
+        {% if cfg.app_url %}<a class="btn btn-secondary" href="{{ cfg.app_url }}" rel="noopener">{{ t.hero.cta_demo }}</a>{% endif %}
+        <a class="btn btn-ghost" href="#how">{{ t.hero.cta_secondary }}</a>
+      </div>
+      <p class="offer"><span class="offer-mark" aria-hidden="true"></span>{{ t.hero.offer }}</p>
+    </div>
+
+    <figure class="matrix-card">
+      <div class="matrix-head">
+        <span class="matrix-title">{{ t.matrix.title }}</span>
+        <span class="chip">{{ t.matrix.tag }}</span>
+      </div>
+      <div class="matrix-scroll">
+        <table class="matrix" aria-label="{{ t.matrix.aria }}">
+          <thead>
+            <tr><td></td>{% for l in matrix.labels %}<th scope="col">{{ l }}</th>{% endfor %}</tr>
+          </thead>
+          <tbody>
+          {% for row in matrix.rows %}
+            <tr>
+              <th scope="row">{{ row.label }}</th>
+              {% for c in row.cells %}<td class="cell cell-{{ c.level }}" style="--i: {{ c.index }}">{% if c.level != 'self' %}{{ c.text }}{% else %}<span aria-hidden="true">·</span>{% endif %}</td>{% endfor %}
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="matrix-stats">
+        <div><span class="stat-num">{{ matrix.n_pairs }}</span><span class="stat-label">{{ t.matrix.pairs }}</span></div>
+        <div><span class="stat-num stat-alert">{{ matrix.n_flagged }}</span><span class="stat-label">{{ t.matrix.flagged }}</span></div>
+        <div><span class="stat-num"><i class="math">θ<sub>Δ</sub></i> {{ matrix.threshold_text }}</span><span class="stat-label">{{ t.matrix.threshold }}</span></div>
+      </div>
+      <p class="matrix-verdict"><span class="dot dot-crit" aria-hidden="true"></span>{{ t.matrix.verdict }}</p>
+      <figcaption class="matrix-caption">{{ t.matrix.caption }}<span class="matrix-legend">{{ t.matrix.legend_low }}</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band problem" aria-labelledby="problem-title">
+  <div class="wrap two-col">
+    <h2 id="problem-title">{{ t.problem.title }}</h2>
+    <div class="prose">
+      <p>{{ t.problem.p1 }}</p>
+      <p>{{ t.problem.p2 }}</p>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="section" aria-labelledby="how-title">
+  <div class="wrap">
+    <h2 id="how-title">{{ t.how.title }}</h2>
+    <ol class="steps">
+      {% for s in t.how.steps %}
+      <li class="step">
+        <span class="step-num" aria-hidden="true">{{ "%02d" | format(loop.index) }}</span>
+        <h3>{{ s.title }}</h3>
+        <p>{{ s.text | math }}</p>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+</section>
+
+<section id="method" class="section method" aria-labelledby="method-title">
+  <div class="wrap">
+    <h2 id="method-title">{{ t.method.title }}</h2>
+    <p class="section-lead">{{ t.method.lead }}</p>
+    <div class="formula" role="img" aria-label="R_DIMS = w1·I_content + w2·I_coord + w3·I_dynamics + w4·I_impact + w5·I_source">
+      <span class="f-lhs"><i>R</i><sub>DIMS</sub></span><span class="f-op">=</span>
+      {% for ind in t.method.indicators %}<span class="f-term" data-ind="{{ ind.key }}"><i>w</i><sub>{{ loop.index }}</sub>·<i>I</i><sub>{{ ind.key }}</sub></span>{% if not loop.last %}<span class="f-op">+</span>{% endif %}{% endfor %}
+    </div>
+    <ul class="indicators">
+      {% for ind in t.method.indicators %}
+      <li class="indicator" data-ind="{{ ind.key }}">
+        <span class="ind-sym"><i>I</i><sub>{{ ind.key }}</sub></span>
+        <h3>{{ ind.name }}</h3>
+        <p>{{ ind.text }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="grades">
+      <h3 class="label">{{ t.method.grades_title }}</h3>
+      <ol class="grade-scale">
+        {% for g in t.method.grades %}
+        <li><span class="grade grade-{{ g.code | lower }}">{{ g.code }}</span><span class="grade-label">{{ g.label }}</span></li>
+        {% endfor %}
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="screens" class="section screens" aria-labelledby="screens-title">
+  <div class="wrap">
+    <h2 id="screens-title">{{ t.screens.title }}</h2>
+    <figure class="shot shot-wide">
+      <img src="{{ asset('img/workspace-dark.webp') }}" width="1600" height="1000" alt="{{ t.screens.alt.workspace }}" loading="lazy" decoding="async">
+      <figcaption>{{ t.screens.captions.workspace | math }}</figcaption>
+    </figure>
+    <div class="shot-grid">
+      <figure class="shot">
+        <img src="{{ asset('img/pairs-dark.webp') }}" width="1400" height="762" alt="{{ t.screens.alt.pairs }}" loading="lazy" decoding="async">
+        <figcaption>{{ t.screens.captions.pairs }}</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="{{ asset('img/indicators-dark.webp') }}" width="1400" height="959" alt="{{ t.screens.alt.indicators }}" loading="lazy" decoding="async">
+        <figcaption>{{ t.screens.captions.indicators }}</figcaption>
+      </figure>
+    </div>
+    <figure class="shot shot-report">
+      <img src="{{ asset('img/report.webp') }}" width="1200" height="1185" alt="{{ t.screens.alt.report }}" loading="lazy" decoding="async">
+      <figcaption>{{ t.screens.captions.report }}</figcaption>
+    </figure>
+    <p class="note">{{ t.screens.note }}</p>
+  </div>
+</section>
+
+<section class="section audience" aria-labelledby="audience-title">
+  <div class="wrap">
+    <h2 id="audience-title">{{ t.audience.title }}</h2>
+    <ul class="audience-list">
+      {% for a in t.audience.entries %}
+      <li><h3>{{ a.title }}</h3><p>{{ a.text }}</p></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="band limits" aria-labelledby="limits-title">
+  <div class="wrap two-col">
+    <div>
+      <h2 id="limits-title">{{ t.limits.title }}</h2>
+      <div class="source-note">
+        <h3 class="label">{{ t.limits.source_title }}</h3>
+        <p>{{ t.limits.source_text }}</p>
+        <p class="citation">{{ t.limits.citation }}</p>
+      </div>
+    </div>
+    <ul class="limits-list">
+      {% for item in t.limits.entries %}<li>{{ item }}</li>{% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section id="pricing" class="section pricing" aria-labelledby="pricing-title">
+  <div class="wrap">
+    <h2 id="pricing-title">{{ t.pricing.title }}</h2>
+    <p class="section-lead">{{ t.pricing.lead }}</p>
+    <div class="plans">
+      <article class="plan">
+        <h3>{{ t.pricing.free.name }}</h3>
+        <p class="plan-price"><span class="price">{{ t.pricing.free.price }}</span></p>
+        <ul class="plan-features">{% for f in t.pricing.free.features %}<li>{{ f }}</li>{% endfor %}</ul>
+        <a class="btn btn-secondary" href="#waitlist">{{ t.pricing.cta }}</a>
+      </article>
+      <article class="plan plan-pro">
+        <div class="plan-top"><h3>{{ t.pricing.pro.name }}</h3><span class="chip chip-accent">{{ t.pricing.pro.badge }}</span></div>
+        <p class="plan-price"><span class="price">{{ prices.early }}</span> <span class="per">{{ t.pricing.per_year }}</span></p>
+        <p class="plan-note">{{ t.pricing.pro.early_note }}</p>
+        <p class="plan-regular">{{ t.pricing.pro.regular }}</p>
+        <ul class="plan-features">{% for f in t.pricing.pro.features %}<li>{{ f }}</li>{% endfor %}</ul>
+        <a class="btn btn-primary" href="#waitlist">{{ t.pricing.cta }}</a>
+      </article>
+      <article class="plan">
+        <h3>{{ t.pricing.team.name }}</h3>
+        <p class="plan-price"><span class="price price-text">{{ t.pricing.team.price }}</span></p>
+        <ul class="plan-features">{% for f in t.pricing.team.features %}<li>{{ f }}</li>{% endfor %}</ul>
+        <a class="btn btn-secondary" href="#waitlist">{{ t.pricing.cta }}</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="waitlist" class="band waitlist" aria-labelledby="waitlist-title">
+  <div class="wrap two-col">
+    <div>
+      <h2 id="waitlist-title">{{ t.waitlist.title }}</h2>
+      <p class="section-lead">{{ t.waitlist.lead }}</p>
+    </div>
+    <form class="form" id="waitlist-form" novalidate
+          data-endpoint="{{ cfg.waitlist.endpoint }}"
+          data-msg-sending="{{ t.waitlist.sending }}"
+          data-msg-success="{{ t.waitlist.success }}"
+          data-msg-error="{{ t.waitlist.error }}"
+          data-msg-invalid="{{ t.waitlist.invalid }}"
+          data-msg-consent="{{ t.waitlist.consent_required }}"
+          data-msg-unconfigured="{{ t.waitlist.not_configured }}">
+      <input type="hidden" name="language" value="{{ lang }}">
+      <input type="hidden" name="subject" value="DIMS waitlist ({{ lang }})">
+      {% for k, v in cfg.waitlist.extra_fields.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">
+      {% endfor %}
+      <div class="hp" aria-hidden="true"><label for="wl-company">Company</label><input type="text" id="wl-company" name="company" tabindex="-1" autocomplete="off"></div>
+      <div class="field">
+        <label for="wl-email">{{ t.waitlist.email }}</label>
+        <input type="email" id="wl-email" name="email" required autocomplete="email" inputmode="email" placeholder="{{ t.waitlist.email_placeholder }}">
+      </div>
+      <div class="field">
+        <label for="wl-role">{{ t.waitlist.role }}</label>
+        <select id="wl-role" name="role">
+          {% for r in t.waitlist.roles %}<option>{{ r }}</option>{% endfor %}
+        </select>
+      </div>
+      <label class="consent" for="wl-consent">
+        <input type="checkbox" id="wl-consent" name="consent" value="yes" required>
+        <span>{{ t.waitlist.consent }} <a href="{{ page_href(lang, 'privacy') }}">{{ t.waitlist.privacy_link }}</a></span>
+      </label>
+      <button class="btn btn-primary" type="submit" id="wl-submit">{{ t.waitlist.submit }}</button>
+      <p class="form-status" id="wl-status" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
+<section id="faq" class="section faq" aria-labelledby="faq-title">
+  <div class="wrap two-col">
+    <h2 id="faq-title">{{ t.faq.title }}</h2>
+    <div class="faq-list">
+      {% for item in t.faq.entries %}
+      <details{% if loop.first %} open{% endif %}>
+        <summary>{{ item.q }}</summary>
+        <p>{{ item.a }}</p>
+      </details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

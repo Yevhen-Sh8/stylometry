@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ t.privacy.title }} · DIMS{% endblock %}
+{% block main %}
+<article class="section doc">
+  <div class="wrap doc-wrap">
+    <p class="kicker"><a href="{{ page_href(lang, 'index') }}">← {{ t.privacy.back }}</a></p>
+    <h1>{{ t.privacy.title }}</h1>
+    <p class="doc-updated">{{ t.privacy.updated }}</p>
+    {% for s in t.privacy.sections %}
+    <h2>{{ s.h }}</h2>
+    <p>{{ s.p }}</p>
+    {% endfor %}
+    <p class="doc-contact">{{ t.privacy.contact }}</p>
+  </div>
+</article>
+{% endblock %}

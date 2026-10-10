@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}{{ t.meta.title }}{% endblock %}</title>
+<meta name="description" content="{{ t.meta.description }}">
+{% if canonical %}<link rel="canonical" href="{{ canonical }}">
+{% for alt in alternates %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
+{% endfor %}{% endif %}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DIMS">
+<meta property="og:title" content="{{ t.meta.title }}">
+<meta property="og:description" content="{{ t.meta.description }}">
+<meta property="og:locale" content="{{ t.locale }}">
+{% if og_image %}<meta property="og:image" content="{{ og_image }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{{ t.meta.og_alt }}">
+<meta name="twitter:card" content="summary_large_image">
+{% endif %}{% if canonical %}<meta property="og:url" content="{{ canonical }}">
+{% endif %}<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+<link rel="stylesheet" href="{{ asset('fonts.css') }}">
+{% if inline_css %}<style>{{ inline_css | safe }}</style>{% else %}<link rel="stylesheet" href="{{ asset('landing.css') }}">{% endif %}
+</head>
+<body>
+<a class="skip" href="#main">{{ t.skip }}</a>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="{{ page_href(lang, 'index') }}" aria-label="DIMS">
+      <span class="brand-mark" aria-hidden="true">D</span>
+      <span class="brand-text">
+        <span class="brand-word">DIM<span>S</span></span>
+        <span class="brand-sub">{{ t.brand_sub }}</span>
+      </span>
+    </a>
+    {% block nav %}{% endblock %}
+    <nav class="langs" aria-label="{{ t.nav.lang_label }}">
+      {% for l in languages %}<a href="{{ page_href(l.code, page) }}" hreflang="{{ l.code }}" lang="{{ l.code }}" data-lang="{{ l.code }}"{% if l.code == lang %} aria-current="true"{% endif %} title="{{ l.name }}">{{ l.short }}</a>{% endfor %}
+    </nav>
+  </div>
+</header>
+<main id="main" tabindex="-1">
+{% block main %}{% endblock %}
+</main>
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <span class="brand-word">DIM<span>S</span></span>
+      <span class="footer-copy">© {{ cfg.copyright_year }}{% if cfg.operator_name %} {{ cfg.operator_name }}{% endif %}</span>
+    </div>
+    <p class="footer-note">{{ t.footer.disclaimer }}</p>
+    <ul class="footer-links">
+      <li><a href="{{ page_href(lang, 'privacy') }}">{{ t.footer.privacy }}</a></li>
+      {% if cfg.contact_email %}<li>{{ t.footer.contact }}: <a href="mailto:{{ cfg.contact_email }}">{{ cfg.contact_email }}</a></li>{% endif %}
+    </ul>
+  </div>
+</footer>
+{% if inline_js %}<script>{{ inline_js | safe }}</script>{% else %}<script src="{{ asset('landing.js') }}" defer></script>{% endif %}
+</body>
+</html>

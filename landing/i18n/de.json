@@ -1,0 +1,269 @@
+{
+  "lang_name": "Deutsch",
+  "lang_short": "DE",
+  "locale": "de_DE",
+  "price_format": "{n} $",
+
+  "meta": {
+    "title": "DIMS — stilometrische Analyse koordinierter Veröffentlichungen",
+    "description": "DIMS vergleicht den Schreibstil von Texten aus verschiedenen Kanälen und Websites mit Burrows' Delta und zeigt Veröffentlichungen, die nach derselben Vorlage geschrieben wurden. Integrierter Risikowert R_DIMS und Einstufung von F bis SSS.",
+    "og_alt": "DIMS: Distanzmatrix nach Burrows' Delta zwischen Quellen"
+  },
+
+  "brand_sub": "stilometrische Analyse · Burrows' Δ",
+  "skip": "Zum Inhalt springen",
+
+  "nav": {
+    "how": "So funktioniert es",
+    "method": "Bewertung",
+    "screens": "Oberfläche",
+    "pricing": "Preise",
+    "faq": "Fragen",
+    "cta": "Früher Zugang",
+    "lang_label": "Sprache der Website"
+  },
+
+  "hero": {
+    "kicker": "Stilometrie für Faktenprüfung und Monitoring",
+    "title": "Finden Sie Veröffentlichungen nach derselben Vorlage",
+    "lead": "DIMS vergleicht den Schreibstil von Texten aus verschiedenen Kanälen und Websites und markiert Paare, die sich zu ähnlich sind, um unabhängig zu sein. Das Ergebnis ist ein integrierter Risikowert mit einer Erklärung für jeden Indikator.",
+    "cta_primary": "Frühen Zugang sichern",
+    "cta_secondary": "So funktioniert es",
+    "cta_demo": "Demo öffnen",
+    "offer": "Die ersten {early_limit} Nutzer erhalten Pro für {early_price} pro Jahr."
+  },
+
+  "matrix": {
+    "title": "Matrix nach Burrows' Δ",
+    "tag": "Demo-Set",
+    "caption": "A, B, C sind anonyme Kanäle, N1 und N2 sind Nachrichtenseiten. Die Texte sind synthetisch, die Δ-Werte stammen aus einem echten DIMS-Lauf.",
+    "legend_low": "kleineres Δ bedeutet mehr Ähnlichkeit",
+    "threshold": "Schwelle",
+    "flagged": "verdächtige Paare",
+    "pairs": "verglichene Paare",
+    "verdict": "Kanäle A, B, C: Δ von 0.12 bis 0.21, kritische Ähnlichkeit",
+    "aria": "Tabelle der Distanzen nach Burrows' Delta zwischen den fünf Quellen des Demo-Sets"
+  },
+
+  "problem": {
+    "title": "Eine koordinierte Kampagne verrät sich durch den Stil, nicht durch das Thema",
+    "p1": "Wenn mehrere Kanäle denselben Text mit kleinen Änderungen posten, kostet die Prüfung jedes einzelnen Beitrags Stunden. Ein gemeinsames Thema beweist für sich genommen nichts: Über ein Ereignis schreiben alle.",
+    "p2": "Die Stilometrie vergleicht die Häufigkeiten der häufigsten Wörter. Dieser Fingerabdruck hängt kaum vom Thema ab und übersteht Umstellungen und den Austausch einzelner Wörter. So wird eine gemeinsame Vorlage oder ein gemeinsamer Autor in Sekunden sichtbar."
+  },
+
+  "how": {
+    "title": "In drei Schritten von den Quellen zum Bericht",
+    "steps": [
+      {
+        "title": "Quellen hinzufügen",
+        "text": "TXT-, PDF-, DOCX-, RTF- und HTML-Dateien, Links zu Artikeln oder eingefügter Text. Oder Material über Google News, RSS-Feeds und öffentliche Telegram-Kanäle sammeln."
+      },
+      {
+        "title": "Analyse starten",
+        "text": "DIMS berechnet die Distanz nach Burrows' Delta für jedes Textpaar, erstellt ein Dendrogramm, eine Heatmap und eine Projektion der Quellen und markiert Paare unterhalb der Schwelle θΔ."
+      },
+      {
+        "title": "Bericht erhalten",
+        "text": "Ein integrierter Wert R_DIMS, eine Einstufung von F bis SSS, Konfidenzintervalle für jedes Paar und ein Bericht zum Drucken oder Speichern als PDF."
+      }
+    ]
+  },
+
+  "method": {
+    "title": "Ein Wert, fünf erklärbare Indikatoren",
+    "lead": "Stilometrische Ähnlichkeit ist nur ein Signal. DIMS gewichtet fünf Indikatoren und zeigt den Beitrag jedes einzelnen, damit nachvollziehbar bleibt, woher der Wert kommt.",
+    "indicators": [
+      { "key": "content",  "name": "Inhalt",       "text": "Manipulationsmarker, emotionale Sprache, Tonalität." },
+      { "key": "coord",    "name": "Koordination", "text": "Stilometrische Ähnlichkeit und zeitgleiches Veröffentlichen." },
+      { "key": "dynamics", "name": "Dynamik",      "text": "Verbreitungstempo und zeitliche Muster." },
+      { "key": "impact",   "name": "Wirkung",      "text": "Reichweite und Vervielfältigung des Materials." },
+      { "key": "source",   "name": "Quelle",       "text": "Domain, Eigentümer, Merkmale der Redaktionspolitik." }
+    ],
+    "grades_title": "Einstufungsskala",
+    "grades": [
+      { "code": "F",   "label": "Geringes Interesse" },
+      { "code": "B",   "label": "Punktuelles Interesse" },
+      { "code": "S",   "label": "Eindeutiges Interesse" },
+      { "code": "SS",  "label": "Erhebliches Interesse" },
+      { "code": "SSS", "label": "Kritisches Interesse" }
+    ]
+  },
+
+  "screens": {
+    "title": "So sieht es aus",
+    "note": "Die Screenshots zeigen das synthetische Demo-Set. Die Oberfläche der App ist derzeit ukrainisch, eine englische Version ist geplant.",
+    "captions": {
+      "workspace": "Arbeitsbereich: Quellen, Einstellungen für MFW und Schwelle θΔ, Merkmalstyp.",
+      "pairs": "Verdächtige Paare mit Konfidenzintervallen und Ähnlichkeitsstufe.",
+      "indicators": "Indikatorprofil von DIMS und Aufschlüsselung des Quellenrisikos.",
+      "report": "Analysebericht, fertig zum Drucken."
+    },
+    "alt": {
+      "workspace": "DIMS-Arbeitsbereich mit fünf Quellen und Analyseeinstellungen",
+      "pairs": "Liste verdächtiger Paare mit Werten nach Burrows' Delta",
+      "indicators": "Netzdiagramm der DIMS-Indikatoren und Komponenten des Quellenrisikos",
+      "report": "Erste Seite eines DIMS-Analyseberichts"
+    }
+  },
+
+  "audience": {
+    "title": "Für wen",
+    "entries": [
+      { "title": "Faktenprüfer", "text": "Koordinierte Kampagnen schnell von unabhängiger Berichterstattung zum selben Thema trennen." },
+      { "title": "Journalisten und Redaktionen", "text": "Prüfen, ob ein „Exklusivbericht“ aus einer fremden Vorlage umgeschrieben wurde." },
+      { "title": "Forschung und Lehre", "text": "Reproduzierbare Berechnungen mit Parametern, die sich in einer Methodik dokumentieren lassen." },
+      { "title": "OSINT-Analysten", "text": "Themenmonitoring in Nachrichten, RSS und Telegram mit Sitzungsprotokoll." },
+      { "title": "NGOs", "text": "Berichte, die sich mit Partnern und Förderern teilen lassen." }
+    ]
+  },
+
+  "limits": {
+    "title": "Grenzen der Methode",
+    "entries": [
+      "Stilometrische Ähnlichkeit ist ein Indikator, kein Beweis. Ein niedriges Δ kann einen gemeinsamen Autor, eine gemeinsame Vorlage oder einfach dasselbe Genre bedeuten. Im Demo-Set erhielten auch zwei unabhängige Nachrichten Δ = 0.44.",
+      "Für verlässliche Ergebnisse braucht es Texte ab 500 Wörtern. Kürzere markiert DIMS mit einer Warnung.",
+      "Die Analyse aller Wörter funktioniert in jeder Sprache. Der Funktionswort-Modus unterstützt derzeit Ukrainisch, Russisch und Englisch.",
+      "Ob es sich um Desinformation handelt, entscheidet ein Mensch nach Prüfung der Fakten und des Kontexts."
+    ],
+    "source_title": "Wissenschaftliche Grundlage",
+    "source_text": "Die Methode baut auf Burrows' Delta auf und wurde im Rahmen einer Doktorarbeit im Fachgebiet Informationssysteme und -technologien entwickelt.",
+    "citation": "Burrows, J. (2002). ‘Delta’: a Measure of Stylistic Difference and a Guide to Likely Authorship. Literary and Linguistic Computing, 17(3), 267–287."
+  },
+
+  "pricing": {
+    "title": "Preise",
+    "lead": "Zahlung per Karte, Apple Pay oder Google Pay. Die Tarife starten mit dem Launch, die Liste für den frühen Zugang ist bereits offen.",
+    "per_year": "pro Jahr",
+    "per_month": "pro Monat",
+    "free": {
+      "name": "Basis",
+      "price": "0 $",
+      "features": [
+        "Analysen pro Monat: {free_analyses}",
+        "Bis zu {free_sources} Quellen pro Analyse",
+        "Dateien, Links und eingefügter Text",
+        "Bericht im Browser"
+      ]
+    },
+    "pro": {
+      "name": "Pro",
+      "badge": "Früher Zugang",
+      "early_note": "für die ersten {early_limit} Nutzer",
+      "regular": "Regulärer Preis: {price_year} pro Jahr oder {price_month} pro Monat",
+      "features": [
+        "Unbegrenzte Analysen",
+        "Bis zu {pro_sources} Quellen pro Analyse",
+        "Suche in Google News, RSS und Telegram",
+        "PDF-Bericht und DOCX-Monitoringformular",
+        "Sitzungsprotokoll und Themenmonitoring"
+      ]
+    },
+    "team": {
+      "name": "Team",
+      "price": "Auf Anfrage",
+      "features": [
+        "Mehrere Konten",
+        "Gemeinsames Protokoll und Monitoring-Themen",
+        "Betrieb auf Ihrem eigenen Server",
+        "Schulung und Support"
+      ]
+    },
+    "cta": "Eintragen"
+  },
+
+  "waitlist": {
+    "title": "Früher Zugang",
+    "lead": "Hinterlassen Sie Ihre E-Mail-Adresse, und wir schreiben Ihnen, sobald DIMS startet. Die ersten {early_limit} Nutzer erhalten Pro für {early_price} pro Jahr.",
+    "email": "E-Mail",
+    "email_placeholder": "name@example.com",
+    "role": "Ihre Rolle",
+    "roles": [
+      "Faktenprüfung",
+      "Journalismus oder Redaktion",
+      "Forschung oder Lehre",
+      "OSINT-Analyse",
+      "NGO",
+      "Sonstiges"
+    ],
+    "consent": "Ich bin einverstanden, E-Mails zum Start von DIMS zu erhalten. Ich kann mich jederzeit abmelden.",
+    "privacy_link": "Datenschutzerklärung",
+    "submit": "Eintragen",
+    "sending": "Wird gesendet…",
+    "success": "Vielen Dank. Sie stehen auf der Liste für den frühen Zugang, wir melden uns vor dem Start.",
+    "error": "Die Anfrage konnte nicht gesendet werden. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+    "invalid": "Bitte prüfen Sie die E-Mail-Adresse.",
+    "consent_required": "Bitte bestätigen Sie die Einwilligung, um sich einzutragen.",
+    "not_configured": "Die Anmeldung ist noch nicht angebunden: Dies ist eine Vorschau der Seite."
+  },
+
+  "faq": {
+    "title": "Fragen",
+    "entries": [
+      {
+        "q": "Beweist DIMS, dass ein Text Desinformation ist?",
+        "a": "Nein. DIMS zeigt stilistische Ähnlichkeit und ein Gesamtrisiko. Die Schlussfolgerung zieht ein Mensch nach Prüfung der Fakten und des Kontexts."
+      },
+      {
+        "q": "Welche Textsprachen werden unterstützt?",
+        "a": "Die Analyse aller Wörter funktioniert in jeder Sprache, die Wörter durch Leerzeichen trennt. Der Funktionswort-Modus unterstützt derzeit Ukrainisch, Russisch und Englisch. Vergleichen Sie Texte in derselben Sprache."
+      },
+      {
+        "q": "In welcher Sprache ist die Oberfläche?",
+        "a": "Derzeit auf Ukrainisch. Eine englische Oberfläche ist geplant."
+      },
+      {
+        "q": "Was passiert mit meinen Texten?",
+        "a": "Die Texte werden nur für die Analyse in Ihrem Konto verwendet und nicht an Dritte weitergegeben."
+      },
+      {
+        "q": "Wie bezahle und kündige ich?",
+        "a": "Per Visa oder Mastercard, Apple Pay oder Google Pay. Sie können jederzeit kündigen und behalten den Zugang bis zum Ende des bezahlten Zeitraums."
+      },
+      {
+        "q": "Lässt sich DIMS auf einem eigenen Server betreiben?",
+        "a": "Ja. Der Team-Tarif umfasst den Betrieb auf Ihrer Infrastruktur."
+      }
+    ]
+  },
+
+  "footer": {
+    "disclaimer": "Ein DIMS-Wert ist ein analytischer Indikator und keine rechtliche Feststellung über eine Quelle oder Person.",
+    "privacy": "Datenschutz",
+    "contact": "Kontakt"
+  },
+
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "updated": "Fassung vom 10. Oktober 2026",
+    "back": "Startseite",
+    "sections": [
+      {
+        "h": "Welche Daten wir erheben",
+        "p": "Bei der Anmeldung für den frühen Zugang: Ihre E-Mail-Adresse, die gewählte Rolle, die Sprache der Seite und den Zeitpunkt der Anfrage. Die Seite erhebt keine weiteren personenbezogenen Daten und verwendet keine Werbe-Tracker."
+      },
+      {
+        "h": "Zweck",
+        "p": "Um Sie über den Start von DIMS zu informieren und Ihnen den Preis für den frühen Zugang zu gewähren. Adressen werden weder verkauft noch zu Marketingzwecken an Dritte weitergegeben."
+      },
+      {
+        "h": "Rechtsgrundlage",
+        "p": "Ihre Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO, die Sie durch das Kontrollkästchen im Formular erteilen. Sie können sie jederzeit widerrufen, indem Sie auf eine unserer E-Mails antworten oder an die Kontaktadresse schreiben."
+      },
+      {
+        "h": "Speicherort und Dauer",
+        "p": "Anfragen gehen über einen Dienst zur Formularverarbeitung{provider_suffix} ein und werden höchstens 12 Monate nach dem Start von DIMS oder bis zum Widerruf der Einwilligung gespeichert."
+      },
+      {
+        "h": "Ihre Rechte",
+        "p": "Sie können Auskunft über Ihre Daten, deren Berichtigung oder Löschung verlangen. Sie haben die Rechte nach der DSGVO, einschließlich des Rechts auf Beschwerde bei einer Aufsichtsbehörde."
+      }
+    ],
+    "contact": "Kontakt in Datenschutzfragen: {contact}.",
+    "contact_fallback": "über das Formular auf der Startseite"
+  },
+
+  "notfound": {
+    "title": "Seite nicht gefunden",
+    "back": "Startseite"
+  }
+}

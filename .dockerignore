@@ -9,3 +9,4 @@ output/*.svg
 output/*.csv
 output/*.txt
 Data/monitoring_log.jsonl
+landing/

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ t.notfound.title }} · DIMS{% endblock %}
+{% block main %}
+<section class="section doc">
+  <div class="wrap doc-wrap">
+    <p class="kicker">404</p>
+    <h1>{{ t.notfound.title }}</h1>
+    <p class="actions">{% for l in languages %}<a class="btn btn-secondary" href="{{ page_href(l.code, 'index') }}" lang="{{ l.code }}">{{ l.name }}</a>{% endfor %}</p>
+  </div>
+</section>
+{% endblock %}

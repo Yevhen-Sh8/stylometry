@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIMS</title>
+<meta name="description" content="{{ meta_description }}">
+{% if canonical %}<link rel="canonical" href="{{ canonical }}">
+{% for alt in alternates %}<link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.href }}">
+{% endfor %}{% endif %}<link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+<script>
+(function () {
+  var langs = {{ lang_codes | tojson }}, fallback = {{ default_lang | tojson }}, links = {{ lang_links | tojson }}, pick = null;
+  try { pick = localStorage.getItem("dims-lang"); } catch (e) {}
+  if (langs.indexOf(pick) < 0) {
+    pick = null;
+    var prefs = navigator.languages || [navigator.language || ""];
+    for (var i = 0; i < prefs.length && !pick; i++) {
+      var code = String(prefs[i]).toLowerCase().slice(0, 2);
+      if (code === "ru" || code === "be") code = "uk";
+      if (langs.indexOf(code) >= 0) pick = code;
+    }
+  }
+  location.replace(links[pick || fallback]);
+})();
+</script>
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #f7f9fc; color: #162033; }
+  main { max-width: 32rem; margin: 15vh auto; padding: 0 16px; }
+  a { color: #1f6feb; }
+  ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 12px 20px; }
+  @media (prefers-color-scheme: dark) { body { background: #0f172a; color: #f8fafc; } a { color: #60a5fa; } }
+</style>
+</head>
+<body>
+<main>
+  <p><strong>DIMS</strong></p>
+  <ul>{% for l in languages %}<li><a href="{{ lang_links[l.code] }}" hreflang="{{ l.code }}" lang="{{ l.code }}">{{ l.name }}</a></li>{% endfor %}</ul>
+</main>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DIMS — стилометричний аналіз скоординованих публікацій</title>
+<meta name="description" content="DIMS порівнює стиль текстів із різних каналів і сайтів за метрикою Δ-Бурровс і показує публікації, написані за одним шаблоном. Інтегральна оцінка ризику R_DIMS і грейд від F до SSS.">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="DIMS">
+<meta property="og:title" content="DIMS — стилометричний аналіз скоординованих публікацій">
+<meta property="og:description" content="DIMS порівнює стиль текстів із різних каналів і сайтів за метрикою Δ-Бурровс і показує публікації, написані за одним шаблоном. Інтегральна оцінка ризику R_DIMS і грейд від F до SSS.">
+<meta property="og:locale" content="uk_UA">
+<meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="../static/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../static/fonts.css?v=9975e92a09">
+<link rel="stylesheet" href="../static/landing.css?v=11327934a0">
+</head>
+<body>
+<a class="skip" href="#main">Перейти до змісту</a>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="./" aria-label="DIMS">
+      <span class="brand-mark" aria-hidden="true">D</span>
+      <span class="brand-text">
+        <span class="brand-word">DIM<span>S</span></span>
+        <span class="brand-sub">стилометричний аналіз · Δ-Бурровс</span>
+      </span>
+    </a>
+    
+    <nav class="mainnav" aria-label="DIMS">
+      <a href="#how">Як працює</a>
+      <a href="#method">Оцінка</a>
+      <a href="#screens">Інтерфейс</a>
+      <a href="#pricing">Тарифи</a>
+      <a href="#faq">Питання</a>
+    </nav>
+    <a class="btn btn-primary btn-sm topbar-cta" href="#waitlist">Ранній доступ</a>
+
+    <nav class="langs" aria-label="Мова сайту">
+      <a href="./" hreflang="uk" lang="uk" data-lang="uk" aria-current="true" title="Українська">UA</a><a href="../en/" hreflang="en" lang="en" data-lang="en" title="English">EN</a><a href="../pl/" hreflang="pl" lang="pl" data-lang="pl" title="Polski">PL</a><a href="../de/" hreflang="de" lang="de" data-lang="de" title="Deutsch">DE</a>
+    </nav>
+  </div>
+</header>
+<main id="main" tabindex="-1">
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="kicker">Стилометрія для фактчекінгу та моніторингу</p>
+      <h1>Знаходьте публікації, написані за одним шаблоном</h1>
+      <p class="lead">DIMS порівнює стиль текстів із різних каналів і сайтів та показує пари, надто схожі, щоб бути незалежними. Результат — інтегральна оцінка ризику з поясненням кожного індикатора.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#waitlist">Отримати ранній доступ</a>
+        
+        <a class="btn btn-ghost" href="#how">Як це працює</a>
+      </div>
+      <p class="offer"><span class="offer-mark" aria-hidden="true"></span>Перші 100 користувачів отримають Pro за 9 $ на рік.</p>
+    </div>
+
+    <figure class="matrix-card">
+      <div class="matrix-head">
+        <span class="matrix-title">Матриця Δ-Бурровс</span>
+        <span class="chip">демо-набір</span>
+      </div>
+      <div class="matrix-scroll">
+        <table class="matrix" aria-label="Таблиця відстаней Δ-Бурровс між п&#39;ятьма джерелами демонстраційного набору">
+          <thead>
+            <tr><td></td><th scope="col">A</th><th scope="col">B</th><th scope="col">C</th><th scope="col">N1</th><th scope="col">N2</th></tr>
+          </thead>
+          <tbody>
+          
+            <tr>
+              <th scope="row">A</th>
+              <td class="cell cell-self" style="--i: 0"><span aria-hidden="true">·</span></td><td class="cell cell-critical" style="--i: 1">0.16</td><td class="cell cell-critical" style="--i: 2">0.21</td><td class="cell cell-clear" style="--i: 3">1.85</td><td class="cell cell-clear" style="--i: 4">1.87</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">B</th>
+              <td class="cell cell-critical" style="--i: 5">0.16</td><td class="cell cell-self" style="--i: 6"><span aria-hidden="true">·</span></td><td class="cell cell-critical" style="--i: 7">0.12</td><td class="cell cell-clear" style="--i: 8">1.92</td><td class="cell cell-clear" style="--i: 9">1.98</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">C</th>
+              <td class="cell cell-critical" style="--i: 10">0.21</td><td class="cell cell-critical" style="--i: 11">0.12</td><td class="cell cell-self" style="--i: 12"><span aria-hidden="true">·</span></td><td class="cell cell-clear" style="--i: 13">1.90</td><td class="cell cell-clear" style="--i: 14">1.97</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">N1</th>
+              <td class="cell cell-clear" style="--i: 15">1.85</td><td class="cell cell-clear" style="--i: 16">1.92</td><td class="cell cell-clear" style="--i: 17">1.90</td><td class="cell cell-self" style="--i: 18"><span aria-hidden="true">·</span></td><td class="cell cell-high" style="--i: 19">0.44</td>
+            </tr>
+          
+            <tr>
+              <th scope="row">N2</th>
+              <td class="cell cell-clear" style="--i: 20">1.87</td><td class="cell cell-clear" style="--i: 21">1.98</td><td class="cell cell-clear" style="--i: 22">1.97</td><td class="cell cell-high" style="--i: 23">0.44</td><td class="cell cell-self" style="--i: 24"><span aria-hidden="true">·</span></td>
+            </tr>
+          
+          </tbody>
+        </table>
+      </div>
+      <div class="matrix-stats">
+        <div><span class="stat-num">10</span><span class="stat-label">пар порівняно</span></div>
+        <div><span class="stat-num stat-alert">4</span><span class="stat-label">підозрілих пар</span></div>
+        <div><span class="stat-num"><i class="math">θ<sub>Δ</sub></i> 0.8</span><span class="stat-label">поріг</span></div>
+      </div>
+      <p class="matrix-verdict"><span class="dot dot-crit" aria-hidden="true"></span>Канали A, B, C: Δ від 0.12 до 0.21, критична подібність</p>
+      <figcaption class="matrix-caption">A, B, C — анонімні канали, N1, N2 — новинні сайти. Тексти синтетичні, значення Δ отримано реальним прогоном DIMS.<span class="matrix-legend">менше Δ — більша подібність</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band problem" aria-labelledby="problem-title">
+  <div class="wrap two-col">
+    <h2 id="problem-title">Скоординовану кампанію видає стиль, а не тема</h2>
+    <div class="prose">
+      <p>Коли кілька каналів публікують той самий текст із дрібними правками, перевірка кожного допису окремо забирає години. А збіг теми ще нічого не доводить: про одну подію пишуть усі.</p>
+      <p>Стилометрія порівнює частоти найуживаніших слів. Такий «відбиток» майже не залежить від теми й добре переживає перестановки та заміну окремих слів, тому спільний шаблон чи спільного автора видно за секунди.</p>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="section" aria-labelledby="how-title">
+  <div class="wrap">
+    <h2 id="how-title">Три кроки від джерел до звіту</h2>
+    <ol class="steps">
+      
+      <li class="step">
+        <span class="step-num" aria-hidden="true">01</span>
+        <h3>Додайте джерела</h3>
+        <p>Файли TXT, PDF, DOCX, RTF, HTML, посилання на статті або вставлений текст. Або знайдіть матеріали через Google News, RSS-стрічки та публічні Telegram-канали.</p>
+      </li>
+      
+      <li class="step">
+        <span class="step-num" aria-hidden="true">02</span>
+        <h3>Запустіть аналіз</h3>
+        <p>DIMS обчислює відстань Δ-Бурровс для кожної пари текстів, будує дендрограму, теплокарту й проєкцію джерел і позначає пари нижче порогу <i class="math">θ<sub>Δ</sub></i>.</p>
+      </li>
+      
+      <li class="step">
+        <span class="step-num" aria-hidden="true">03</span>
+        <h3>Отримайте звіт</h3>
+        <p>Інтегральна оцінка <i class="math">R<sub>DIMS</sub></i>, грейд від F до SSS, довірчі інтервали для кожної пари та звіт, готовий до друку або збереження в PDF.</p>
+      </li>
+      
+    </ol>
+  </div>
+</section>
+
+<section id="method" class="section method" aria-labelledby="method-title">
+  <div class="wrap">
+    <h2 id="method-title">Одна оцінка, п&#39;ять пояснюваних індикаторів</h2>
+    <p class="section-lead">Стилометрична подібність — лише один із сигналів. DIMS зважує п&#39;ять індикаторів і показує внесок кожного, щоб аналітик бачив, звідки взялася оцінка.</p>
+    <div class="formula" role="img" aria-label="R_DIMS = w1·I_content + w2·I_coord + w3·I_dynamics + w4·I_impact + w5·I_source">
+      <span class="f-lhs"><i>R</i><sub>DIMS</sub></span><span class="f-op">=</span>
+      <span class="f-term" data-ind="content"><i>w</i><sub>1</sub>·<i>I</i><sub>content</sub></span><span class="f-op">+</span><span class="f-term" data-ind="coord"><i>w</i><sub>2</sub>·<i>I</i><sub>coord</sub></span><span class="f-op">+</span><span class="f-term" data-ind="dynamics"><i>w</i><sub>3</sub>·<i>I</i><sub>dynamics</sub></span><span class="f-op">+</span><span class="f-term" data-ind="impact"><i>w</i><sub>4</sub>·<i>I</i><sub>impact</sub></span><span class="f-op">+</span><span class="f-term" data-ind="source"><i>w</i><sub>5</sub>·<i>I</i><sub>source</sub></span>
+    </div>
+    <ul class="indicators">
+      
+      <li class="indicator" data-ind="content">
+        <span class="ind-sym"><i>I</i><sub>content</sub></span>
+        <h3>Зміст</h3>
+        <p>Маніпулятивні маркери, емоційна лексика, тональність.</p>
+      </li>
+      
+      <li class="indicator" data-ind="coord">
+        <span class="ind-sym"><i>I</i><sub>coord</sub></span>
+        <h3>Координація</h3>
+        <p>Стилометрична подібність і синхронність публікацій.</p>
+      </li>
+      
+      <li class="indicator" data-ind="dynamics">
+        <span class="ind-sym"><i>I</i><sub>dynamics</sub></span>
+        <h3>Динаміка</h3>
+        <p>Темп поширення та часові патерни.</p>
+      </li>
+      
+      <li class="indicator" data-ind="impact">
+        <span class="ind-sym"><i>I</i><sub>impact</sub></span>
+        <h3>Вплив</h3>
+        <p>Охоплення і тиражування матеріалу.</p>
+      </li>
+      
+      <li class="indicator" data-ind="source">
+        <span class="ind-sym"><i>I</i><sub>source</sub></span>
+        <h3>Джерело</h3>
+        <p>Домен, власник, ознаки редакційної політики.</p>
+      </li>
+      
+    </ul>
+    <div class="grades">
+      <h3 class="label">Шкала грейдів</h3>
+      <ol class="grade-scale">
+        
+        <li><span class="grade grade-f">F</span><span class="grade-label">Малий інтерес</span></li>
+        
+        <li><span class="grade grade-b">B</span><span class="grade-label">Точковий інтерес</span></li>
+        
+        <li><span class="grade grade-s">S</span><span class="grade-label">Однозначний інтерес</span></li>
+        
+        <li><span class="grade grade-ss">SS</span><span class="grade-label">Вагомий інтерес</span></li>
+        
+        <li><span class="grade grade-sss">SSS</span><span class="grade-label">Критичний інтерес</span></li>
+        
+      </ol>
+    </div>
+  </div>
+</section>
+
+<section id="screens" class="section screens" aria-labelledby="screens-title">
+  <div class="wrap">
+    <h2 id="screens-title">Як це виглядає</h2>
+    <figure class="shot shot-wide">
+      <img src="../static/img/workspace-dark.webp" width="1600" height="1000" alt="Робоче середовище DIMS із п&#39;ятьма джерелами та параметрами аналізу" loading="lazy" decoding="async">
+      <figcaption>Робоче середовище: джерела, параметри MFW і порогу <i class="math">θ<sub>Δ</sub></i>, тип ознак.</figcaption>
+    </figure>
+    <div class="shot-grid">
+      <figure class="shot">
+        <img src="../static/img/pairs-dark.webp" width="1400" height="762" alt="Список підозрілих пар із значеннями Δ-Бурровс" loading="lazy" decoding="async">
+        <figcaption>Підозрілі пари з довірчими інтервалами та рівнем подібності.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="../static/img/indicators-dark.webp" width="1400" height="959" alt="Пелюсткова діаграма індикаторів DIMS і компоненти ризику джерела" loading="lazy" decoding="async">
+        <figcaption>Профіль індикаторів DIMS і розклад ризику джерел.</figcaption>
+      </figure>
+    </div>
+    <figure class="shot shot-report">
+      <img src="../static/img/report.webp" width="1200" height="1185" alt="Перша сторінка аналітичного звіту DIMS" loading="lazy" decoding="async">
+      <figcaption>Аналітичний звіт, готовий до друку.</figcaption>
+    </figure>
+    <p class="note">Знімки зроблено на синтетичному демо-наборі. Інтерфейс застосунку зараз українською, англійська версія в планах.</p>
+  </div>
+</section>
+
+<section class="section audience" aria-labelledby="audience-title">
+  <div class="wrap">
+    <h2 id="audience-title">Для кого</h2>
+    <ul class="audience-list">
+      
+      <li><h3>Фактчекери</h3><p>Швидко відокремити скоординований вкид від незалежних публікацій на ту саму тему.</p></li>
+      
+      <li><h3>Журналісти й редактори</h3><p>Перевірити, чи не переписано «ексклюзив» з чужого шаблону.</p></li>
+      
+      <li><h3>Дослідники та викладачі</h3><p>Відтворювані розрахунки з параметрами, які можна описати в методиці.</p></li>
+      
+      <li><h3>OSINT-аналітики</h3><p>Моніторинг тем у новинах, RSS і Telegram з журналом сесій.</p></li>
+      
+      <li><h3>Громадські організації</h3><p>Звіти, які можна показати партнерам і донорам.</p></li>
+      
+    </ul>
+  </div>
+</section>
+
+<section class="band limits" aria-labelledby="limits-title">
+  <div class="wrap two-col">
+    <div>
+      <h2 id="limits-title">Межі методу</h2>
+      <div class="source-note">
+        <h3 class="label">Наукова основа</h3>
+        <p>Методика ґрунтується на метриці Burrows&#39; Delta і розроблена в межах дисертаційного дослідження зі спеціальності «Інформаційні системи та технології».</p>
+        <p class="citation">Burrows J. ‘Delta’: a Measure of Stylistic Difference and a Guide to Likely Authorship. Literary and Linguistic Computing. 2002. Vol. 17, No. 3. P. 267–287.</p>
+      </div>
+    </div>
+    <ul class="limits-list">
+      <li>Стилометрична подібність — індикатор, а не доказ. Низьке Δ може означати спільного автора, спільний шаблон або просто однаковий жанр. У демо-наборі дві незалежні новини теж отримали Δ = 0.44.</li><li>Для надійного результату потрібні тексти від 500 слів. Коротші DIMS позначає попередженням.</li><li>Аналіз за всіма словами працює з будь-якою мовою. Режим функціональних слів зараз підтримує українську, російську та англійську.</li><li>Висновок про дезінформацію робить людина після перевірки фактів і контексту.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="pricing" class="section pricing" aria-labelledby="pricing-title">
+  <div class="wrap">
+    <h2 id="pricing-title">Тарифи</h2>
+    <p class="section-lead">Оплата карткою, Apple Pay або Google Pay. Тарифи запрацюють після запуску, зараз відкрито запис у ранній доступ.</p>
+    <div class="plans">
+      <article class="plan">
+        <h3>Базовий</h3>
+        <p class="plan-price"><span class="price">0 $</span></p>
+        <ul class="plan-features"><li>Аналізів на місяць: 3</li><li>До 5 джерел в одному аналізі</li><li>Файли, посилання та вставлений текст</li><li>Звіт у браузері</li></ul>
+        <a class="btn btn-secondary" href="#waitlist">Записатися</a>
+      </article>
+      <article class="plan plan-pro">
+        <div class="plan-top"><h3>Pro</h3><span class="chip chip-accent">Ранній доступ</span></div>
+        <p class="plan-price"><span class="price">9 $</span> <span class="per">на рік</span></p>
+        <p class="plan-note">для перших 100 користувачів</p>
+        <p class="plan-regular">Звичайна ціна: 36 $ на рік або 4 $ на місяць</p>
+        <ul class="plan-features"><li>Без обмеження кількості аналізів</li><li>До 50 джерел в одному аналізі</li><li>Пошук у Google News, RSS і Telegram</li><li>Звіт у PDF і форма моніторингу DOCX</li><li>Журнал сесій і тематичний моніторинг</li></ul>
+        <a class="btn btn-primary" href="#waitlist">Записатися</a>
+      </article>
+      <article class="plan">
+        <h3>Команда</h3>
+        <p class="plan-price"><span class="price price-text">За запитом</span></p>
+        <ul class="plan-features"><li>Кілька облікових записів</li><li>Спільний журнал і теми моніторингу</li><li>Розгортання на вашому сервері</li><li>Навчання і супровід</li></ul>
+        <a class="btn btn-secondary" href="#waitlist">Записатися</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="waitlist" class="band waitlist" aria-labelledby="waitlist-title">
+  <div class="wrap two-col">
+    <div>
+      <h2 id="waitlist-title">Ранній доступ</h2>
+      <p class="section-lead">Залиште email, і ми напишемо, щойно DIMS відкриється. Перші 100 користувачів отримають Pro за 9 $ на рік.</p>
+    </div>
+    <form class="form" id="waitlist-form" novalidate
+          data-endpoint=""
+          data-msg-sending="Надсилаємо…"
+          data-msg-success="Дякуємо. Ви в списку раннього доступу, ми напишемо перед запуском."
+          data-msg-error="Не вдалося надіслати заявку. Перевірте з&#39;єднання й спробуйте ще раз."
+          data-msg-invalid="Перевірте адресу email."
+          data-msg-consent="Позначте згоду, щоб записатися."
+          data-msg-unconfigured="Запис ще не підключено: це попередній перегляд сторінки.">
+      <input type="hidden" name="language" value="uk">
+      <input type="hidden" name="subject" value="DIMS waitlist (uk)">
+      
+      <div class="hp" aria-hidden="true"><label for="wl-company">Company</label><input type="text" id="wl-company" name="company" tabindex="-1" autocomplete="off"></div>
+      <div class="field">
+        <label for="wl-email">Email</label>
+        <input type="email" id="wl-email" name="email" required autocomplete="email" inputmode="email" placeholder="name@example.com">
+      </div>
+      <div class="field">
+        <label for="wl-role">Ваша роль</label>
+        <select id="wl-role" name="role">
+          <option>Фактчекер</option><option>Журналіст або редактор</option><option>Дослідник або викладач</option><option>OSINT-аналітик</option><option>Громадська організація</option><option>Інше</option>
+        </select>
+      </div>
+      <label class="consent" for="wl-consent">
+        <input type="checkbox" id="wl-consent" name="consent" value="yes" required>
+        <span>Погоджуюся отримувати листи про запуск DIMS. Відписатися можна будь-коли. <a href="privacy/">Політика конфіденційності</a></span>
+      </label>
+      <button class="btn btn-primary" type="submit" id="wl-submit">Записатися</button>
+      <p class="form-status" id="wl-status" role="status" aria-live="polite"></p>
+    </form>
+  </div>
+</section>
+
+<section id="faq" class="section faq" aria-labelledby="faq-title">
+  <div class="wrap two-col">
+    <h2 id="faq-title">Питання</h2>
+    <div class="faq-list">
+      
+      <details open>
+        <summary>Чи доводить DIMS, що текст є дезінформацією?</summary>
+        <p>Ні. DIMS показує стилістичну подібність і сукупний рівень ризику. Висновок робить людина після перевірки фактів і контексту.</p>
+      </details>
+      
+      <details>
+        <summary>Які мови текстів підтримуються?</summary>
+        <p>Аналіз за всіма словами працює з будь-якою мовою, де слова розділено пробілами. Режим функціональних слів зараз підтримує українську, російську та англійську. Порівнювати варто тексти однією мовою.</p>
+      </details>
+      
+      <details>
+        <summary>Якою мовою інтерфейс?</summary>
+        <p>Зараз українською. Англійська версія інтерфейсу в планах.</p>
+      </details>
+      
+      <details>
+        <summary>Що відбувається з моїми текстами?</summary>
+        <p>Тексти використовуються лише для аналізу у вашому обліковому записі й не передаються третім особам.</p>
+      </details>
+      
+      <details>
+        <summary>Як оплатити й скасувати підписку?</summary>
+        <p>Карткою Visa або Mastercard, через Apple Pay чи Google Pay. Підписку можна скасувати будь-коли, доступ зберігається до кінця оплаченого періоду.</p>
+      </details>
+      
+      <details>
+        <summary>Чи можна встановити DIMS на власний сервер?</summary>
+        <p>Так, для організацій є тариф «Команда» з розгортанням на вашій інфраструктурі.</p>
+      </details>
+      
+    </div>
+  </div>
+</section>
+
+</main>
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <span class="brand-word">DIM<span>S</span></span>
+      <span class="footer-copy">© 2026</span>
+    </div>
+    <p class="footer-note">Оцінка DIMS є аналітичним індикатором і не є юридичним висновком щодо будь-якого джерела чи особи.</p>
+    <ul class="footer-links">
+      <li><a href="privacy/">Конфіденційність</a></li>
+      
+    </ul>
+  </div>
+</footer>
+<script src="../static/landing.js?v=0c39c3a5b9" defer></script>
+</body>
+</html>

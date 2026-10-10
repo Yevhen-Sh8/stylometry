@@ -206,8 +206,13 @@ stylometry/
 │   ├── index.html          # Головна сторінка
 │   └── report.html         # Звіт аналізу
 ├── docs/                   # Документація методики
+├── landing/                # Багатомовний сайт-презентація (UA/EN/PL/DE)
 └── requirements.txt
 ```
+
+**Сайт-презентація** (`landing/`) — статичний лендинг зі збором заявок у ранній
+доступ. Збирання: `.venv/bin/python landing/build.py`, готові файли — у
+`landing/dist/`. Налаштування форми, цін і деплою — у `landing/README.md`.
 
 ---
 

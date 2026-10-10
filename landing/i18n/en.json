@@ -1,0 +1,269 @@
+{
+  "lang_name": "English",
+  "lang_short": "EN",
+  "locale": "en_US",
+  "price_format": "${n}",
+
+  "meta": {
+    "title": "DIMS — stylometric analysis of coordinated publications",
+    "description": "DIMS compares the writing style of texts from different channels and sites using Burrows' Delta and shows which publications follow the same template. An integrated risk score R_DIMS and a grade from F to SSS.",
+    "og_alt": "DIMS: Burrows' Delta distance matrix between sources"
+  },
+
+  "brand_sub": "stylometric analysis · Burrows' Δ",
+  "skip": "Skip to content",
+
+  "nav": {
+    "how": "How it works",
+    "method": "Score",
+    "screens": "Interface",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "cta": "Early access",
+    "lang_label": "Site language"
+  },
+
+  "hero": {
+    "kicker": "Stylometry for fact-checking and monitoring",
+    "title": "Find publications written from the same template",
+    "lead": "DIMS compares the writing style of texts from different channels and sites and flags pairs that are too similar to be independent. You get an integrated risk score with an explanation for every indicator.",
+    "cta_primary": "Get early access",
+    "cta_secondary": "How it works",
+    "cta_demo": "Open the demo",
+    "offer": "The first {early_limit} users get Pro for {early_price} a year."
+  },
+
+  "matrix": {
+    "title": "Burrows' Δ matrix",
+    "tag": "demo set",
+    "caption": "A, B, C are anonymous channels, N1 and N2 are news sites. The texts are synthetic; the Δ values come from a real DIMS run.",
+    "legend_low": "lower Δ means more similar",
+    "threshold": "threshold",
+    "flagged": "suspicious pairs",
+    "pairs": "pairs compared",
+    "verdict": "Channels A, B, C: Δ from 0.12 to 0.21, critical similarity",
+    "aria": "Table of Burrows' Delta distances between the five sources of the demo set"
+  },
+
+  "problem": {
+    "title": "A coordinated campaign gives itself away through style, not topic",
+    "p1": "When several channels post the same text with minor edits, checking each post separately takes hours. A shared topic proves nothing on its own: everyone writes about the same event.",
+    "p2": "Stylometry compares the frequencies of the most common words. This fingerprint barely depends on the topic and survives reordering and word swaps, so a shared template or a shared author shows up within seconds."
+  },
+
+  "how": {
+    "title": "Three steps from sources to report",
+    "steps": [
+      {
+        "title": "Add sources",
+        "text": "TXT, PDF, DOCX, RTF and HTML files, article links or pasted text. Or collect material through Google News, RSS feeds and public Telegram channels."
+      },
+      {
+        "title": "Run the analysis",
+        "text": "DIMS computes the Burrows' Delta distance for every pair of texts, builds a dendrogram, a heatmap and a projection of sources, and flags pairs below the θΔ threshold."
+      },
+      {
+        "title": "Get the report",
+        "text": "An integrated R_DIMS score, a grade from F to SSS, confidence intervals for every pair and a report ready to print or save as PDF."
+      }
+    ]
+  },
+
+  "method": {
+    "title": "One score, five explainable indicators",
+    "lead": "Stylometric similarity is only one signal. DIMS weighs five indicators and shows the contribution of each, so the analyst can see where the score comes from.",
+    "indicators": [
+      { "key": "content",  "name": "Content",      "text": "Manipulative markers, emotional vocabulary, tone." },
+      { "key": "coord",    "name": "Coordination", "text": "Stylometric similarity and synchronised publishing." },
+      { "key": "dynamics", "name": "Dynamics",     "text": "Spread rate and timing patterns." },
+      { "key": "impact",   "name": "Impact",       "text": "Reach and replication of the material." },
+      { "key": "source",   "name": "Source",       "text": "Domain, owner, signs of editorial policy." }
+    ],
+    "grades_title": "Grade scale",
+    "grades": [
+      { "code": "F",   "label": "Low interest" },
+      { "code": "B",   "label": "Limited interest" },
+      { "code": "S",   "label": "Clear interest" },
+      { "code": "SS",  "label": "Significant interest" },
+      { "code": "SSS", "label": "Critical interest" }
+    ]
+  },
+
+  "screens": {
+    "title": "What it looks like",
+    "note": "Screenshots use the synthetic demo set. The app interface is currently in Ukrainian; an English version is planned.",
+    "captions": {
+      "workspace": "Workspace: sources, MFW and θΔ threshold settings, feature type.",
+      "pairs": "Suspicious pairs with confidence intervals and similarity level.",
+      "indicators": "DIMS indicator profile and source risk breakdown.",
+      "report": "An analytical report ready to print."
+    },
+    "alt": {
+      "workspace": "DIMS workspace with five sources and analysis settings",
+      "pairs": "List of suspicious pairs with Burrows' Delta values",
+      "indicators": "Radar chart of DIMS indicators and source risk components",
+      "report": "First page of a DIMS analytical report"
+    }
+  },
+
+  "audience": {
+    "title": "Who it is for",
+    "entries": [
+      { "title": "Fact-checkers", "text": "Separate a coordinated push from independent coverage of the same story." },
+      { "title": "Journalists and editors", "text": "Check whether an “exclusive” was rewritten from someone else's template." },
+      { "title": "Researchers and educators", "text": "Reproducible calculations with parameters you can document in a methodology." },
+      { "title": "OSINT analysts", "text": "Topic monitoring across news, RSS and Telegram with a session log." },
+      { "title": "NGOs", "text": "Reports you can share with partners and donors." }
+    ]
+  },
+
+  "limits": {
+    "title": "Limits of the method",
+    "entries": [
+      "Stylometric similarity is an indicator, not proof. A low Δ can mean a shared author, a shared template or simply the same genre. In the demo set, two independent news reports also scored Δ = 0.44.",
+      "Reliable results need texts of 500 words or more. DIMS flags shorter ones with a warning.",
+      "All-word analysis works with any language. Function-word mode currently supports Ukrainian, Russian and English.",
+      "A person decides whether something is disinformation, after checking the facts and the context."
+    ],
+    "source_title": "Scientific basis",
+    "source_text": "The method builds on Burrows' Delta and was developed as part of doctoral research in information systems and technologies.",
+    "citation": "Burrows, J. (2002). ‘Delta’: a Measure of Stylistic Difference and a Guide to Likely Authorship. Literary and Linguistic Computing, 17(3), 267–287."
+  },
+
+  "pricing": {
+    "title": "Pricing",
+    "lead": "Pay by card, Apple Pay or Google Pay. Plans start at launch; the early access list is open now.",
+    "per_year": "per year",
+    "per_month": "per month",
+    "free": {
+      "name": "Basic",
+      "price": "$0",
+      "features": [
+        "Analyses per month: {free_analyses}",
+        "Up to {free_sources} sources per analysis",
+        "Files, links and pasted text",
+        "In-browser report"
+      ]
+    },
+    "pro": {
+      "name": "Pro",
+      "badge": "Early access",
+      "early_note": "for the first {early_limit} users",
+      "regular": "Regular price: {price_year} a year or {price_month} a month",
+      "features": [
+        "Unlimited analyses",
+        "Up to {pro_sources} sources per analysis",
+        "Google News, RSS and Telegram search",
+        "PDF report and DOCX monitoring form",
+        "Session log and topic monitoring"
+      ]
+    },
+    "team": {
+      "name": "Team",
+      "price": "On request",
+      "features": [
+        "Multiple accounts",
+        "Shared log and monitoring topics",
+        "Deployment on your own server",
+        "Training and support"
+      ]
+    },
+    "cta": "Join the list"
+  },
+
+  "waitlist": {
+    "title": "Early access",
+    "lead": "Leave your email and we will write as soon as DIMS opens. The first {early_limit} users get Pro for {early_price} a year.",
+    "email": "Email",
+    "email_placeholder": "name@example.com",
+    "role": "Your role",
+    "roles": [
+      "Fact-checker",
+      "Journalist or editor",
+      "Researcher or educator",
+      "OSINT analyst",
+      "NGO",
+      "Other"
+    ],
+    "consent": "I agree to receive emails about the DIMS launch. I can unsubscribe at any time.",
+    "privacy_link": "Privacy policy",
+    "submit": "Join the list",
+    "sending": "Sending…",
+    "success": "Thank you. You are on the early access list; we will write before launch.",
+    "error": "The request could not be sent. Check your connection and try again.",
+    "invalid": "Check the email address.",
+    "consent_required": "Tick the consent box to join.",
+    "not_configured": "Sign-up is not connected yet: this is a page preview."
+  },
+
+  "faq": {
+    "title": "FAQ",
+    "entries": [
+      {
+        "q": "Does DIMS prove that a text is disinformation?",
+        "a": "No. DIMS shows stylistic similarity and an overall risk level. A person draws the conclusion after checking the facts and the context."
+      },
+      {
+        "q": "Which text languages are supported?",
+        "a": "All-word analysis works with any language that separates words with spaces. Function-word mode currently supports Ukrainian, Russian and English. Compare texts written in the same language."
+      },
+      {
+        "q": "What language is the interface in?",
+        "a": "Ukrainian for now. An English interface is planned."
+      },
+      {
+        "q": "What happens to my texts?",
+        "a": "Texts are used only for analysis in your account and are not shared with third parties."
+      },
+      {
+        "q": "How do I pay and cancel?",
+        "a": "By Visa or Mastercard, Apple Pay or Google Pay. You can cancel at any time and keep access until the end of the paid period."
+      },
+      {
+        "q": "Can DIMS run on our own server?",
+        "a": "Yes. The Team plan includes deployment on your infrastructure."
+      }
+    ]
+  },
+
+  "footer": {
+    "disclaimer": "A DIMS score is an analytical indicator, not a legal finding about any source or person.",
+    "privacy": "Privacy",
+    "contact": "Contact"
+  },
+
+  "privacy": {
+    "title": "Privacy policy",
+    "updated": "Version of 10 October 2026",
+    "back": "Home",
+    "sections": [
+      {
+        "h": "What we collect",
+        "p": "When you join the early access list: your email address, the role you choose, the page language and the time of the request. The page collects no other personal data and uses no advertising trackers."
+      },
+      {
+        "h": "Why",
+        "p": "To tell you when DIMS launches and to give you the early access price. Addresses are not sold or shared with third parties for marketing."
+      },
+      {
+        "h": "Legal basis",
+        "p": "Your consent, given by ticking the box in the form. You can withdraw it at any time by replying to any of our emails or writing to the contact address."
+      },
+      {
+        "h": "Where the data is stored",
+        "p": "Requests arrive through a form processing service{provider_suffix} and are kept for no longer than 12 months after DIMS launches, or until you withdraw consent."
+      },
+      {
+        "h": "Your rights",
+        "p": "You can ask to access, correct or delete your data. EU residents have the rights set out in the GDPR, including the right to lodge a complaint with a supervisory authority."
+      }
+    ],
+    "contact": "Data protection contact: {contact}.",
+    "contact_fallback": "through the form on the main page"
+  },
+
+  "notfound": {
+    "title": "Page not found",
+    "back": "Home"
+  }
+}

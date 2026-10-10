@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DIMS</title>
+<meta name="description" content="DIMS compares the writing style of texts from different channels and sites using Burrows&#39; Delta and shows which publications follow the same template. An integrated risk score R_DIMS and a grade from F to SSS.">
+<link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+<script>
+(function () {
+  var langs = ["uk", "en", "pl", "de"], fallback = "en", links = {"de": "de/", "en": "en/", "pl": "pl/", "uk": "uk/"}, pick = null;
+  try { pick = localStorage.getItem("dims-lang"); } catch (e) {}
+  if (langs.indexOf(pick) < 0) {
+    pick = null;
+    var prefs = navigator.languages || [navigator.language || ""];
+    for (var i = 0; i < prefs.length && !pick; i++) {
+      var code = String(prefs[i]).toLowerCase().slice(0, 2);
+      if (code === "ru" || code === "be") code = "uk";
+      if (langs.indexOf(code) >= 0) pick = code;
+    }
+  }
+  location.replace(links[pick || fallback]);
+})();
+</script>
+<style>
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #f7f9fc; color: #162033; }
+  main { max-width: 32rem; margin: 15vh auto; padding: 0 16px; }
+  a { color: #1f6feb; }
+  ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 12px 20px; }
+  @media (prefers-color-scheme: dark) { body { background: #0f172a; color: #f8fafc; } a { color: #60a5fa; } }
+</style>
+</head>
+<body>
+<main>
+  <p><strong>DIMS</strong></p>
+  <ul><li><a href="uk/" hreflang="uk" lang="uk">Українська</a></li><li><a href="en/" hreflang="en" lang="en">English</a></li><li><a href="pl/" hreflang="pl" lang="pl">Polski</a></li><li><a href="de/" hreflang="de" lang="de">Deutsch</a></li></ul>
+</main>
+</body>
+</html>

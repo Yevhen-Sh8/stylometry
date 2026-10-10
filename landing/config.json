@@ -1,0 +1,43 @@
+{
+  "_comment": "Налаштування лендингу DIMS. Після змін: python3 landing/build.py. Порожні рядки = блок приховано або вимкнено.",
+
+  "site_url": "",
+  "default_lang": "en",
+  "base_path": "/",
+  "languages": ["uk", "en", "pl", "de"],
+  "copyright_year": 2026,
+
+  "app_url": "",
+  "contact_email": "",
+  "operator_name": "",
+
+  "waitlist": {
+    "_comment": "endpoint: адреса форми Formspree (https://formspree.io/f/XXXX) або Web3Forms (https://api.web3forms.com/submit). extra_fields: приховані поля, напр. {\"access_key\": \"...\"} для Web3Forms.",
+    "endpoint": "",
+    "provider_name": "",
+    "extra_fields": {}
+  },
+
+  "pricing": {
+    "free_analyses_per_month": 3,
+    "free_max_sources": 5,
+    "pro_max_sources": 50,
+    "pro_early_price": 9,
+    "pro_early_limit": 100,
+    "pro_price_year": 36,
+    "pro_price_month": 4
+  },
+
+  "demo_matrix": {
+    "_comment": "Реальні значення Δ-Бурровс із прогону DIMS на синтетичному демо-наборі (MFW 100, θΔ 0.8, word tokens, culling ≥ 2).",
+    "threshold": 0.8,
+    "labels": ["A", "B", "C", "N1", "N2"],
+    "values": [
+      [0.0,    0.1596, 0.2129, 1.8496, 1.8746],
+      [0.1596, 0.0,    0.1248, 1.9189, 1.9776],
+      [0.2129, 0.1248, 0.0,    1.9045, 1.9709],
+      [1.8496, 1.9189, 1.9045, 0.0,    0.4402],
+      [1.8746, 1.9776, 1.9709, 0.4402, 0.0]
+    ]
+  }
+}
