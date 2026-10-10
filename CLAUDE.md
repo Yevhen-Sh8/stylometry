@@ -69,6 +69,9 @@ Launch config: `.claude/launch.json` → `/usr/bin/python3 /tmp/stylometry_previ
 | `static/style.css` | Стилі |
 | `templates/index.html` | Головна сторінка |
 | `templates/report.html` | Звіт аналізу |
+| `core/ias_service.py` | Безстанова оцінка події (інтеграція з ІАС) |
+| `core/ias_scanner.py` | Сканер БД модуля моніторингу ІАС + webhook |
+| `core/api_v1.py` | REST API v1 для ІАС (сервісні токени) |
 
 ### Формула DIMS
 ```

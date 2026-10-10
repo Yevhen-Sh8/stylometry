@@ -18,6 +18,9 @@ Data/monitoring_config.json
 Data/monitoring_queue.json
 Data/state.db
 Data/state.db-*
+Data/ias_service.db
+Data/ias_service.db-*
+deploy/ias/.env
 
 # Temp files
 _tmp_*

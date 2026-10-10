@@ -1,0 +1,48 @@
+# DIMS як окремий сервіс ІАС (розгортання на серверах замовника).
+#
+#   cp deploy/ias/.env.example deploy/ias/.env   # заповнити значення
+#   docker compose -f deploy/ias/docker-compose.yml --env-file deploy/ias/.env up -d --build
+#
+# Два процеси з одного образу:
+#   dims-api     — REST API v1 (+ вебінтерфейс аналітика) на порту 5001;
+#   dims-scanner — періодичний сканер БД модуля моніторингу ІАС.
+# Спільний том dims-data: SQLite зі станом сканера, оцінками та сповіщеннями.
+
+services:
+  dims-api:
+    build:
+      context: ../..
+      args:
+        EXTRA_PIP: ${EXTRA_PIP:-}
+    image: dims-stylometry:ias
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: "5001"
+      DIMS_DATA_DIR: /var/data
+      MPLCONFIGDIR: /tmp/matplotlib
+    volumes:
+      - dims-data:/var/data
+    ports:
+      - "${DIMS_API_BIND:-127.0.0.1}:5001:5001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/healthz', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  dims-scanner:
+    image: dims-stylometry:ias
+    depends_on:
+      - dims-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DIMS_DATA_DIR: /var/data
+      MPLCONFIGDIR: /tmp/matplotlib
+    volumes:
+      - dims-data:/var/data
+    command: ["python", "-m", "core.ias_scanner", "--interval", "${DIMS_SCAN_INTERVAL_S:-300}"]
+
+volumes:
+  dims-data:

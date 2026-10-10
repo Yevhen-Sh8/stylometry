@@ -45,11 +45,14 @@ from core.analysis import (DIMS_MANIFESTATION_TYPES, detect_script,
 from core.monitoring_log import (append_record, find_duplicate, load_records,
                                   text_fingerprint, simhash, hamming)
 from core.monitoring_forms import build_daily_monitoring_form
+from core.api_v1 import bp as api_v1_bp
 
 # ─────────────────────────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB upload limit
+# Машинний API для інтеграції з ІАС (власна автентифікація сервісними токенами).
+app.register_blueprint(api_v1_bp)
 
 BASE_DIR   = Path(__file__).parent
 OUTPUT_DIR = BASE_DIR / "output"
@@ -424,10 +427,8 @@ def _admin_token() -> str:
 
 
 def _supplied_admin_token() -> str:
-    return (
-        request.headers.get("X-DIMS-Admin-Token", "")
-        or request.args.get("admin_token", "")
-    ).strip()
+    # Лише заголовок: токен у query-рядку потрапляв би в журнали проксі/сервера.
+    return request.headers.get("X-DIMS-Admin-Token", "").strip()
 
 
 @app.before_request
@@ -436,6 +437,8 @@ def require_admin_token_for_mutations():
         return None
     if request.path == "/api/monitor/cron":
         return None
+    if request.path.startswith("/api/v1/"):
+        return None  # API v1 автентифікується сервісними токенами (core/api_v1.py)
 
     expected = _admin_token()
     if not expected:
