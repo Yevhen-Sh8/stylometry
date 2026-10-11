@@ -14,6 +14,11 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Драйвер СУБД модуля моніторингу ІАС для сканера (core/ias_scanner.py), напр.:
+#   docker build --build-arg EXTRA_PIP="psycopg[binary]>=3.1" .
+ARG EXTRA_PIP=""
+RUN if [ -n "$EXTRA_PIP" ]; then pip install --no-cache-dir $EXTRA_PIP; fi
+
 COPY . .
 
 EXPOSE 5001

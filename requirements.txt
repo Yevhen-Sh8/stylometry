@@ -14,6 +14,10 @@ matplotlib>=3.7.0,<4.0
 flask>=3.0.0,<4.0
 gunicorn>=22.0.0,<24.0
 
+# ІАС-інтеграція: читання БД модуля моніторингу (core/ias_scanner.py).
+# Драйвер конкретної СУБД (psycopg, pymysql, pyodbc…) додається під замовника.
+sqlalchemy>=2.0.0,<3.0
+
 # URL scraping
 requests>=2.31.0,<3.0
 beautifulsoup4>=4.12.0,<5.0

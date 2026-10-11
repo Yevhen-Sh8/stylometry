@@ -1,0 +1,288 @@
+openapi: 3.0.3
+info:
+  title: DIMS API v1 — інтеграція з ІАС
+  version: 1.0.0
+  description: |
+    Машинний інтерфейс сервісу DIMS (удосконалена методика моніторингу
+    інформації у відкритих джерелах із застосуванням стилометричного методу).
+    Опис інтеграції — docs/ias_integration_ua.md.
+
+    Автентифікація: `Authorization: Bearer <service-token>` (токени задаються
+    змінною DIMS_SERVICE_TOKENS). Без налаштованих токенів API повертає 503.
+servers:
+  - url: http://127.0.0.1:5001
+security:
+  - bearerAuth: []
+paths:
+  /api/v1/assess:
+    post:
+      summary: Оцінити одну інформаційну подію (без збереження стану)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/AssessRequest'}
+      responses:
+        '200':
+          description: Оцінка DIMS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  assessment: {$ref: '#/components/schemas/Assessment'}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+        '503': {$ref: '#/components/responses/Error'}
+  /api/v1/events/{event_id}/assessment:
+    get:
+      summary: Остання оцінка події, виконана сканером
+      parameters:
+        - {name: event_id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Оцінка
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  assessment: {$ref: '#/components/schemas/Assessment'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/alerts:
+    get:
+      summary: Перелік сповіщень (новіші першими)
+      parameters:
+        - {name: status, in: query, schema: {type: string, enum: [open, confirmed, rejected]}}
+        - {name: since_id, in: query, schema: {type: integer, minimum: 0}, description: 'Лише сповіщення з id > since_id (для опитування)'}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        '200':
+          description: Сповіщення
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  alerts:
+                    type: array
+                    items: {$ref: '#/components/schemas/Alert'}
+  /api/v1/alerts/{alert_id}:
+    get:
+      summary: Сповіщення з повною оцінкою
+      parameters:
+        - {name: alert_id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200':
+          description: Сповіщення
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean}
+                  alert:
+                    allOf:
+                      - {$ref: '#/components/schemas/Alert'}
+                      - type: object
+                        properties:
+                          assessment: {$ref: '#/components/schemas/Assessment'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/alerts/{alert_id}/review:
+    post:
+      summary: Рішення аналітика щодо сповіщення (+ експертний грейд для валідації)
+      parameters:
+        - {name: alert_id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [confirmed, rejected]}
+                expert_grade: {$ref: '#/components/schemas/Grade'}
+                comment: {type: string, maxLength: 2000}
+                reviewer: {type: string, maxLength: 200}
+      responses:
+        '200': {description: Оновлене сповіщення}
+        '400': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/v1/feedback:
+    get:
+      summary: Пари «грейд DIMS ↔ експертний грейд» (валідаційний набір)
+      responses:
+        '200': {description: Перелік розглянутих сповіщень}
+  /api/v1/status:
+    get:
+      summary: Стан сканера та лічильники
+      responses:
+        '200': {description: Стан сервісу}
+  /healthz:
+    get:
+      summary: Перевірка живучості (без автентифікації)
+      security: []
+      responses:
+        '200': {description: '{"status":"ok"}'}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer}
+  responses:
+    Error:
+      description: Помилка
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: {type: boolean, example: false}
+              error: {type: string}
+  schemas:
+    Grade:
+      type: string
+      enum: [F, B, S, SS, SSS]
+      description: Рівень інтересу за Наказом № 46
+    Material:
+      type: object
+      required: [source, text]
+      properties:
+        id: {type: string}
+        source: {type: string, description: 'Канал / акаунт / домен — одиниця агрегації для Burrows Delta'}
+        platform: {type: string, example: telegram}
+        domain: {type: string, description: 'Домен для I_source (якщо відмінний від source)'}
+        url: {type: string}
+        published_at: {type: string, format: date-time}
+        text_origin:
+          type: string
+          enum: [text, transcript]
+          description: 'Написаний текст чи ШІ-транскрипт відео/аудіо. Якщо не задано — transcript для платформ із DIMS_TRANSCRIPT_PLATFORMS (youtube, tiktok), інакше text'
+        text: {type: string}
+    AssessRequest:
+      type: object
+      required: [materials]
+      properties:
+        event_id: {type: string}
+        manifestation:
+          type: string
+          enum: [manipulation, fake, sandwich, conspiracy, insider, sensitive, taboo]
+          description: Вид прояву; taboo → грейд не нижче SS
+        materials:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items: {$ref: '#/components/schemas/Material'}
+        params:
+          type: object
+          properties:
+            mfw_n: {type: integer, minimum: 20, maximum: 500, default: 100}
+            threshold: {type: number, minimum: 0.1, maximum: 2.0, default: 0.8}
+            feature_type: {type: string, enum: [word, function, char], default: word}
+            confidence: {type: boolean, default: true, description: 'Bootstrap-інтервал R_DIMS'}
+    Assessment:
+      type: object
+      properties:
+        event_id: {type: string, nullable: true}
+        assessed_at: {type: string, format: date-time}
+        r_dims: {type: number, minimum: 0, maximum: 1}
+        grade:
+          type: object
+          properties:
+            grade: {$ref: '#/components/schemas/Grade'}
+            label: {type: string}
+        indicators:
+          type: object
+          properties:
+            I_content: {type: number}
+            I_coord: {type: number}
+            I_dynamics: {type: number}
+            I_impact: {type: number}
+            I_source: {type: number}
+        weights: {type: object, additionalProperties: {type: number}}
+        confidence:
+          type: object
+          properties:
+            lo: {type: number}
+            hi: {type: number}
+            grade_prob: {type: object, additionalProperties: {type: number}}
+        alert:
+          type: object
+          properties:
+            is_alert: {type: boolean}
+            kinds:
+              type: array
+              items: {type: string, enum: [dims, copy_paste]}
+            coordination_signals: {type: array, items: {type: string}}
+        coordination:
+          type: object
+          properties:
+            assessable: {type: boolean}
+            flagged_pairs:
+              type: array
+              items:
+                type: object
+                properties:
+                  a: {type: string}
+                  b: {type: string}
+                  delta: {type: number}
+                  severity: {type: string, enum: [critical, high, moderate]}
+                  cross_origin: {type: boolean, description: 'Пара «транскрипт ↔ написаний текст» — інтерпретувати обережно'}
+            copy_clusters:
+              type: array
+              items:
+                type: object
+                properties:
+                  sources: {type: array, items: {type: string}}
+                  n_sources: {type: integer}
+                  first_source: {type: string}
+                  first_published_at: {type: string, nullable: true}
+                  material_ids: {type: array, items: {type: string}}
+                  text_origins: {type: array, items: {type: string}}
+        stats: {type: object}
+        warnings: {type: array, items: {type: string}}
+    AlertWebhook:
+      description: |
+        Тіло POST-запиту, який DIMS надсилає на DIMS_ALERT_WEBHOOK_URL (приймач у ІАС).
+        Заголовки: X-DIMS-Alert-Id (ключ ідемпотентності), X-DIMS-Timestamp
+        (Unix-секунди), X-DIMS-Signature: sha256=HMAC_SHA256(secret, "<timestamp>.<body>")
+        за наявності DIMS_ALERT_WEBHOOK_SECRET, Authorization: Bearer за наявності
+        DIMS_ALERT_WEBHOOK_TOKEN. Будь-яка відповідь 2xx = доставлено; інакше повтор
+        у наступному проході сканера. Тексти матеріалів не передаються.
+      type: object
+      properties:
+        type: {type: string, enum: [dims.coordinated_activity_alert]}
+        alert_id: {type: integer}
+        event_id: {type: string}
+        grade: {$ref: '#/components/schemas/Grade'}
+        grade_label: {type: string}
+        r_dims: {type: number}
+        confidence: {type: object, nullable: true}
+        indicators: {type: object, additionalProperties: {type: number}}
+        kinds: {type: array, items: {type: string, enum: [dims, copy_paste]}}
+        signals: {type: array, items: {type: string}}
+        top_pairs: {type: array, items: {type: object}}
+        copy_clusters: {type: array, items: {type: object}}
+        n_sources: {type: integer}
+        n_materials: {type: integer}
+        warnings: {type: array, items: {type: string}}
+        assessed_at: {type: string, format: date-time}
+        url: {type: string, description: 'Посилання на повну оцінку в API DIMS (якщо задано DIMS_PUBLIC_URL)'}
+    Alert:
+      type: object
+      properties:
+        id: {type: integer}
+        event_id: {type: string}
+        created_at: {type: string, format: date-time}
+        grade: {$ref: '#/components/schemas/Grade'}
+        r_dims: {type: number}
+        kinds: {type: array, items: {type: string}}
+        signals: {type: array, items: {type: string}}
+        status: {type: string, enum: [open, confirmed, rejected]}
+        notified: {type: boolean}
+        expert_grade: {type: string, nullable: true}
+        reviewed_at: {type: string, nullable: true}
+        comment: {type: string, nullable: true}

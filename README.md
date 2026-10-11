@@ -186,6 +186,23 @@ X-Monitor-Token: <token>
 - `DIMS_ADMIN_TOKEN` — запасний токен для cron і той самий токен, який заданий
   на Render
 
+### Інтеграція з ІАС (окремий сервіс)
+
+DIMS може працювати як окремий сервіс ІАС підтримки прийняття рішень. Сканер
+періодично читає БД модуля моніторингу інформаційного простору (лише
+читання, будь-яка СУБД через SQLAlchemy) і оцінює змінені події за методикою.
+Якщо знаходить ознаки скоординованої атаки, сповіщає через webhook і
+`GET /api/v1/alerts`. Машинний API v1 (`/api/v1/assess`, `/alerts`,
+`/alerts/{id}/review`, `/feedback`, `/status`) захищено сервісними токенами
+`DIMS_SERVICE_TOKENS`.
+
+```bash
+cp deploy/ias/.env.example deploy/ias/.env   # заповнити
+docker compose -f deploy/ias/docker-compose.yml --env-file deploy/ias/.env up -d --build
+```
+
+Деталі — `docs/ias_integration_ua.md`, специфікація — `docs/openapi_v1.yaml`.
+
 ---
 
 ## Структура проєкту
@@ -198,7 +215,12 @@ stylometry/
 │   ├── extractors.py       # Парсинг PDF, DOCX, RTF, HTML
 │   ├── monitoring_forms.py # Форма щоденного моніторингу
 │   ├── monitoring_log.py   # Журнал сесій
-│   └── scraper.py          # Завантаження URL, RSS, Telegram
+│   ├── scraper.py          # Завантаження URL, RSS, Telegram
+│   ├── ias_service.py      # Безстанова оцінка події для ІАС
+│   ├── ias_scanner.py      # Сканер БД модуля моніторингу ІАС
+│   ├── ias_store.py        # Сховище оцінок і сповіщень сервісу
+│   └── api_v1.py           # REST API v1 (сервісні токени)
+├── deploy/ias/             # docker-compose + .env.example для ІАС
 ├── static/
 │   ├── app.js              # Фронтенд (vanilla JS)
 │   └── style.css           # Стилі (темна/світла тема)
