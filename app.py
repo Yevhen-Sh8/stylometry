@@ -450,21 +450,24 @@ def require_admin_token_for_mutations():
     return None
 
 
-def _parse_analysis_params(data: dict) -> tuple[int, float, int, str, int, str]:
+def _parse_analysis_params(data: dict) -> tuple[int, float | None, int, str, int, str, str]:
     try:
         mfw_n = int(data.get("mfw", 100))
-        threshold = float(data.get("threshold", 0.8))
+        # Порогу немає → автоматичний (з еталонної статистики мови, якщо вона є).
+        raw_threshold = data.get("threshold")
+        threshold = None if raw_threshold in (None, "", "auto") else float(raw_threshold)
         min_doc_freq = int(data.get("min_doc_freq", 2))
         feature_type = str(data.get("feature_type", "word")).lower()
         char_n = int(data.get("char_n", 3))
         projection_method = str(data.get("projection", "pca")).lower()
+        metric = str(data.get("metric", "burrows")).lower()
     except (TypeError, ValueError) as exc:
         raise ValueError("Некоректні параметри аналізу.") from exc
 
     if not 20 <= mfw_n <= 500:
         raise ValueError("Параметр MFW має бути в діапазоні 20-500.")
-    if not 0.1 <= threshold <= 2.0:
-        raise ValueError("Поріг Delta має бути в діапазоні 0.1-2.0.")
+    if threshold is not None and not 0.01 <= threshold <= 2.0:
+        raise ValueError("Поріг Delta має бути в діапазоні 0.01-2.0.")
     if not 1 <= min_doc_freq <= 20:
         raise ValueError("Параметр culling (min_doc_freq) має бути 1-20.")
     if feature_type not in {"word", "char", "function"}:
@@ -473,7 +476,9 @@ def _parse_analysis_params(data: dict) -> tuple[int, float, int, str, int, str]:
         raise ValueError("char_n має бути в діапазоні 2-6.")
     if projection_method not in {"pca", "mds", "tsne"}:
         raise ValueError("projection має бути 'pca', 'mds' або 'tsne'.")
-    return mfw_n, threshold, min_doc_freq, feature_type, char_n, projection_method
+    if metric not in {"burrows", "cosine"}:
+        raise ValueError("metric має бути 'burrows' або 'cosine'.")
+    return mfw_n, threshold, min_doc_freq, feature_type, char_n, projection_method, metric
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1711,9 +1716,8 @@ def analyze():
 
     data = request.get_json(silent=True) or {}
     try:
-        mfw_n, threshold, min_doc_freq, feature_type, char_n, projection_method = (
-            _parse_analysis_params(data)
-        )
+        (mfw_n, threshold, min_doc_freq, feature_type, char_n, projection_method,
+         metric) = _parse_analysis_params(data)
     except ValueError as exc:
         return _err(str(exc))
 
@@ -1732,7 +1736,11 @@ def analyze():
             char_n=char_n,
             projection_method=projection_method,
             manifestation=manifestation,
+            metric=metric,
         )
+    except ValueError as exc:
+        # Зрозумілі користувачеві причини (напр. немає калібрування авто-порогу).
+        return _err(str(exc))
     except Exception:
         app.logger.exception("Помилка аналізу")
         return _err("Помилка аналізу. Перевірте вхідні дані та спробуйте ще раз.", code=500)
@@ -1748,7 +1756,13 @@ def analyze():
         ci = pair_ci.get(f"{a}||{b}") or pair_ci.get(f"{b}||{a}")
         if not ci:
             return None
-        return {k: round(v, 4) for k, v in ci.items()}
+        return {k: (round(v, 4) if isinstance(v, float) else v) for k, v in ci.items()}
+
+    pair_pct = results.get("pair_percentile", {})
+    pair_verdicts = results.get("pair_verdict", {})
+
+    def _key(a: str, b: str) -> str:
+        return f"{a}||{b}" if f"{a}||{b}" in pair_pct else f"{b}||{a}"
 
     # Build JSON-serialisable summary
     flagged_summary = [
@@ -1759,6 +1773,9 @@ def analyze():
             "delta": round(d, 4),
             "severity": sev,
             "ci": _ci(a, b),
+            "percentile": pair_pct.get(_key(a, b)),
+            "threshold": round(results["pair_threshold"][_key(a, b)], 4),
+            "verdict": pair_verdicts.get(_key(a, b)),
         }
         for a, b, d, sev in results["flagged"]
     ]
@@ -1770,6 +1787,8 @@ def analyze():
             "b_meta": _source_lookup(b),
             "delta": round(d, 4),
             "ci": _ci(a, b),
+            "percentile": pair_pct.get(_key(a, b)),
+            "verdict": pair_verdicts.get(_key(a, b)),
         }
         for a, b, d in results["all_pairs"][:5]
     ]
@@ -1787,7 +1806,11 @@ def analyze():
             results["dims_assessment"].get("source_details", {}),
         ),
         mfw_n=mfw_n,
-        threshold=threshold,
+        threshold=round(results["threshold"], 4),
+        threshold_source=results.get("threshold_source"),
+        metric=results.get("metric"),
+        reference=results.get("reference"),
+        doc_length_level=results.get("doc_length_level", {}),
         min_doc_freq=min_doc_freq,
         feature_type=feature_type,
         char_n=char_n,

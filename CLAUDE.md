@@ -63,7 +63,8 @@ Launch config: `.claude/launch.json` → `/usr/bin/python3 /tmp/stylometry_previ
 | Файл | Призначення |
 |---|---|
 | `app.py` | Flask-сервер, всі API-ендпоінти |
-| `core/analysis.py` | Burrows Delta, detect_script, DIMS-оцінки |
+| `core/analysis.py` | Burrows/Cosine Delta, токенізатор ct-tok-2, DIMS-оцінки |
+| `core/reference.py` | Еталони мов (`Data/reference/`), авто-поріг, перцентилі |
 | `core/monitoring_forms.py` | Форма щоденного моніторингу |
 | `static/app.js` | Весь фронтенд JS |
 | `static/style.css` | Стилі |

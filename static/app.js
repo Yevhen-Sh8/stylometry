@@ -453,6 +453,8 @@ const els = {
   mfwInput:     $("mfwInput"),
   thrSlider:    $("thresholdSlider"),
   thrInput:     $("thresholdInput"),
+  thrAuto:      $("thresholdAuto"),
+  metric:       $("metricSelect"),
   featureType:  $("featureType"),
   charNSlider:  $("charNSlider"),
   charN:        $("charN"),
@@ -1501,7 +1503,9 @@ updateFeatureTypeUI();
 // ─────────────────────────────────────────────────────────────
 els.btnAnalyze.addEventListener("click", async () => {
   const mfw       = parseInt(els.mfwInput.value) || 100;
-  const threshold = parseFloat(els.thrInput.value) || 0.8;
+  const threshold = (els.thrAuto && els.thrAuto.checked)
+    ? "auto" : (parseFloat(els.thrInput.value) || 0.8);
+  const metric = (els.metric && els.metric.value) || "burrows";
   const feature_type = els.featureType.value || "word";
   const char_n = parseInt(els.charN.value) || 3;
   const min_doc_freq = parseInt(els.minDocFreq.value) || 2;
@@ -1515,7 +1519,7 @@ els.btnAnalyze.addEventListener("click", async () => {
 
   try {
     const data = await api("/api/analyze", "POST", {
-      mfw, threshold, feature_type, char_n, min_doc_freq,
+      mfw, threshold, metric, feature_type, char_n, min_doc_freq,
       projection_method, manifestation,
     });
 
@@ -1644,7 +1648,7 @@ function renderResults(data) {
     els.flaggedQuick.innerHTML = `
       ${dimsSummary}
       <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">
-        Підозрілі пари (${MATH.delta} &lt; ${MATH.thetaDelta} = ${data.flagged[0]?.delta !== undefined ? parseFloat(els.thrInput.value) : "?"})
+        Підозрілі пари (${MATH.delta} &lt; ${MATH.thetaDelta} = ${data.threshold !== undefined ? data.threshold : "?"})
       </h3>
       ${data.flagged.map(f => {
         const ci = f.ci && (f.ci.lo !== undefined)

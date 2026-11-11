@@ -291,7 +291,7 @@
             <input type="number" id="mfwInput" class="form-control param-number"
                    min="20" max="500" value="100" />
           </div>
-          <p class="hint">Рекомендовано: 50–200. Короткі тексти (&lt;500 слів) — 50.</p>
+          <p class="hint">Рекомендовано: 100 — для нього відкалібровано автоматичний поріг. Інше значення — лише з ручним порогом.</p>
           <details class="param-help">
             <summary>Що це таке?</summary>
             <p>MFW (Most Frequent Words) — N найчастіших лексем у корпусі. На цьому наборі обчислюється
@@ -309,12 +309,27 @@
             <input type="number" id="thresholdInput" class="form-control param-number"
                    min="0.1" max="2.0" step="0.05" value="0.8" />
           </div>
-          <p class="hint">Менше <span class="math-inline">&Delta;<sub>Burrows</sub></span> = більша подібність. Рекомендовано: 0.6–1.0.</p>
+          <label class="param-check"><input type="checkbox" id="thresholdAuto" checked />
+            Авто: пара ближча, ніж 99 % випадкових пар текстів такої довжини (за еталоном мови)</label>
+          <p class="hint">Менше <span class="math-inline">&Delta;</span> = більша подібність. Ручний поріг діє, коли «Авто» вимкнено.</p>
           <details class="param-help">
             <summary>Як обрати поріг?</summary>
-            <p>Пари з <span class="math-inline">&Delta;<sub>Burrows</sub></span> &lt; <span class="math-inline">&theta;<sub>&Delta;</sub></span>
-               позначаються як підозріло подібні. Короткі тексти — нижче (0.6–0.7).</p>
+            <p>Пари з <span class="math-inline">&Delta;</span> &lt; <span class="math-inline">&theta;<sub>&Delta;</sub></span>
+               позначаються як підозріло подібні. Автоматичний поріг береться з еталонного
+               корпусу мови (uk, ru, en, pl, de): відстань, ближче за яку стоять лише 1 %
+               пар незалежних текстів такої самої довжини. Калібрування є для MFW = 100;
+               для змішаних мов або інших MFW задайте поріг вручну (типово 0.8).</p>
           </details>
+        </div>
+
+        <!-- Metric -->
+        <div class="param-group">
+          <label for="metricSelect">Метрика відстані</label>
+          <select id="metricSelect" class="form-control">
+            <option value="burrows" selected>Burrows Delta (класична)</option>
+            <option value="cosine">Cosine Delta (Smith &amp; Aldridge 2011)</option>
+          </select>
+          <p class="hint">Cosine Delta краще ранжує пари на бенчмарку ELTeC-ukr, але має інший масштаб і частоту хибних спрацювань.</p>
         </div>
 
         <!-- Feature type -->

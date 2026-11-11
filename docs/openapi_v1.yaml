@@ -180,7 +180,13 @@ components:
           type: object
           properties:
             mfw_n: {type: integer, minimum: 20, maximum: 500, default: 100}
-            threshold: {type: number, minimum: 0.1, maximum: 2.0, default: 0.8}
+            threshold:
+              description: 'Поріг відстані. "auto" (типово) — за еталоном мови: пара ближча, ніж 99 % випадкових пар текстів такої довжини; без еталона — 0.8. Авто-поріг відкалібровано для mfw_n = 100'
+              oneOf:
+                - {type: number, minimum: 0.01, maximum: 2.0}
+                - {type: string, enum: [auto]}
+              default: auto
+            metric: {type: string, enum: [burrows, cosine], default: burrows, description: 'Burrows Delta або Cosine Delta (Smith & Aldridge 2011)'}
             feature_type: {type: string, enum: [word, function, char], default: word}
             confidence: {type: boolean, default: true, description: 'Bootstrap-інтервал R_DIMS'}
     Assessment:
@@ -228,7 +234,11 @@ components:
                 properties:
                   a: {type: string}
                   b: {type: string}
-                  delta: {type: number}
+                  delta: {type: number, description: 'Відстань пари обраною метрикою'}
+                  threshold: {type: number, description: 'Поріг саме цієї пари (за довжиною коротшого тексту)'}
+                  percentile: {type: number, nullable: true, description: 'Частка (0–100) випадкових пар мови, ближчих за цю; null без еталона'}
+                  ci: {type: object, nullable: true, properties: {lo: {type: number}, hi: {type: number}}, description: '95 % інтервал відстані (бутстреп тексту)'}
+                  verdict: {type: string, enum: [strong, possible], description: 'strong — ближче за поріг з урахуванням похибки й обсягу ≥ 500 слів'}
                   severity: {type: string, enum: [critical, high, moderate]}
                   cross_origin: {type: boolean, description: 'Пара «транскрипт ↔ написаний текст» — інтерпретувати обережно'}
             copy_clusters:
