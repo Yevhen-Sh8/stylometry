@@ -1,6 +1,6 @@
 ---
 name: dims-sync
-description: Sync edited files from /Users/odin/Desktop/Стилометрія to /tmp/dims_project so the preview server (port 5001) picks them up. Use after editing app.py, templates/*, static/*, or core/*.py. Triggers — "синхронізуй", "sync preview", "перезалити в /tmp", "оновити preview-сервер".
+description: Sync edited files from /Users/odin/Desktop/Стилометрія to /tmp/dims_project so the preview server (port 5001) picks them up. Use after editing app.py, templates/*, static/* (including static/tokens/), core/*.py or Data/reference/*.json. Triggers — "синхронізуй", "sync preview", "перезалити в /tmp", "оновити preview-сервер".
 ---
 
 # DIMS sync
@@ -13,12 +13,13 @@ description: Sync edited files from /Users/odin/Desktop/Стилометрія t
 SRC="/Users/odin/Desktop/Стилометрія"
 DST="/tmp/dims_project"
 
-mkdir -p "$DST/templates" "$DST/static" "$DST/core"
+mkdir -p "$DST/templates" "$DST/static" "$DST/core" "$DST/Data/reference"
 
 cp "$SRC/app.py" "$DST/" 2>/dev/null
 cp "$SRC/templates/"*.html "$DST/templates/" 2>/dev/null
-cp "$SRC/static/"* "$DST/static/" 2>/dev/null
+cp -R "$SRC/static/." "$DST/static/" 2>/dev/null   # разом із static/tokens/
 cp "$SRC/core/"*.py "$DST/core/" 2>/dev/null
+cp "$SRC/Data/reference/"*.json "$DST/Data/reference/" 2>/dev/null   # еталони мов
 
 echo "✓ Synced to $DST"
 ls -la "$DST/templates/" "$DST/static/" | head -20

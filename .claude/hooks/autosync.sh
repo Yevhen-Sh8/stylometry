@@ -29,7 +29,7 @@ rel="${file#$SRC/}"
 
 # Only mirror files that the preview server actually consumes.
 case "$rel" in
-  app.py | templates/*.html | static/* | core/*.py) ;;
+  app.py | templates/*.html | static/* | core/*.py | Data/reference/*.json) ;;
   *) exit 0 ;;
 esac
 
