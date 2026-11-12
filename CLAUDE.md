@@ -47,9 +47,14 @@ Preview працює з `/tmp/dims_project/` (TCC-обмеження macOS).
 ```bash
 cp "/Users/odin/Desktop/Стилометрія/app.py" /tmp/dims_project/
 cp "/Users/odin/Desktop/Стилометрія/templates/"* /tmp/dims_project/templates/
-cp "/Users/odin/Desktop/Стилометрія/static/"* /tmp/dims_project/static/
+cp -R "/Users/odin/Desktop/Стилометрія/static/." /tmp/dims_project/static/
 cp "/Users/odin/Desktop/Стилометрія/core/"*.py /tmp/dims_project/core/
+mkdir -p /tmp/dims_project/Data/reference
+cp "/Users/odin/Desktop/Стилометрія/Data/reference/"*.json /tmp/dims_project/Data/reference/
 ```
+
+`static/` копіюється рекурсивно: `style.css` підключає `static/tokens/*.css`, без них інтерфейс втрачає оформлення.
+Після перезавантаження Mac (`/tmp` очищено) — `bash .claude/restore_preview.sh`.
 
 Launch config: `.claude/launch.json` → `/usr/bin/python3 /tmp/stylometry_preview/run.py`
 

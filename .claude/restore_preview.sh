@@ -19,15 +19,19 @@ SRC="/Users/odin/Desktop/Стилометрія"
 DST="/tmp/dims_project"
 LAUNCH="/tmp/stylometry_preview"
 
-mkdir -p "$DST/templates" "$DST/static" "$DST/core" "$DST/Data" "$LAUNCH"
+mkdir -p "$DST/templates" "$DST/static" "$DST/core" "$DST/Data/reference" "$LAUNCH"
 
 cp "$SRC/app.py" "$DST/" 2>/dev/null || true
 cp "$SRC/templates/"*.html "$DST/templates/" 2>/dev/null || true
-cp "$SRC/static/"* "$DST/static/" 2>/dev/null || true
+# Рекурсивно: style.css підключає static/tokens/*.css (кольори, шрифти, відступи).
+# Без них інтерфейс відображається без оформлення (шрифт Times, без кольорів).
+cp -R "$SRC/static/." "$DST/static/" 2>/dev/null || true
 cp "$SRC/core/"*.py "$DST/core/" 2>/dev/null || true
 # Дані для I_source / журналу (списки доменів, overrides) — для повного аналізу.
 cp "$SRC/Data/"*.txt "$DST/Data/" 2>/dev/null || true
 cp "$SRC/Data/"*.json "$DST/Data/" 2>/dev/null || true
+# Еталони мов для авто-порогу (core/reference.py).
+cp "$SRC/Data/reference/"*.json "$DST/Data/reference/" 2>/dev/null || true
 
 # Лоунчер: вантажить app із /tmp (а не з Desktop) — обхід TCC.
 cat > "$LAUNCH/run.py" <<'PY'
