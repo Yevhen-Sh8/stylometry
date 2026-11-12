@@ -1,0 +1,485 @@
+{
+  "corpus_url": "https://github.com/COST-ELTeC/ELTeC-ukr",
+  "corpus_revision": "a8c3d71301cdba767e33551ff0099da1dc51681a",
+  "attribution": "ELTeC-ukr, Dmytro Yesypenko and Mykhailo Nazarenko, 0.5.0 (2021)",
+  "doi": "https://doi.org/10.5281/zenodo.4662731",
+  "protocol": {
+    "seed": 20261014,
+    "raw_word_lengths": [
+      250,
+      500,
+      1000,
+      2500,
+      5000
+    ],
+    "mfw_counts": [
+      100,
+      200,
+      300,
+      500
+    ],
+    "variants": [
+      "default",
+      "keep_single"
+    ],
+    "metrics": [
+      "burrows",
+      "cosine"
+    ],
+    "maximum_nonoverlapping_samples_per_work": 3,
+    "calibration_negative_quantile": 0.01,
+    "calibration_unit": "different-author pairs; no evaluation authors",
+    "evaluation_unit": "different works; repeated samples are dependent",
+    "scope": "exploratory distance screening; excludes bootstrap/strong verdict"
+  },
+  "excluded": [
+    {
+      "id": "UKR18801",
+      "reason": "coauthored by Panas Myrnyi and Ivan Bilyk"
+    }
+  ],
+  "engine_source_hashes": {
+    "core/analysis.py": "3e53a5cf706e283de59a4336a7a3a08e7e2b1770518c924db748a35d4f849c73",
+    "core/reference.py": "4b4438418de8424c948272a3a13167bdcacd31f070a14de62b3f275f4bba606b"
+  },
+  "partitions": {
+    "reference": [
+      {
+        "id": "UKR18571",
+        "author": "Куліш, Пантелеймон",
+        "title": "Чорна рада, хроніка 1663 року : ELTeC видання",
+        "path": "level1/UKR18571_KulishChornaRada.xml",
+        "xml_sha256": "112d473a6b87be3881e0f89a35ed3e607efb56335815ba65cc55cc214cade476",
+        "text_sha256": "ed1ebcd026bac053953baf90438f6ea48c06ff1d8502ecaf3efd7271b8d9ebc8",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18731",
+        "author": "Федькович, Юрій",
+        "title": "Фармазони : ELTeC видання",
+        "path": "level1/UKR18731_FedkovychFarmazony.xml",
+        "xml_sha256": "9709a952ec6d2d132031c368f988c9906ed52912b65635138fddc340861b16c2",
+        "text_sha256": "6113b8c0af766362fb87ae8dcb64395d17933665e1baaf92803ed6376b827555",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18751",
+        "author": "Кониський, Олександр",
+        "title": "Семен Жук і його родичі. Хроніка : ELTeC видання",
+        "path": "level1/UKR18751_KonyskyiSemenZhuk.xml",
+        "xml_sha256": "e2f5d5fc1208cc89bfd5c5a8bfc6bfc98ebb14cbeeaa62579846bbc2378cec99",
+        "text_sha256": "21ac515842dcaeadc30448556a1c50fa14db95d2a16267b312494f23886064ad",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18771",
+        "author": "Барвінок, Василь [Володимир Барвінський]",
+        "title": "Скошений цвіт (Виїмок з галицьких образків) : ELTeC видання",
+        "path": "level1/UKR18771_BarvinokSkoshenyiTsvit.xml",
+        "xml_sha256": "0074c96d26c842b7aa4e94ab48911a4abc20851203851601da6f247618841e2a",
+        "text_sha256": "c3a9093fe9bf77b1f95f98d36c1b8a98324cc0293f3f62678b2cf85428249d6d",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18951",
+        "author": "Кримський, Агатангел",
+        "title": "Не порозуміються. (Оповідання). : ELTeC видання",
+        "path": "level1/UKR18951_KrymskyiNePorozumiiutsia.xml",
+        "xml_sha256": "b216cc204375808e9dbeadc8b4ff25ec9ee5405cc0c39880a4163c20e39bb673",
+        "text_sha256": "514d5b0fe099141e178e73662c2483d039c42bb48c5ec168ac96459cad2b9752",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18981",
+        "author": "Мордовець, Данило [Данило Мордовцев]",
+        "title": "Дві долі. Повість : ELTeC видання",
+        "path": "level1/UKR18981_MordovetsDviDoli.xml",
+        "xml_sha256": "777987714a2fa240e63cace0b08b8e3a8aa31bb381fa023194fb730cc215e7d6",
+        "text_sha256": "ee9b408aae7bf4e35083249c7740b3d1c88b1f209cb7d9069ee2edbcce0441f3",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18991",
+        "author": "Кониський, Олександр",
+        "title": "Хвора душа (споминки баби Оришки Прядчихи) : ELTeC видання",
+        "path": "level1/UKR18991_KonyskyiKhvoraDusha.xml",
+        "xml_sha256": "111f03a159babd0bb4571416ef7515202423ead56665fe4b8a3615e43cf7719f",
+        "text_sha256": "ac992dcde2d9409ee8fbb35321def2ad7b28fdf9f3eed7fc3ca959be8f266c24",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18992",
+        "author": "Кониський, Олександр",
+        "title": "Баба Явдоха : ELTeC видання",
+        "path": "level1/UKR18992_KonyskyiBabaIavdokha.xml",
+        "xml_sha256": "3cd65b0a910537ba1f08f8570176189098c23129d0875e07b4686746cd81eb4f",
+        "text_sha256": "23d05cd706ba39b01aea7a3529d08b6dfea7960ad17b60dec41abe80e69a7385",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19023",
+        "author": "Маковей, Осип",
+        "title": "Клопоти Савчихи : ELTeC видання",
+        "path": "level1/UKR19023_MakoveiKlopotySavchykhy.xml",
+        "xml_sha256": "e3cb50a5bdb4fb942432ee220c7136161208ea9614ac525c5f3b3016c964ee03",
+        "text_sha256": "23c868c7ae576f5e34dc7cf56976c6a3d2998e321065f592c4efb1ca58fedebd",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19112",
+        "author": "Хоткевич, Гнат",
+        "title": "Камінна душя : ELTeC видання",
+        "path": "level1/UKR19112_KhotkevychKaminnaDushia.xml",
+        "xml_sha256": "72c828ee856e9bc325e10405f06fffcea7b753a329982e06026274c2b1073034",
+        "text_sha256": "a61bd3121fcb1cff4323f7165c03298c03c68c293b23e9a15dca46aa9a781833",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19122",
+        "author": "Яцків, Михайло",
+        "title": "Блискавиці. Суспільна студія : ELTeC видання",
+        "path": "level1/UKR19122_IatskivBlyskavytsi.xml",
+        "xml_sha256": "921fff086873ea65028c920f073822c2abb1c5513f3d60cbf404e687a49af2ab",
+        "text_sha256": "9e02768647ead21fdd687e315226541e048716179e4abab933e839f2b2daee44",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19172",
+        "author": "Винниченко, Володимир",
+        "title": "Записки Кирпатого Мефістофеля. Роман : ELTeC видання",
+        "path": "level1/UKR19172_VynnychenkoZapyskyKyrpatohoMefistofelia.xml",
+        "xml_sha256": "3759e64adbb017708a25721dfac38c6aa7fa4bbd8ba46189e24f8be68295c243",
+        "text_sha256": "450779cc0aad5b5d7f6bd41db3f3559fa21a408d49f0bc1c071427aacfef167c",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19181",
+        "author": "Назарук, Осип",
+        "title": "Князь Ярослав Осмомисл. Історична повість : ELTeC видання",
+        "path": "level1/UKR19181_NazarukKniazYaroslavOsmomysl.xml",
+        "xml_sha256": "1e4967c489248fc7acf8df6784a808a5208de05561fd9a3bf8421b12824d1f3a",
+        "text_sha256": "df0af92e9e4951cc3df2401c278dfddce50507fe96f0ca98416de39c20f71999",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      }
+    ],
+    "calibration": [
+      {
+        "id": "UKR18611",
+        "author": "Нечуй-Вітер, А. [Олександра Куліш-Білозерська]",
+        "title": "Не було змалку - не буде й до'станку : ELTeC видання",
+        "path": "level1/UKR18611_KulishBilozerskaNeBuloZmalku.xml",
+        "xml_sha256": "611266b4dc31804b05f91547a140ce931da1c34077efc2231be1d7dedcc99b4b",
+        "text_sha256": "5913ab7bcb3538a308169c74a65b62e60ea609e3cccbf489f97f4a012c920c1c",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18722",
+        "author": "Мирний, Панас [Панас Рудченко]",
+        "title": "Лихий попутав. Оповідання : ELTeC видання",
+        "path": "level1/UKR18722_MyrnyiLykhyiPoputav.xml",
+        "xml_sha256": "a994f2bb2b8aef3e2cba1c547e990c9c33bf9d149c01df12859a69bda3a12e05",
+        "text_sha256": "d8211a9209fcfc8d88d67aadd729b23e5ae5fc05eda4420adfe858b2682b66aa",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18791",
+        "author": "Стороженко, Олекса",
+        "title": "Марко Проклятий. Поема : ELTeC видання",
+        "path": "level1/UKR18791_StorozhenkoMarkoProkliatyi.xml",
+        "xml_sha256": "0e96877b3c9de7d457344b9c165e74dba5c8b60948415e6f7a4ce03ed7a53f9c",
+        "text_sha256": "0ef6729d744e74feaeb743eb7def08e5a995def6506c95b94eb2b492625dcde7",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18871",
+        "author": "Пчілка, Олена [Ольга Косач]",
+        "title": "Товаришки : Оповідання : ELTeC видання",
+        "path": "level1/UKR18871_PchilkaTovaryshky.xml",
+        "xml_sha256": "5d38bc2b3e8ba393551657ec00f4ee1941453efd24b27a3723045bd785219fea",
+        "text_sha256": "246067b54e424b493254af4291a34284b6fde1174c57999fe78a876ee4750a41",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18993",
+        "author": "Левицький, Іван [Іван Нечуй-Левицький]",
+        "title": "Гетьман Іван Виговський. Історична повість : ELTeC видання",
+        "path": "level1/UKR18993_LevytskyiHetmanIvanVyhovskyi.xml",
+        "xml_sha256": "12d4c54dc035f7238ad03f95625e3c2f8e73cc5c440727f27c92d9e6a9f4ce49",
+        "text_sha256": "829191e88e2c3e0da8eeb7ab633e1f54cd425043dfbeb8b48e7356795a0dcd02",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19024",
+        "author": "Романова, Одарка",
+        "title": "Акула. Оповідання : ELTeC видання",
+        "path": "level1/UKR19024_RomanovaAkula.xml",
+        "xml_sha256": "a6a3db5a05ccc1be51ed1645d391aa9d2d107dc2d4b654f5bb71f9ca855e918a",
+        "text_sha256": "13090c9d26287ea462b86c75289d802d06aa073d30466ab53ff791e6d58ed8ee",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19051",
+        "author": "Чернявський, Микола",
+        "title": "Vae victis!.. (Оповідання) : ELTeC видання",
+        "path": "level1/UKR19051_CherniavskyiVaeVictis.xml",
+        "xml_sha256": "b3d4b96257817d4cd085a2c89309400161f789b1c31dd9708f72db5e0d8c231e",
+        "text_sha256": "565c6584587f14efae60d63e7669f5ec179aed53eeb3736c1bb42990223c3e07",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19092",
+        "author": "Мирний, Панас [Панас Рудченко]",
+        "title": "Дурниця. Оповіданнє : ELTeC видання",
+        "path": "level1/UKR19092_MyrnyiDurnytsia.xml",
+        "xml_sha256": "49700972b6e24491d619bd52008cbb4235b01be30611c2654faca5ed36775149",
+        "text_sha256": "c5821ea7260e9c8d3a4c904387399c4e0e238d7f8ee4f7c6a7d9229873b026c0",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19111",
+        "author": "Тесленко, Архип",
+        "title": "Страчене життє : ELTeC видання",
+        "path": "level1/UKR19111_TeslenkoStracheneZhyttie.xml",
+        "xml_sha256": "d1616e89979f64474a4e6506f7154d8b3183ff8fd89c793e90beec2be41a0860",
+        "text_sha256": "cbe54de8bdd0f911374f28a7e54676435e559af8f13d04a51ceee2ceaffe5c5d",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19113",
+        "author": "Воробкевич, Сидір",
+        "title": "Месть чорногорця. Образ з минувшости сербських чорногорців : ELTeC видання",
+        "path": "level1/UKR19113_VorobkevychMestChornohortsia.xml",
+        "xml_sha256": "ec0f2f1c0f9279339b8969ba69479fd154f05ea28277019d39647fc5195d2aab",
+        "text_sha256": "0b9773ad3b75e6d4109478438c2cb637ce93e244a158bef4dcecd8730cd56714",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19121",
+        "author": "Коцюбинський, Михайло",
+        "title": "Тіні забутих предків. : ELTeC видання",
+        "path": "level1/UKR19121_KotsiubynskyiTiniZabutykhPredkiv.xml",
+        "xml_sha256": "e7f0e05dd6a7201ae082ba9fc7c8e35cbb0bbb92fadbffcf5a471fc6aab52192",
+        "text_sha256": "9e4862eabfc7d70ba3552ae5f7c2dcafbb71395804a028c3fbcbae43f9d39da3",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19171",
+        "author": "Мартович, Лесь",
+        "title": "Забобон. Повість : ELTeC видання",
+        "path": "level1/UKR19171_MartovychZabobon.xml",
+        "xml_sha256": "a43586f07379c47601963a70dee7b79f0985f462963c7e5501e6f09abdd7fb12",
+        "text_sha256": "e122a4cf3179a23f229cfc803934af3c0e257ab7582388861d5545b37b876135",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19201",
+        "author": "Королів-Старий, Василь",
+        "title": "Чмелик. Роман для юнацтва з ілюстраціями : ELTeC видання",
+        "path": "level1/UKR19201_KorolivChmelyk.xml",
+        "xml_sha256": "4b0016be4cb2df931e3c6d5bbb364517b652532151ab54038e8ab83dcad07bb0",
+        "text_sha256": "3cb0cd9348b4a7d08eea6e66b0d86b0e3c0fa4cf221b118237d0332327cd2a5e",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      }
+    ],
+    "evaluation": [
+      {
+        "id": "UKR18411",
+        "author": "Квітка-Основ'яненко, Григорій",
+        "title": "Сердешна Оксана : ELTeC видання",
+        "path": "level1/UKR18411_KvitkaSerdeshnaOksana.xml",
+        "xml_sha256": "7c50afd10b289f99bb02ad4fb384f635c84962b022d8b9a13aed0a2ccd8a0b67",
+        "text_sha256": "d44422eaedeab65a2cb7ea1c1db4a402082d0811c952229dc61f89c98dd58b9d",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18581",
+        "author": "Квітка-Основ'яненко, Григорій",
+        "title": "Конотопська відьма : ELTeC видання",
+        "path": "level1/UKR18581_KvitkaKonotopskaVidma.xml",
+        "xml_sha256": "889d354bb0474cd01ebc61efa6f6c5b5cbb0c0e39f822747d87ee3b799152a0a",
+        "text_sha256": "2c1f0f069328a9e10d36682fd02a099ff65b56f8ae223f8de591e10b0aff9701",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18582",
+        "author": "Квітка-Основ'яненко, Григорій",
+        "title": "Козир-дівка : ELTeC видання",
+        "path": "level1/UKR18582_KvitkaKozyrDivka.xml",
+        "xml_sha256": "0f1c63f49896bf3185c1a3a2c7a64da76268f5f9ce9fed29ef24a3ac3bd1df1f",
+        "text_sha256": "0c76891f037095a5c44a54713273a3465fdbbbfd6c95e5d5a8378ba7936a2bae",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18583",
+        "author": "Вовчок, Марко [Марія Вілінська]",
+        "title": "Козачка : ELTeC видання",
+        "path": "level1/UKR18583_VovchokKozachka.xml",
+        "xml_sha256": "046a1137e4606b6c8df794abdcc7d5916b4b948e3f704564099a9ded66e2f9f7",
+        "text_sha256": "3bddec4105791f79e942bf08a686946a43b5a381b341e38f304768950e60a1eb",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18621",
+        "author": "Вовчок, Марко [Марія Вілінська]",
+        "title": "Інститутка : ELTeC видання",
+        "path": "level1/UKR18621_VovchokInstytutka.xml",
+        "xml_sha256": "935688ac47cb9d3e7985d48d58a7921fbd4897ed43cc53f7afc58d57ee7934ed",
+        "text_sha256": "5b93ef735f63fb15d4aa15489646add48bb8b147586d79582418ffe882b06919",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18622",
+        "author": "Вовчок, Марко [Марія Вілінська]",
+        "title": "Від себе не втечеш : ELTeC видання",
+        "path": "level1/UKR18622_VovchokVidSebeNeVtechesh.xml",
+        "xml_sha256": "c30612987be30c18cfdc3844790ffcbc76734897b1512d508d5ad3095f1deae3",
+        "text_sha256": "a5faff365062ca2d050becca23e867926d18941c203111f30719d215f0fdd9a8",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18651",
+        "author": "Вовчок, Марко [Марія Вілінська]",
+        "title": "Дев'ять братів і десята сестриця Галя : ELTeC видання",
+        "path": "level1/UKR18651_VovchokDeviatBrativ.xml",
+        "xml_sha256": "b3332ca8b0d59d2eab5d9a81982853d4194ebc12e1b7e6ad332c7052641a5d69",
+        "text_sha256": "43e2266b448789aaf92d4773ca232a1cb44601242196ab87260957c7549a4a33",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18831",
+        "author": "Франко, Іван",
+        "title": "Захар Беркут : Образ громадського життя Карпатської Русі в XIII віці : ELTeC видання",
+        "path": "level1/UKR18831_FrankoZakharBerkut.xml",
+        "xml_sha256": "98b6ca10ead44ff7c4afe38449762b8c9d45c51d7f3247846e6ed39c0f756661",
+        "text_sha256": "3515f5a0d731ef07f6ecda2e7273bd92a668b9d56edb0fcf46c935fe7b8fa8fd",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18841",
+        "author": "Франко, Іван",
+        "title": "Boa constrictor : Повість : ELTeC видання",
+        "path": "level1/UKR18841_FrankoBoaConstrictor.xml",
+        "xml_sha256": "043c2b97858e517f8b7829c7a5c4b4171165ec28bbd724ff7abd5dcdf951ca1b",
+        "text_sha256": "210aa6d7bd3e8c637e299eaf49db574caac71e0be6e4528dc23234341039ed00",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18941",
+        "author": "Українка, Леся [Лариса Косач]",
+        "title": "Жаль. Оповідання : ELTeC видання",
+        "path": "level1/UKR18941_UkrainkaZhal.xml",
+        "xml_sha256": "99e2f99ae3b9dfb17b07f73fb7f446dd9bdb8a67836492679d0e9cae39305f76",
+        "text_sha256": "c066235103fde8498f87e5c33f62b27ffb18e9b7f13cced030409e276377c892",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR18942",
+        "author": "Кобилянська, Ольга",
+        "title": "Людина. Повість з життя жіночого : ELTeC видання",
+        "path": "level1/UKR18942_KobylianskaLiudyna.xml",
+        "xml_sha256": "92c451c0192606775a80eb4f63262118fd90ad5440c25dc8f2cfd494b133442f",
+        "text_sha256": "5d93071fe69d5ca31a2b216bc79205f61083c7dc7a4a7a8a2d4900c40936245e",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19001",
+        "author": "Франко, Іван",
+        "title": "Перехресні стежки : ELTeC видання",
+        "path": "level1/UKR19001_FrankoPerekhresniStezhky.xml",
+        "xml_sha256": "7a155de928216b35ef063053ffb88e6621c3d4247b7fcb6691687daa9b1acc79",
+        "text_sha256": "809513ce7464313ef81b33cb46c4724fe908c580a453db9f1ad99ef1f979ad6c",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19011",
+        "author": "Грінченко, Борис",
+        "title": "Серед темної ночі : ELTeC видання",
+        "path": "level1/UKR19011_HrinchenkoSeredTemnoiNochi.xml",
+        "xml_sha256": "8a308ebb622c3fd8eb9f31e4f14f6f518b977a361a45088d60c250579a32331e",
+        "text_sha256": "9139a29cf6943282bee9f82074811193691a48c578903ea95b7702bbbbd23f4e",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19012",
+        "author": "Українка, Леся [Лариса Косач]",
+        "title": "Над морем. Оповідання : ELTeC видання",
+        "path": "level1/UKR19012_UkrainkaNadMorem.xml",
+        "xml_sha256": "d6e2e6154bf25f95531d6a948f30045b0a1bdb4060ade373d68be4200385c672",
+        "text_sha256": "759752b82e8e4cad7e3652aa6c73dfc26c3b486b759446a604dc1ef475523451",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19021",
+        "author": "Грінченко, Борис",
+        "title": "Під тихими вербами : ELTeC видання",
+        "path": "level1/UKR19021_HrinchenkoPidTykhymyVerbamy.xml",
+        "xml_sha256": "c3bbec167d01bd0db6f4ff53b077ccf95f2e8844bb9475320e6a89e61dc0f5c3",
+        "text_sha256": "19ce622a1a3ee20892586f84e2b0af732fed18956156217e18be5e217af506d6",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19022",
+        "author": "Кобилянська, Ольга",
+        "title": "Земля. Оповідання : ELTeC видання",
+        "path": "level1/UKR19022_KobylianskaZemlia.xml",
+        "xml_sha256": "71dec190bb908a53ebe71206b89b274d70bed3f85638fbdbb051a4b682ea33ad",
+        "text_sha256": "47ec17d45b874477e8ea4699166dc3104e7acef4880f62d769a0b6cdbe8abd4b",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19052",
+        "author": "Українка, Леся [Лариса Косач]",
+        "title": "Приязнь (Оповідання з життя волинського Полісся) : ELTeC видання",
+        "path": "level1/UKR19052_UkrainkaPryiazn.xml",
+        "xml_sha256": "d3baa1c0a863532cbc0671b2c94036f06b252a3efb04c30ee2577ff8ddb1d01c",
+        "text_sha256": "5204dc6a2adcf79dd3b9e1b8b76ad764764c355474134707ec7fe4808552bd2a",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19091",
+        "author": "Кобилянська, Ольга",
+        "title": "В неділю рано зілля копала. (Оповідання) : ELTeC видання",
+        "path": "level1/UKR19091_KobylianskaVNediliuRanoZilliaKopala.xml",
+        "xml_sha256": "a534021fc12234da104f708a26e9ee2cd92b2a45ef2edecfb022833f7e5accf7",
+        "text_sha256": "2f2e4e958474fec87265834b9793efa63a440372dcd62f7b08e2048cc2f347c4",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19101",
+        "author": "Грінченко, Борис",
+        "title": "Брат на брата. Оповідання : ELTeC видання",
+        "path": "level1/UKR19101_HrinchenkoBratNaBrata.xml",
+        "xml_sha256": "9c2dee0ecd19090410bb6d2f538202514109f37e8c70fad17892a8fcda9a7711",
+        "text_sha256": "573bb8a4ca7569f8810d5314c7aa972ea6968c9acd90cec61fded148dd8292e3",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19191",
+        "author": "Кащенко, Адріан",
+        "title": "Борці за правду. Історичне оповідання : ELTeC видання",
+        "path": "level1/UKR19191_KashchenkoBortsiZaPravdu.xml",
+        "xml_sha256": "ab0a5062c4bc4fa618373984cc77e670f79ca0e59dd77f871d119dba04ffc93a",
+        "text_sha256": "cb00ee821da83f72e9d8273a357bbb511012791f9e587f05c0b4095291737ff2",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19192",
+        "author": "Кащенко, Адріан",
+        "title": "З Дніпра на Дунай. Оповідання з часів скасування Запорозької Січі : ELTeC видання",
+        "path": "level1/UKR19192_KashchenkoZDnipraNaDunai.xml",
+        "xml_sha256": "4149343fd29d05fde4fed906cac118b9d0a060c472be5d025e122f8166217e51",
+        "text_sha256": "0562a58c607d0fa9eb3aaa9ba4368924a1329c5fa2670a91b1e9fe3ffd83d6d0",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "id": "UKR19193",
+        "author": "Кащенко, Адріан",
+        "title": "Під Корсунем. Історична повість : ELTeC видання",
+        "path": "level1/UKR19193_KashchenkoPidKorsunem.xml",
+        "xml_sha256": "769efcba37b3773cc5826302a781c964a709b5c0625b567f25623896449dde71",
+        "text_sha256": "625cff4a79f8701ec61b01bf303d57f0899ac940eb7c1bac100a436fd1fa0e87",
+        "licence": "https://creativecommons.org/licenses/by/4.0/"
+      }
+    ]
+  }
+}

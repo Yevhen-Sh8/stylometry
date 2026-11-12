@@ -12,10 +12,13 @@ write files.  The top-level run_pipeline() orchestrates the full analysis.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import re
-import string
+import unicodedata
 from collections import Counter
+from collections.abc import Callable
+from dataclasses import dataclass
 from itertools import combinations
 from pathlib import Path
 from urllib.parse import urlparse
@@ -48,8 +51,150 @@ from scipy.spatial.distance import squareform, cdist
 from sklearn.decomposition import PCA
 from sklearn.manifold import MDS, TSNE
 
+from core.reference import Reference, choose_reference, load_references
+
+# Поріг без еталона (історичне значення DIMS) і частка випадкових пар, ближчих
+# за автоматичний поріг з еталоном.
+DEFAULT_THRESHOLD = 0.8
+DEFAULT_FLAG_PERCENTILE = 1.0
+
+_REFERENCES_CACHE: dict[str, Reference] | None = None
+
+
+def _references() -> dict[str, Reference]:
+    global _REFERENCES_CACHE
+    if _REFERENCES_CACHE is None:
+        _REFERENCES_CACHE = load_references()
+    return _REFERENCES_CACHE
+
 
 SHORT_TEXT_WARNING_TOKENS = 500
+# Обсяг тексту для надійної атрибуції за Delta: від ~2 500 слів (Eder 2015,
+# «Does size matter?», DSH 30(2)); нижче 500 — результат лише орієнтовний.
+RELIABLE_TEXT_TOKENS = 2500
+TEXT_BOOTSTRAP_BLOCK = 50
+
+
+def length_level(tokens: int) -> str:
+    """Достатність обсягу тексту: too_short (<500), preliminary (<2500), reliable."""
+    if tokens < SHORT_TEXT_WARNING_TOKENS:
+        return "too_short"
+    if tokens < RELIABLE_TEXT_TOKENS:
+        return "preliminary"
+    return "reliable"
+
+
+def pair_verdict(distance: float, threshold: float, ci_hi: float | None,
+                 min_tokens: int) -> str:
+    """strong — пара ближча за поріг навіть з урахуванням похибки і тексту досить;
+    possible — ближча за поріг, але похибка чи обсяг не дають певності; none."""
+    if distance >= threshold:
+        return "none"
+    if ci_hi is not None and ci_hi < threshold and min_tokens >= SHORT_TEXT_WARNING_TOKENS:
+        return "strong"
+    return "possible"
+
+
+def bootstrap_text_ci(
+    tokenised: dict[str, list[str]],
+    features: list[str],
+    mean: np.ndarray,
+    sd: np.ndarray,
+    metric: str = "burrows",
+    n_iterations: int = 200,
+    block: int | None = None,
+    random_state: int | None = 42,
+) -> dict[tuple[str, str], dict[str, float]]:
+    """Довірчий інтервал відстані через перевибірку ТЕКСТУ.
+
+    Кожен документ ріжеться на блоки по `block` токенів; на кожній ітерації з
+    блоків з поверненням збирається документ того самого обсягу, частоти
+    нормуються тими самими (еталонними чи початковими) середніми й відхиленнями,
+    і відстань рахується заново. Так інтервал відображає головне джерело
+    похибки — які саме слова автор випадково вжив, — і для коротких текстів
+    закономірно ширший.
+
+    Відстань між двома перевибраними копіями систематично більша за відстань
+    між оригіналами (обидві копії шумніші), тож процентильний інтервал зміщений
+    угору. Тому інтервал будується навколо фактичної відстані:
+    d ± 1,96·σ, де σ — розкид відстаней у бутстрепі (нижня межа ≥ 0).
+    Розмір блоку кожного документа — 1/20 його довжини, 10–50 токенів.
+    Окремі потоки випадкових чисел забезпечують стабільність при додаванні
+    джерел або зміні їх порядку. Назва джерела входить у seed, щоб однакові
+    тексти двох джерел перевибиралися незалежно.
+    """
+    labels = list(tokenised)
+    rngs = []
+    block_sizes = []
+    for label in labels:
+        toks = tokenised[label]
+        seed = None
+        if random_state is not None:
+            payload = json.dumps([random_state, label, toks], ensure_ascii=False).encode("utf-8")
+            seed = int.from_bytes(hashlib.sha256(payload).digest()[:16], "big")
+        rngs.append(np.random.default_rng(seed))
+        block_sizes.append(block if block is not None else
+                           int(min(TEXT_BOOTSTRAP_BLOCK, max(10, len(toks) // 20))))
+    idx = {w: i for i, w in enumerate(features)}
+    sd_safe = np.where(sd > 0, sd, 1.0)
+
+    blocks_per_doc: list[np.ndarray] = []
+    lengths: list[int] = []
+    for doc, label in enumerate(labels):
+        toks = tokenised[label]
+        doc_block = block_sizes[doc]
+        counts = []
+        for i in range(0, max(len(toks), 1), doc_block):
+            c = np.zeros(len(features))
+            piece = toks[i:i + doc_block]
+            for t in piece:
+                j = idx.get(t)
+                if j is not None:
+                    c[j] += 1
+            counts.append((c, len(piece)))
+        mat = np.array([c for c, _ in counts])
+        sizes = np.array([n for _, n in counts], dtype=float)
+        blocks_per_doc.append((mat, sizes))
+        lengths.append(len(counts))
+
+    def _dist(z: np.ndarray) -> np.ndarray:
+        if metric == "cosine":
+            return np.nan_to_num(cdist(z, z, metric="cosine"), nan=1.0)
+        return cdist(z, z, metric="cityblock") / len(features)
+
+    full = np.empty((len(labels), len(features)))
+    for d, (mat, sizes) in enumerate(blocks_per_doc):
+        total = sizes.sum()
+        full[d] = (mat.sum(axis=0) / (total if total > 0 else 1.0) - mean) / sd_safe
+    observed = _dist(full)
+
+    pairs = list(combinations(range(len(labels)), 2))
+    samples = np.empty((n_iterations, len(pairs)))
+    for it in range(n_iterations):
+        z = np.empty((len(labels), len(features)))
+        for d, (mat, sizes) in enumerate(blocks_per_doc):
+            pick = rngs[d].integers(0, lengths[d], size=lengths[d])
+            total = sizes[pick].sum()
+            freq = mat[pick].sum(axis=0) / (total if total > 0 else 1.0)
+            z[d] = (freq - mean) / sd_safe
+        dist = _dist(z)
+        for k, (i, j) in enumerate(pairs):
+            samples[it, k] = dist[i, j]
+
+    std = samples.std(axis=0, ddof=1) if n_iterations > 1 else np.zeros(len(pairs))
+    out = {}
+    for k, (i, j) in enumerate(pairs):
+        d = float(observed[i, j])
+        out[(labels[i], labels[j])] = {
+            "lo": max(0.0, d - 1.96 * float(std[k])),
+            "hi": d + 1.96 * float(std[k]),
+            "mean": d,
+            "std": float(std[k]),
+            "block": block_sizes[i] if block_sizes[i] == block_sizes[j] else None,
+            "block_a": block_sizes[i],
+            "block_b": block_sizes[j],
+        }
+    return out
 DEFAULT_WEIGHTS = {
     "content": 0.28,
     "coord": 0.20,
@@ -275,10 +420,26 @@ SOURCE_QUALITY_PROFILES = _load_source_quality_profiles(SOURCE_QUALITY_FILE)
 #  TOKENISATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-_STRIP_TABLE = str.maketrans(
-    "", "",
-    string.punctuation + string.digits + "«»—–„""''…·•№₴€$%°±×÷"
-)
+# Версія правил токенізації. Змінюється разом із будь-якою зміною правил,
+# бо від неї залежать словник MFW і еталонна статистика.
+TOKENIZER_VERSION = "ct-tok-2"
+
+# Усі варіанти апострофа зводяться до одного ASCII-знака: інакше «пам’ять»,
+# «пам'ять» і «памʼять» рахуються як різні слова або зникають.
+_APOSTROPHES = str.maketrans({c: "'" for c in "\u2019\u2018\u02bc\u02b9\u0060\u00b4\u2032"})
+
+# Невидимі символи, що трапляються всередині слів (м'який перенос, нульової
+# ширини) — прибираються без пробілу, щоб не розривати слово.
+_INVISIBLE_RE = re.compile("[\u00ad\u200b\u200c\u200d\u2060\ufeff]")
+
+# Слово = послідовність літер; усередині дозволені апостроф і дефіс
+# («пам'ять», «будь-який»). Усе інше (розділові знаки, цифри, емодзі, символи)
+# — роздільник, тож «слово,слово» дає два слова, а «Привіт🔥» — «привіт».
+_WORD_RE = re.compile(r"[^\W\d_]+(?:['-][^\W\d_]+)*")
+
+# @згадки — це імена акаунтів, а не слова автора.
+_MENTION_RE = re.compile(r"(?<![\w@])@\w+")
+
 
 
 # URL, e-mail та telegram-хендли видаляються ДО зняття пунктуації, інакше
@@ -308,13 +469,31 @@ _BOILERPLATE_STOPWORDS = {
 }
 
 
+def _normalise_text(text: str) -> str:
+    """Спільна нормалізація для всіх видів токенізації (ct-tok-2).
+
+    NFC (щоб «й» з двох кодових точок збігався з однією), нижній регістр,
+    прибирання знаків наголосу й невидимих символів, єдиний апостроф,
+    видалення URL, e-mail, t.me-посилань і @згадок.
+    """
+    text = unicodedata.normalize("NFD", text)
+    text = text.replace("\u0301", "").replace("\u0300", "")
+    text = unicodedata.normalize("NFC", text).lower()
+    text = _INVISIBLE_RE.sub("", text)
+    text = text.translate(_APOSTROPHES)
+    text = _URL_EMAIL_RE.sub(" ", text)
+    return _MENTION_RE.sub(" ", text)
+
+
+def _words(text: str) -> list[str]:
+    """Усі слова тексту за правилами ct-tok-2, без фільтрів довжини й стоп-слів."""
+    return _WORD_RE.findall(_normalise_text(text))
+
+
 def clean_and_tokenise(text: str) -> list[str]:
-    """Lowercase, drop URLs/e-mails, strip punctuation/digits, return alphabetic
-    tokens (len≥2) without web boilerplate (нав./рекл. слова, URL-фрагменти)."""
-    text = _URL_EMAIL_RE.sub(" ", text.lower())
-    text = text.translate(_STRIP_TABLE)
-    return [t for t in text.split()
-            if t.isalpha() and len(t) > 1 and t not in _BOILERPLATE_STOPWORDS]
+    """Слова (довжина ≥ 2) без веб-«хрому» (нав./рекл. слова)."""
+    return [t for t in _words(text)
+            if len(t) > 1 and t not in _BOILERPLATE_STOPWORDS]
 
 
 _UA_SPECIFIC = set("іїєґІЇЄҐ")
@@ -376,12 +555,15 @@ def detect_corpus_languages(corpus: dict[str, str]) -> dict:
             "рекомендується аналізувати одномовні корпуси."
         )
     # Попередження про короткі тексти
-    short_docs = [lbl for lbl, txt in corpus.items() if len(txt.split()) < 500]
+    short_docs = [lbl for lbl, txt in corpus.items()
+                  if len(clean_and_tokenise(txt)) < RELIABLE_TEXT_TOKENS]
     if short_docs:
         warnings.append(
-            f"Короткі тексти ({len(short_docs)} із {len(corpus)}): "
-            "надійний Burrows Delta потребує ≥ 500 слів (Burrows 2002, Eder 2013). "
-            "Telegram-пости та новинні нотатки дають ненадійні результати."
+            f"Мало тексту ({len(short_docs)} із {len(corpus)} джерел мають менше "
+            f"{RELIABLE_TEXT_TOKENS} слів): для надійного висновку потрібно "
+            f"{RELIABLE_TEXT_TOKENS}–5000 слів на джерело (Eder 2015); нижче "
+            f"{SHORT_TEXT_WARNING_TOKENS} слів результат лише орієнтовний. "
+            "Об'єднайте більше дописів кожного джерела."
         )
     warning = " | ".join(warnings) if warnings else None
     return {
@@ -397,12 +579,11 @@ def char_ngrams(text: str, n: int = 3) -> list[str]:
 
     Рекомендовано для коротких текстів (<500 токенів) та міжмовних порівнянь
     (Kestemont 2014, "Function Words in Authorship Attribution").
-    Пунктуація і цифри видаляються, пробіли колапсуються у одинарний ' '.
+    Береться послідовність слів за правилами ct-tok-2, розділена одинарним пробілом.
     """
     if n < 2:
         raise ValueError("n має бути ≥ 2 для char-n-gram режиму.")
-    cleaned = text.lower().translate(_STRIP_TABLE)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    cleaned = " ".join(_words(text))
     if len(cleaned) < n:
         return []
     return [cleaned[i:i + n] for i in range(len(cleaned) - n + 1)]
@@ -483,8 +664,7 @@ FUNCTION_WORDS = {
 def _function_word_tokens(text: str) -> list[str]:
     """Токени-функціональні слова (включно з однолітерними службовими, які
     звичайний токенайзер відкидає). Для feature_type='function'."""
-    text = text.lower().translate(_STRIP_TABLE)
-    return [t for t in text.split() if t in FUNCTION_WORDS]
+    return [t for t in _words(text) if t in FUNCTION_WORDS]
 
 
 def tokenise_corpus(
@@ -581,6 +761,19 @@ def burrows_delta(z: pd.DataFrame) -> pd.DataFrame:
     n_features = z.shape[1]
     raw        = cdist(z.values.astype(float), z.values.astype(float), metric="cityblock")
     return pd.DataFrame(raw / n_features, index=labels, columns=labels)
+
+
+def cosine_delta(z: pd.DataFrame) -> pd.DataFrame:
+    """Cosine Delta (Smith & Aldridge 2011; Evert et al. 2017): 1 − cos між z-векторами.
+
+    Нормалізація довжини вектора робить метрику стійкішою за класичний Delta,
+    коли тексти відрізняються кількістю «нетипових» слів. Значення 0…2.
+    """
+    labels = z.index.tolist()
+    raw = cdist(z.values.astype(float), z.values.astype(float), metric="cosine")
+    raw = np.nan_to_num(raw, nan=1.0)
+    np.fill_diagonal(raw, 0.0)
+    return pd.DataFrame(raw, index=labels, columns=labels)
 
 
 def bootstrap_delta_ci(
@@ -1470,6 +1663,118 @@ def build_dims_assessment(
     }
 
 
+@dataclass
+class StylometryResult:
+    """Стилометрична частина аналізу: ознаки, z-оцінки, відстані й пороги пар."""
+    ref: "Reference | None"
+    reference_info: dict
+    mfw: list[str]
+    tf: pd.DataFrame
+    z: pd.DataFrame
+    z_mean: np.ndarray
+    z_sd: np.ndarray
+    dist_df: pd.DataFrame
+    doc_tokens: dict[str, int]
+    threshold: float
+    threshold_source: str
+    metric: str
+    pair_threshold: Callable[[str, str], float]
+    percentile: Callable[[str, str, float], "float | None"]
+
+    def flagged_pairs(self) -> list[tuple[str, str, float]]:
+        """Пари (a, b, відстань), ближчі за власний поріг пари, за зростанням відстані."""
+        labels = self.dist_df.index.tolist()
+        pairs = [(a, b, float(self.dist_df.loc[a, b])) for a, b in combinations(labels, 2)]
+        return sorted((p for p in pairs if p[2] < self.pair_threshold(p[0], p[1])),
+                      key=lambda p: p[2])
+
+
+def compute_stylometry(
+    tokenised: dict[str, list[str]],
+    *,
+    mfw_n: int = 100,
+    threshold: float | None = None,
+    min_doc_freq: int = 2,
+    feature_type: str = "word",
+    reference: "Reference | str | None" = "auto",
+    metric: str = "burrows",
+    flag_percentile: float = DEFAULT_FLAG_PERCENTILE,
+) -> StylometryResult:
+    """Ознаки, z-оцінки (за еталоном мови або за самим набором), матриця відстаней
+    і пороги пар. Спільне ядро для run_pipeline, оцінки подій ІАС і валідації.
+
+    threshold=None — автоматичний поріг: з еталоном — відстань, ближче за яку
+    стоять лише flag_percentile % випадкових пар текстів такої довжини (для
+    кожної пари — за довжиною коротшого тексту); без еталона — DEFAULT_THRESHOLD.
+    """
+    if metric not in {"burrows", "cosine"}:
+        raise ValueError("metric має бути 'burrows' або 'cosine'.")
+    ref, reference_info = None, {"used": False, "reason": "disabled"}
+    if isinstance(reference, Reference):
+        ref, reference_info = reference, {"used": True, "language": reference.language,
+                                          "vocab_id": reference.vocab_id}
+    elif reference == "auto":
+        if feature_type == "word":
+            ref, reference_info = choose_reference(tokenised, _references(), TOKENIZER_VERSION)
+        else:
+            reference_info = {"used": False, "reason": "feature_type"}
+
+    if ref is not None:
+        mfw = ref.features(mfw_n)
+        tf  = build_tf_matrix(tokenised, mfw)
+        z   = ref.zscores(tf)
+        _ix = {w: i for i, w in enumerate(ref.words)}
+        z_mean = np.array([ref.mean[_ix[w]] for w in mfw])
+        z_sd   = np.array([ref.sd[_ix[w]] for w in mfw])
+    else:
+        mfw = find_mfw(tokenised, n=mfw_n, min_doc_freq=min_doc_freq)
+        if not mfw:
+            raise ValueError(
+                "Після culling не залишилось MFW. Зменшіть min_doc_freq або "
+                "перевірте, чи тексти мають спільну лексику."
+            )
+        tf  = build_tf_matrix(tokenised, mfw)
+        z   = zscore_matrix(tf)
+        z_mean = tf.mean(axis=0).values
+        z_sd   = tf.std(axis=0, ddof=0).values
+    dist_df = cosine_delta(z) if metric == "cosine" else burrows_delta(z)
+
+    doc_tokens = {label: len(toks) for label, toks in tokenised.items()}
+    automatic_threshold = threshold is None
+    threshold_source = "manual"
+    if threshold is None:
+        threshold, threshold_source = DEFAULT_THRESHOLD, "default"
+        if ref is not None:
+            median_len = int(np.median(list(doc_tokens.values())))
+            auto = ref.threshold_for(median_len, metric, flag_percentile, len(mfw))
+            if auto is None:
+                raise ValueError(
+                    f"Немає калібрування {metric} для {len(mfw)} ознак. "
+                    f"Використайте {ref.calibration_features} MFW або задайте поріг вручну."
+                )
+            threshold, threshold_source = auto, "reference"
+
+    def pair_threshold(a: str, b: str) -> float:
+        if automatic_threshold and ref is not None:
+            value = ref.threshold_for(min(doc_tokens[a], doc_tokens[b]), metric,
+                                      flag_percentile, len(mfw))
+            if value is not None:
+                return value
+        return threshold
+
+    def percentile(a: str, b: str, d: float) -> float | None:
+        if ref is None:
+            return None
+        return ref.percentile(d, metric, min(doc_tokens[a], doc_tokens[b]), len(mfw))
+
+    return StylometryResult(
+        ref=ref, reference_info=reference_info, mfw=mfw, tf=tf, z=z,
+        z_mean=z_mean, z_sd=z_sd, dist_df=dist_df, doc_tokens=doc_tokens,
+        threshold=float(threshold), threshold_source=threshold_source, metric=metric,
+        pair_threshold=pair_threshold, percentile=percentile,
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  MAIN PIPELINE
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1478,7 +1783,7 @@ def run_pipeline(
     corpus: dict[str, str],
     output_dir: Path,
     mfw_n: int = 100,
-    threshold: float = 0.8,
+    threshold: float | None = None,
     source_meta: dict[str, dict] | None = None,
     min_doc_freq: int = 2,
     bootstrap_iterations: int = 500,
@@ -1486,6 +1791,9 @@ def run_pipeline(
     char_n: int = 3,
     projection_method: str = "pca",
     manifestation: str | None = None,
+    reference: "Reference | str | None" = "auto",
+    metric: str = "burrows",
+    flag_percentile: float = DEFAULT_FLAG_PERCENTILE,
 ) -> dict:
     """
     Run the complete stylometric pipeline.
@@ -1495,7 +1803,14 @@ def run_pipeline(
     corpus      : {label: clean_text}  — at least 2 documents required
     output_dir  : directory where PNG / CSV outputs are written
     mfw_n       : number of Most Frequent Words to use as features
-    threshold   : Burrows' Delta threshold for flagging coordination
+    threshold   : поріг відстані для «підозрілих» пар; None — автоматичний:
+                  з еталоном — відстань, ближче за яку стоять лише
+                  flag_percentile % випадкових пар текстів такої довжини;
+                  без еталона — DEFAULT_THRESHOLD (0.8)
+    reference   : "auto" — еталон мови з Data/reference (якщо всі тексти однією
+                  мовою й є еталон); None — статистики з самого набору (як було);
+                  або готовий Reference
+    metric      : "burrows" (середня різниця z-оцінок) або "cosine" (Cosine Delta)
 
     Returns
     -------
@@ -1513,16 +1828,20 @@ def run_pipeline(
 
     # ── Pipeline steps ────────────────────────────────────────────────────
     language_report = detect_corpus_languages(corpus)
+    if metric not in {"burrows", "cosine"}:
+        raise ValueError("metric має бути 'burrows' або 'cosine'.")
     tokenised     = tokenise_corpus(corpus, feature_type=feature_type, char_n=char_n)
-    mfw           = find_mfw(tokenised, n=mfw_n, min_doc_freq=min_doc_freq)
-    if not mfw:
-        raise ValueError(
-            "Після culling не залишилось MFW. Зменшіть min_doc_freq або "
-            "перевірте, чи тексти мають спільну лексику."
-        )
-    tf            = build_tf_matrix(tokenised, mfw)
-    z             = zscore_matrix(tf)
-    dist_df       = burrows_delta(z)
+
+    sm = compute_stylometry(
+        tokenised, mfw_n=mfw_n, threshold=threshold, min_doc_freq=min_doc_freq,
+        feature_type=feature_type, reference=reference, metric=metric,
+        flag_percentile=flag_percentile,
+    )
+    ref, reference_info = sm.ref, sm.reference_info
+    mfw, tf, z, z_mean, z_sd = sm.mfw, sm.tf, sm.z, sm.z_mean, sm.z_sd
+    dist_df, doc_tokens = sm.dist_df, sm.doc_tokens
+    threshold, threshold_source = sm.threshold, sm.threshold_source
+    _pair_threshold, _pct = sm.pair_threshold, sm.percentile
 
     dendrogram_path = output_dir / "dendrogram.png"
     pca_path        = output_dir / "pca_plot.png"
@@ -1533,10 +1852,14 @@ def run_pipeline(
     ci_map: dict[tuple[str, str], dict[str, float]] = {}
     branch_support: dict[frozenset[str], float] = {}
     if bootstrap_iterations and bootstrap_iterations > 0:
-        ci_map = bootstrap_delta_ci(z, n_iterations=bootstrap_iterations)
-        branch_support = bootstrap_branch_support(
-            z, n_iterations=min(bootstrap_iterations, 200)
+        ci_map = bootstrap_text_ci(
+            tokenised, mfw, z_mean, z_sd, metric=metric,
+            n_iterations=bootstrap_iterations,
         )
+        if metric == "burrows":
+            branch_support = bootstrap_branch_support(
+                z, n_iterations=min(bootstrap_iterations, 200)
+            )
 
     save_dendrogram(dist_df, dendrogram_path, branch_support=branch_support)
     projection_meta = save_projection_plot(
@@ -1561,8 +1884,8 @@ def run_pipeline(
         key=lambda x: x[2],
     )
     flagged = [
-        (a, b, d, classify_severity(d, threshold))
-        for a, b, d in all_pairs if d < threshold
+        (a, b, d, classify_severity(d, _pair_threshold(a, b)))
+        for a, b, d in all_pairs if d < _pair_threshold(a, b)
     ]
 
     deltas = np.array([d for _, _, d in all_pairs])
@@ -1624,6 +1947,25 @@ def run_pipeline(
         "char_n":          char_n,
         "language_report": language_report,
         "threshold":       threshold,
+        "threshold_source": threshold_source,
+        "metric":          metric,
+        "reference":       reference_info,
+        "pair_percentile": {f"{a}||{b}": _pct(a, b, d) for a, b, d in all_pairs},
+        "pair_threshold": {f"{a}||{b}": _pair_threshold(a, b) for a, b, _ in all_pairs},
+        "doc_tokens":      doc_tokens,
+        "doc_length_level": {k: length_level(v) for k, v in doc_tokens.items()},
+        "pair_percentile_range": {
+            f"{a}||{b}": [_pct(a, b, c["lo"]), _pct(a, b, c["hi"])]
+            for a, b, d in all_pairs
+            if (c := _ci_for(a, b)) is not None and ref is not None and _pct(a, b, d) is not None
+        },
+        "pair_verdict":    {
+            f"{a}||{b}": pair_verdict(
+                d, _pair_threshold(a, b), (_ci_for(a, b) or {}).get("hi"),
+                min(doc_tokens[a], doc_tokens[b]),
+            )
+            for a, b, d in all_pairs
+        },
         "n_docs":          len(labels),
         "n_pairs":         len(all_pairs),
     }

@@ -29,7 +29,7 @@ from core.monitoring_log import simhash, hamming
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 def _assess(corpus, meta=None, feature_type="word", with_z=False, manifestation=None):
-    """Мінімальний конвеєр → build_dims_assessment (як у продукті)."""
+    """Мінімальний конвеєр → build_dims_assessment (як у застосунку)."""
     tok = a.tokenise_corpus(corpus, feature_type=feature_type)
     mfw = a.find_mfw(tok, n=80, min_doc_freq=1)
     tf = a.build_tf_matrix(tok, mfw)
@@ -187,3 +187,35 @@ def _run_standalone():
 
 if __name__ == "__main__":
     sys.exit(0 if _run_standalone() else 1)
+
+
+# ── токенізатор ct-tok-2 ─────────────────────────────────────────────────────
+def test_tokenizer_punctuation_and_emoji_are_separators():
+    assert a.clean_and_tokenise("слово,слово") == ["слово", "слово"]
+    assert a.clean_and_tokenise("Привіт🔥 друзі") == ["привіт", "друзі"]
+    assert a.clean_and_tokenise("word—word") == ["word", "word"]
+
+
+def test_tokenizer_unifies_apostrophes_and_keeps_hyphenated_words():
+    assert a.clean_and_tokenise("пам’ять пам'ять памʼять") == ["пам'ять"] * 3
+    assert a.clean_and_tokenise("будь-який — інший") == ["будь-який", "інший"]
+
+
+def test_tokenizer_keeps_quoted_and_stressed_words_drops_mentions():
+    assert a.clean_and_tokenise("“цитата” на́голос") == ["цитата", "наголос"]
+    assert a.clean_and_tokenise("@shepit_stolytsi пише") == ["пише"]
+    assert a.clean_and_tokenise("2026 року №5") == ["року"]
+
+
+def test_tokenizer_nfc_and_invisible_chars():
+    decomposed = "йти"          # «й» двома кодовими точками
+    assert a.clean_and_tokenise(decomposed) == ["йти"]
+    assert a.clean_and_tokenise("сло­во") == ["слово"]
+
+
+def test_char_ngrams_do_not_glue_words_across_punctuation():
+    assert a.char_ngrams("Ab,cd!", 3) == ["ab ", "b c", " cd"]
+
+
+def test_tokenizer_version_is_declared():
+    assert a.TOKENIZER_VERSION == "ct-tok-2"
