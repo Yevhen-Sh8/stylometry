@@ -457,7 +457,11 @@ def _parse_analysis_params(data: dict) -> tuple[int, float, int, str, int, str]:
         min_doc_freq = int(data.get("min_doc_freq", 2))
         feature_type = str(data.get("feature_type", "word")).lower()
         char_n = int(data.get("char_n", 3))
-        projection_method = str(data.get("projection", "pca")).lower()
+        # Вебінтерфейс (static/app.js) надсилає "projection_method",
+        # API-клієнти — "projection"; приймаємо обидва імені.
+        projection_method = str(
+            data.get("projection") or data.get("projection_method") or "pca"
+        ).lower()
     except (TypeError, ValueError) as exc:
         raise ValueError("Некоректні параметри аналізу.") from exc
 
