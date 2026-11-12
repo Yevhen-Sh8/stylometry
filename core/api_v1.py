@@ -20,7 +20,7 @@ import os
 
 from flask import Blueprint, current_app, jsonify, request
 
-from core.ias_service import GRADES, AssessmentError, assess_event
+from core.ias_service import GRADES, AssessmentError, assess_event, parse_threshold
 from core.ias_store import ALERT_STATUSES, IasStore
 
 bp = Blueprint("api_v1", __name__, url_prefix="/api/v1")
@@ -78,8 +78,9 @@ def assess():
             event_id=str(data["event_id"]) if data.get("event_id") is not None else None,
             manifestation=data.get("manifestation"),
             mfw_n=int(params.get("mfw_n", 100)),
-            threshold=float(params.get("threshold", 0.8)),
+            threshold=parse_threshold(params.get("threshold")),
             feature_type=str(params.get("feature_type", "word")).lower(),
+            metric=str(params.get("metric", "burrows")).lower(),
             with_confidence=params.get("confidence", True) not in (False, "false", 0, "0"),
         )
     except AssessmentError as exc:

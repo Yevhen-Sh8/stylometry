@@ -36,7 +36,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 
-from core.ias_service import GRADE_RANK, AssessmentError, assess_event
+from core.ias_service import GRADE_RANK, AssessmentError, assess_event, parse_threshold
 from core.ias_store import IasStore
 
 log = logging.getLogger("dims.ias_scanner")
@@ -252,8 +252,9 @@ def _should_alert_again(previous: dict | None, result: dict) -> bool:
 def assessment_params_from_env() -> dict:
     return {
         "mfw_n": int(os.environ.get("DIMS_MFW", "100")),
-        "threshold": float(os.environ.get("DIMS_DELTA_THRESHOLD", "0.8")),
+        "threshold": parse_threshold(os.environ.get("DIMS_DELTA_THRESHOLD", "auto")),
         "feature_type": os.environ.get("DIMS_FEATURE_TYPE", "word").strip().lower(),
+        "metric": os.environ.get("DIMS_METRIC", "burrows").strip().lower(),
     }
 
 

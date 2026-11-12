@@ -35,12 +35,16 @@ R_DIMS = w₁·I_content + w₂·I_coord + w₃·I_dynamics + w₄·I_impact + w
   - Telegram публічний канал — з агрегацією постів в один документ для надійного Burrows Delta
 
 ### Аналіз
-- **Burrows Delta** — стилометрична відстань між джерелами
+- **Burrows Delta** або **Cosine Delta** — стилометрична відстань між джерелами
+- **Еталони мов** (uk, ru, en, pl, de) — z-оцінки за великим корпусом мови, тож
+  відстань пари не залежить від решти набору
+- **Автоматичний поріг θ_Δ** — пара ближча, ніж 99 % випадкових пар незалежних
+  текстів такої довжини; перцентиль і вердикт пари (*strong* / *possible*)
+- **Довірчий інтервал** відстані перевибіркою тексту (блоковий бутстреп)
 - **Дендрограма** — кластеризація за стилем
 - **PCA/MDS/t-SNE** — проєкція джерел у 2D
 - **Теплокарта** відстаней з порогом θ_Δ
-- Виявлення **підозрілих пар** (Delta < порогу)
-- Автоматичне попередження про короткі тексти (< 500 слів)
+- Рівні обсягу тексту: < 500 слів — замало, < 2 500 — орієнтовно, ≥ 2 500 — надійно
 
 ### Звіт
 - PDF/HTML звіт з повним DIMS-розкладом
@@ -211,7 +215,8 @@ docker compose -f deploy/ias/docker-compose.yml --env-file deploy/ias/.env up -d
 stylometry/
 ├── app.py                  # Flask-сервер, всі API-ендпоінти
 ├── core/
-│   ├── analysis.py         # Burrows Delta, detect_script, DIMS-оцінки
+│   ├── analysis.py         # Burrows/Cosine Delta, токенізатор, DIMS-оцінки
+│   ├── reference.py        # Еталонна статистика мов, авто-поріг, перцентилі
 │   ├── extractors.py       # Парсинг PDF, DOCX, RTF, HTML
 │   ├── monitoring_forms.py # Форма щоденного моніторингу
 │   ├── monitoring_log.py   # Журнал сесій
@@ -221,6 +226,9 @@ stylometry/
 │   ├── ias_store.py        # Сховище оцінок і сповіщень сервісу
 │   └── api_v1.py           # REST API v1 (сервісні токени)
 ├── deploy/ias/             # docker-compose + .env.example для ІАС
+├── Data/reference/         # Еталони мов (uk, ru, en, pl, de) + README з ліцензіями
+├── benchmarks/             # Бенчмарк авторства ELTeC-ukr (протокол і результати)
+├── tools/                  # validation.py, build_reference.py, authorship_benchmark.py
 ├── static/
 │   ├── app.js              # Фронтенд (vanilla JS)
 │   └── style.css           # Стилі (темна/світла тема)
@@ -253,7 +261,8 @@ stylometry/
 
 ## Методологічні обмеження
 
-- **Мінімальний обсяг тексту**: Burrows Delta надійний при ≥ 500 слів на документ (Burrows 2002, Eder 2013). Для Telegram-постів рекомендується агрегація 15–20 постів одного каналу в один документ.
+- **Мінімальний обсяг тексту**: надійна атрибуція за Delta потребує ~2 500–5 000 слів на джерело (Eder 2015); нижче 500 слів результат лише орієнтовний. На бенчмарку ELTeC-ukr при 500 словах знаходиться 1–12 % пар спільного автора, при 5 000 — 31–51 % за ≈ 1 % хибних спрацювань (`benchmarks/README.md`). Тому дописи одного каналу агрегуються в один документ.
+- **Автоматичний поріг** відкалібровано для 100 найчастотніших слів (MFW = 100); для іншої кількості ознак, змішаних мов, функціональних слів чи n-грам поріг задається вручну (типово 0,8).
 - **Одномовний корпус**: стилометричний компонент порівнює *стиль*, а не зміст — змішування мовних сімей (кирилиця + латиниця) знижує достовірність.
 - **Відкриті джерела**: застосунок працює виключно з публічно доступними матеріалами.
 
@@ -264,6 +273,10 @@ stylometry/
 - Burrows, J. (2002). *Delta: A measure of stylistic difference and a guide to likely authorship*. Literary and Linguistic Computing, 17(3).
 - Eder, M., Rybicki, J., Kestemont, M. (2016). *Stylometry with R: A package for computational text analysis*. R Journal, 8(1).
 - Kestemont, M. (2014). *Function words in authorship attribution*. EACL Workshop on Language Technology for Digital Humanities.
+- Eder, M. (2015). *Does size matter? Authorship attribution, small samples, big problem*. Digital Scholarship in the Humanities, 30(2), 167–182.
+- Smith, P. W. H., Aldridge, W. (2011). *Improving authorship attribution: Optimizing Burrows' Delta method*. Journal of Quantitative Linguistics, 18(1), 63–88.
+- Evert, S. et al. (2017). *Understanding and explaining Delta measures for authorship attribution*. Digital Scholarship in the Humanities, 32(suppl. 2), ii4–ii16.
+- Yesypenko, D., Nazarenko, M. (2021). *ELTeC-ukr: Ukrainian novel collection* (v0.5.0). Zenodo. https://doi.org/10.5281/zenodo.4662731
 - Наказ Міністерства оборони України № 46 «Методика НУЗРКС».
 
 ---

@@ -29,22 +29,22 @@ from __future__ import annotations
 import os
 from collections import defaultdict
 from datetime import datetime, timezone
-from itertools import combinations
 
 import pandas as pd
 
 from core.analysis import (
+    DEFAULT_THRESHOLD,
     DIMS_MANIFESTATION_TYPES,
     GRADE_THRESHOLDS,
-    SHORT_TEXT_WARNING_TOKENS,
+    RELIABLE_TEXT_TOKENS,
+    bootstrap_text_ci,
     build_dims_assessment,
-    build_tf_matrix,
-    burrows_delta,
     classify_severity,
+    compute_stylometry,
     detect_corpus_languages,
-    find_mfw,
+    length_level,
+    pair_verdict,
     tokenise_corpus,
-    zscore_matrix,
 )
 from core.monitoring_log import hamming, simhash, text_fingerprint
 
@@ -59,6 +59,9 @@ MAX_MATERIALS_PER_EVENT = int(os.environ.get("DIMS_MAX_MATERIALS_PER_EVENT", "50
 MAX_TEXT_CHARS = int(os.environ.get("DIMS_MAX_TEXT_CHARS", "200000"))
 
 FEATURE_TYPES = {"word", "function", "char"}
+METRICS = {"burrows", "cosine"}
+# Ітерацій бутстрепу тексту для довірчого інтервалу відстані пари.
+PAIR_CI_ITERATIONS = 100
 
 # Походження тексту: написаний текст чи ШІ-транскрипт відео/аудіо.
 # Транскрипт — усне мовлення після розпізнавання; його «стиль» частково
@@ -75,6 +78,16 @@ def _transcript_platforms() -> set[str]:
 
 class AssessmentError(ValueError):
     """Некоректні вхідні дані події (повідомлення придатне для показу клієнту)."""
+
+
+def parse_threshold(value) -> float | None:
+    """Поріг із конфігурації чи запиту: None/""/"auto" → автоматичний (None)."""
+    if value is None or (isinstance(value, str) and value.strip().lower() in {"", "auto"}):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise AssessmentError("threshold має бути числом або \"auto\".") from exc
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -265,18 +278,25 @@ def assess_event(
     event_id: str | None = None,
     manifestation: str | None = None,
     mfw_n: int = 100,
-    threshold: float = 0.8,
+    threshold: float | None = None,
     feature_type: str = "word",
+    metric: str = "burrows",
     with_confidence: bool = True,
     alert_policy: dict | None = None,
 ) -> dict:
-    """Повна DIMS-оцінка однієї події. Чиста функція: не пише файлів і стану."""
+    """Повна DIMS-оцінка однієї події. Чиста функція: не пише файлів і стану.
+
+    threshold=None — автоматичний поріг за еталоном мови (пара ближча, ніж
+    99 % випадкових пар текстів такої довжини); без еталона — 0.8.
+    """
     if feature_type not in FEATURE_TYPES:
         raise AssessmentError("feature_type має бути 'word', 'function' або 'char'.")
+    if metric not in METRICS:
+        raise AssessmentError("metric має бути 'burrows' або 'cosine'.")
     if not 20 <= int(mfw_n) <= 500:
         raise AssessmentError("mfw_n має бути в діапазоні 20-500.")
-    if not 0.1 <= float(threshold) <= 2.0:
-        raise AssessmentError("threshold має бути в діапазоні 0.1-2.0.")
+    if threshold is not None and not 0.01 <= float(threshold) <= 2.0:
+        raise AssessmentError("threshold має бути в діапазоні 0.01-2.0 або auto.")
     manifestation = (manifestation or "").strip().lower() or None
     if manifestation and manifestation not in DIMS_MANIFESTATION_TYPES:
         raise AssessmentError(
@@ -291,23 +311,63 @@ def assess_event(
     coordination_assessable = len(corpus) >= 2
     flagged: list[dict] = []
     z = None
+    used_threshold = float(threshold) if threshold is not None else DEFAULT_THRESHOLD
+    stylometry_info: dict = {"threshold_source": "manual" if threshold is not None else "default",
+                             "reference": {"used": False, "reason": "single_source"}}
 
     if coordination_assessable:
         tok = tokenise_corpus(corpus, feature_type=feature_type)
-        mfw = find_mfw(tok, n=int(mfw_n), min_doc_freq=2) or find_mfw(tok, n=int(mfw_n), min_doc_freq=1)
-        if not mfw:
+        sm = None
+        for min_doc_freq in (2, 1):
+            try:
+                sm = compute_stylometry(tok, mfw_n=int(mfw_n), threshold=threshold,
+                                        min_doc_freq=min_doc_freq, feature_type=feature_type,
+                                        metric=metric)
+                break
+            except ValueError as exc:
+                if "калібрування" in str(exc):
+                    raise AssessmentError(str(exc)) from exc
+        if sm is None:
             raise AssessmentError("Тексти не мають спільних ознак для стилометрії.")
-        z = zscore_matrix(build_tf_matrix(tok, mfw))
-        dist = burrows_delta(z)
-        for a, b in combinations(dist.index.tolist(), 2):
-            d = float(dist.loc[a, b])
-            if d < threshold:
-                sev = classify_severity(d, threshold)
-                oa, ob = meta[a]["text_origin"], meta[b]["text_origin"]
-                flagged.append({"a": a, "b": b, "delta": round(d, 4),
-                                "severity": sev["en"].lower(),
-                                "cross_origin": oa != ob or "mixed" in (oa, ob)})
-        flagged.sort(key=lambda p: p["delta"])
+        z, dist, used_threshold = sm.z, sm.dist_df, sm.threshold
+        stylometry_info = {"threshold_source": sm.threshold_source,
+                           "reference": sm.reference_info}
+        pairs = sm.flagged_pairs()
+        ci = (bootstrap_text_ci(tok, sm.mfw, sm.z_mean, sm.z_sd, metric=metric,
+                                n_iterations=PAIR_CI_ITERATIONS)
+              if pairs and with_confidence else {})
+        for a, b, d in pairs:
+            pt = sm.pair_threshold(a, b)
+            c = ci.get((a, b)) or ci.get((b, a))
+            oa, ob = meta[a]["text_origin"], meta[b]["text_origin"]
+            pct = sm.percentile(a, b, d)
+            flagged.append({
+                "a": a, "b": b, "delta": round(d, 4),
+                "threshold": round(pt, 4),
+                "percentile": pct,
+                "ci": {"lo": round(c["lo"], 4), "hi": round(c["hi"], 4)} if c else None,
+                "verdict": pair_verdict(d, pt, c["hi"] if c else None,
+                                        min(sm.doc_tokens[a], sm.doc_tokens[b])),
+                "severity": classify_severity(d, pt)["en"].lower(),
+                "cross_origin": oa != ob or "mixed" in (oa, ob),
+            })
+        if not sm.reference_info.get("used"):
+            reason = sm.reference_info.get("reason")
+            warnings.append(
+                "Еталон мови не застосовано"
+                + (" (джерела різними мовами)" if reason == "mixed_languages" else
+                   " (мову не розпізнано)" if reason == "unknown_language" else "")
+                + " — z-оцінки рахуються за самою подією, поріг "
+                + f"{used_threshold:g}; для 2–3 джерел відстані малоінформативні."
+            )
+        levels = {s: length_level(n) for s, n in sm.doc_tokens.items()}
+        short = [s for s, lv in levels.items() if lv != "reliable"]
+        if short:
+            warnings.append(
+                f"{len(short)} із {len(corpus)} джерел мають < {RELIABLE_TEXT_TOKENS} слів "
+                "навіть після агрегації; для надійного висновку потрібно 2500–5000 слів "
+                "(Eder 2015) — орієнтуйтеся на вердикт пари та довірчий інтервал."
+            )
     else:
         # Одне джерело: Δ-Burrows неможлива; стилометрична частина I_coord = 0.
         warnings.append(
@@ -322,18 +382,11 @@ def assess_event(
                             index=[only_label, "_"], columns=[only_label, "_"])
 
     assessment = build_dims_assessment(
-        tokenised=tok, dist_df=dist, threshold=float(threshold),
+        tokenised=tok, dist_df=dist, threshold=float(used_threshold),
         source_meta=meta, corpus=corpus, manifestation=manifestation,
         z=z if with_confidence else None,
     )
 
-    short = [s for s, t in corpus.items() if len(t.split()) < SHORT_TEXT_WARNING_TOKENS]
-    if short and coordination_assessable:
-        warnings.append(
-            f"{len(short)} із {len(corpus)} джерел мають < {SHORT_TEXT_WARNING_TOKENS} слів "
-            "навіть після агрегації; Δ-Burrows на коротких текстах нестійка "
-            "(Eder 2015: надійно від ~2500 слів) — орієнтуйтеся на довірчий інтервал."
-        )
     origins = {m["text_origin"] for m in meta.values()}
     if coordination_assessable and len(origins) > 1:
         warnings.append(
@@ -369,8 +422,10 @@ def assess_event(
             "sources": {s: m["n_materials"] for s, m in meta.items()},
             "text_origins": {s: m["text_origin"] for s, m in meta.items()},
         },
-        "params": {"mfw_n": int(mfw_n), "threshold": float(threshold),
-                   "feature_type": feature_type},
+        "params": {"mfw_n": int(mfw_n), "threshold": round(float(used_threshold), 4),
+                   "threshold_source": stylometry_info["threshold_source"],
+                   "metric": metric, "feature_type": feature_type,
+                   "reference": stylometry_info["reference"]},
         "source_breakdown": assessment["source_breakdown"],
         "warnings": warnings,
         "methodology": "DIMS (Шерстюк Є.І., НУОУ); пороги сповіщення провізорні",

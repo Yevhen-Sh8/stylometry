@@ -58,7 +58,7 @@ import matplotlib.pyplot as plt
 
 from core.analysis import (
     tokenise_corpus, find_mfw, build_tf_matrix, zscore_matrix, burrows_delta,
-    build_dims_assessment, classify_interest_grade, GRADE_THRESHOLDS,
+    build_dims_assessment, classify_interest_grade, compute_stylometry, GRADE_THRESHOLDS,
 )
 
 GRADES = [g for g, _, _ in GRADE_THRESHOLDS]        # ["F","B","S","SS","SSS"]
@@ -73,8 +73,12 @@ OUT.mkdir(parents=True, exist_ok=True)
 #  Обчислення R_DIMS для однієї події
 # ─────────────────────────────────────────────────────────────────────────────
 def _event_r_dims(sources: list[dict], manifestation: str | None,
-                  threshold: float = 0.8) -> tuple[float, str]:
-    """Мінімальний конвеєр DIMS для однієї події → (R_DIMS, передбачений грейд)."""
+                  threshold: float | None = None) -> tuple[float, str]:
+    """Мінімальний конвеєр DIMS для однієї події → (R_DIMS, передбачений грейд).
+
+    Стилометрія — те саме ядро, що в застосунку (compute_stylometry): еталон мови
+    й автоматичний поріг (threshold=None), без еталона — z-оцінки за подією і 0.8.
+    """
     corpus, meta = {}, {}
     for i, s in enumerate(sources):
         label = s.get("label") or f"s{i+1}"
@@ -96,17 +100,18 @@ def _event_r_dims(sources: list[dict], manifestation: str | None,
         tok = tokenise_corpus({"s1": only, "s2": only})
         mfw = find_mfw(tok, n=100, min_doc_freq=1)
         tf = build_tf_matrix(tok, mfw); z = zscore_matrix(tf); dist = burrows_delta(z)
-        assess = build_dims_assessment(tokenised=tok, dist_df=dist, threshold=threshold,
+        assess = build_dims_assessment(tokenised=tok, dist_df=dist,
+                                       threshold=threshold if threshold is not None else 0.8,
                                        source_meta=meta, corpus=corpus,
                                        manifestation=manifestation)
         return assess["r_dims"], assess["grade"]["grade"]
 
     tok = tokenise_corpus(corpus)
-    mfw = find_mfw(tok, n=100, min_doc_freq=2)
-    if not mfw:
-        mfw = find_mfw(tok, n=100, min_doc_freq=1)
-    tf = build_tf_matrix(tok, mfw); z = zscore_matrix(tf); dist = burrows_delta(z)
-    assess = build_dims_assessment(tokenised=tok, dist_df=dist, threshold=threshold,
+    try:
+        sm = compute_stylometry(tok, mfw_n=100, threshold=threshold, min_doc_freq=2)
+    except ValueError:
+        sm = compute_stylometry(tok, mfw_n=100, threshold=threshold, min_doc_freq=1)
+    assess = build_dims_assessment(tokenised=tok, dist_df=sm.dist_df, threshold=sm.threshold,
                                    source_meta=meta, corpus=corpus,
                                    manifestation=manifestation)
     return assess["r_dims"], assess["grade"]["grade"]
