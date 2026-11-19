@@ -122,6 +122,34 @@ class IasStore:
                             (event_id,)).fetchone()
         return json.loads(row["payload"]) if row else None
 
+    def list_assessments(self, since: str | None = None, limit: int = 5000) -> list[dict]:
+        """Збережені оцінки (повні payload) — для макрорівня (core.gur_threat).
+        since фільтрує за часом оцінки; дати публікацій фільтрує вже агрегатор."""
+        sql = "SELECT payload FROM assessments"
+        args: tuple = ()
+        if since:
+            sql += " WHERE assessed_at >= ?"
+            args = (since,)
+        sql += " ORDER BY assessed_at DESC LIMIT ?"
+        with self._conn() as c:
+            rows = c.execute(sql, args + (int(limit),)).fetchall()
+        return [json.loads(r["payload"]) for r in rows]
+
+    def set_gur(self, event_id: str, gur: dict) -> dict | None:
+        """Замінює блок метаданих ГУР (напрям, ЦА, поширеність…) уже оціненої
+        події на переданий — злиття й валідацію виконує викликач (API).
+        R_DIMS і грейд не змінюються. None — подію не знайдено."""
+        with self._conn() as c:
+            row = c.execute("SELECT payload FROM assessments WHERE event_id=?",
+                            (event_id,)).fetchone()
+            if row is None:
+                return None
+            payload = json.loads(row["payload"])
+            payload["gur"] = gur
+            c.execute("UPDATE assessments SET payload=? WHERE event_id=?",
+                      (json.dumps(payload, ensure_ascii=False), event_id))
+        return payload
+
     # ── сповіщення ───────────────────────────────────────────────────────
     def last_alert_for_event(self, event_id: str) -> dict | None:
         with self._conn() as c:

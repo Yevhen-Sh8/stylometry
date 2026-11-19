@@ -47,6 +47,7 @@ from core.analysis import (
     tokenise_corpus,
 )
 from core.monitoring_log import hamming, simhash, text_fingerprint
+from core.gur_threat import normalise_gur_meta
 
 GRADES = [g for g, _, _ in GRADE_THRESHOLDS]          # F, B, S, SS, SSS
 GRADE_RANK = {g: i for i, g in enumerate(GRADES)}
@@ -283,6 +284,7 @@ def assess_event(
     metric: str = "burrows",
     with_confidence: bool = True,
     alert_policy: dict | None = None,
+    gur: dict | None = None,
 ) -> dict:
     """Повна DIMS-оцінка однієї події. Чиста функція: не пише файлів і стану.
 
@@ -303,7 +305,15 @@ def assess_event(
             "Невідомий manifestation. Допустимі: " + ", ".join(DIMS_MANIFESTATION_TYPES)
         )
 
+    # Метадані макрорівня (ГУР-2016): напрям, сфера, ЦА, поширеність тощо.
+    # На R_DIMS не впливають — лише зберігаються для агрегації (core.gur_threat).
+    try:
+        gur_meta = normalise_gur_meta(gur)
+    except ValueError as exc:
+        raise AssessmentError(str(exc)) from exc
+
     items = _normalise_materials(materials)
+    published = sorted(m["published_at"] for m in items if m["published_at"])
     unique, copy_clusters = _dedupe(items)
     corpus, meta = _aggregate_by_source(unique)
 
@@ -428,5 +438,8 @@ def assess_event(
                    "reference": stylometry_info["reference"]},
         "source_breakdown": assessment["source_breakdown"],
         "warnings": warnings,
+        "period": {"first_published": published[0] if published else None,
+                   "last_published": published[-1] if published else None},
+        "gur": gur_meta,
         "methodology": "DIMS (Шерстюк Є.І., НУОУ); пороги сповіщення провізорні",
     }

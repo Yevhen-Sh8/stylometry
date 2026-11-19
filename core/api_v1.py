@@ -20,6 +20,9 @@ import os
 
 from flask import Blueprint, current_app, jsonify, request
 
+from datetime import date, datetime, timedelta, timezone
+
+from core.gur_threat import assess_threat, normalise_gur_meta
 from core.ias_service import GRADES, AssessmentError, assess_event, parse_threshold
 from core.ias_store import ALERT_STATUSES, IasStore
 
@@ -82,6 +85,7 @@ def assess():
             feature_type=str(params.get("feature_type", "word")).lower(),
             metric=str(params.get("metric", "burrows")).lower(),
             with_confidence=params.get("confidence", True) not in (False, "false", 0, "0"),
+            gur=data.get("gur"),
         )
     except AssessmentError as exc:
         return _error(str(exc), 422)
@@ -99,6 +103,65 @@ def event_assessment(event_id: str):
     if result is None:
         return _error("Подію ще не оцінено.", 404)
     return jsonify({"ok": True, "assessment": result})
+
+
+# ── Макрорівень (прототип ГУР-2016 + доповнення автора) ─────────────────────
+
+@bp.post("/events/<event_id>/gur")
+def set_event_gur(event_id: str):
+    """Експертне задання метаданих макрорівня для оціненої події: напрям ІВ,
+    сфера, ЦА (масштабність об'єктів), поширеність джерел, лічильники
+    негативних повідомлень, залучені особи. Ключ зі значенням null видаляється."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return _error("Очікується JSON-об'єкт із метаданими gur.", 400)
+    store = get_store()
+    current = store.get_assessment(event_id)
+    if current is None:
+        return _error("Подію ще не оцінено.", 404)
+    merged = {**(current.get("gur") or {}), **data}
+    merged = {k: v for k, v in merged.items() if v is not None}
+    try:
+        gur = normalise_gur_meta(merged)
+    except ValueError as exc:
+        return _error(str(exc), 422)
+    store.set_gur(event_id, gur)
+    return jsonify({"ok": True, "event_id": event_id, "gur": gur})
+
+
+def _query_date(name: str) -> date | None:
+    raw = (request.args.get(name) or "").strip()
+    if not raw:
+        return None
+    return datetime.strptime(raw[:10], "%Y-%m-%d").date()
+
+
+@bp.get("/threat-level")
+def threat_level():
+    """Форма ІБ і рівень ІЗ за напрямами й сферами за період (типово —
+    останні 28 днів, тобто 4 тижневі вікна для тренду)."""
+    try:
+        end = _query_date("to") or datetime.now(timezone.utc).date()
+        start = _query_date("from") or end - timedelta(days=27)
+        window_days = int(request.args.get("window_days", 7))
+        delta = float(request.args.get("delta", 0.05))
+    except ValueError:
+        return _error("Некоректні параметри (from/to — YYYY-MM-DD, window_days — ціле, "
+                      "delta — число).", 400)
+    if not 1 <= window_days <= 92 or not 0.0 <= delta <= 1.0:
+        return _error("window_days має бути 1–92, delta — 0–1.", 400)
+    if (end - start).days > 731:
+        return _error("Період не довший за два роки.", 400)
+    spheres = [s for s in (request.args.get("sphere") or "").split(",") if s.strip()] or None
+    # Історія для K_т (тривалість від першої появи напряму) — до двох років назад.
+    since = (start - timedelta(days=731)).isoformat()
+    try:
+        result = assess_threat(get_store().list_assessments(since=since),
+                               start=start, end=end, spheres=spheres,
+                               window_days=window_days, delta=delta)
+    except ValueError as exc:
+        return _error(str(exc), 400)
+    return jsonify(result)
 
 
 # ── Сповіщення ──────────────────────────────────────────────────────────────
