@@ -26,6 +26,7 @@ from core import api_v1
 from core.ias_scanner import SqlEventSource, run_once
 from core.ias_service import AssessmentError, assess_event
 from core.ias_store import IasStore
+from core.gur_threat import merge_gur
 
 POLICY = {"min_grade": "S", "min_coord": 0.40, "min_copy_sources": 3,
           "copy_paste_standalone": True}
@@ -117,15 +118,22 @@ def test_api_expert_gur_and_threat_level(api):
     d = mil["directions"][0]
     assert d["direction"] == "m3" and d["indicator_sources"]["K_d"] == "expert"
     assert d["target_audience"]["audiences"][0]["audience"] == "особовий склад"
-    assert mil["level"]["key"] in {"low", "elevated", "high", "critical"}
-    assert len(mil["series"]) == 2                       # два тижневі вікна
+    assert mil["prototype"]["level"]["key"] in {"low", "elevated", "high", "critical"}
+    assert len(mil["improved"]["series"]) == 2           # два тижневі вікна
+    assert r.get_json()["gur"]["expert_keys"]           # позначено як ввід аналітика
+
+    snap = client.get("/api/v1/threat-level?from=2026-09-29&to=2026-10-12&snapshot=1",
+                      headers=AUTH).get_json()
+    again = client.get(f"/api/v1/threat-level/snapshots/{snap['snapshot_id']}", headers=AUTH)
+    assert again.status_code == 200 and again.get_json()["result"]["period"] == snap["period"]
+    assert client.get("/api/v1/threat-level/snapshots/999", headers=AUTH).status_code == 404
 
 
 def test_api_threat_level_validation_and_auth(api):
     client, _ = api
     assert client.get("/api/v1/threat-level").status_code == 401
     assert client.get("/api/v1/threat-level?from=bad", headers=AUTH).status_code == 400
-    assert client.get("/api/v1/threat-level?window_days=0", headers=AUTH).status_code == 400
+    assert client.get("/api/v1/threat-level?window_days=3", headers=AUTH).status_code == 400
     assert client.get("/api/v1/threat-level?from=2026-10-10&to=2026-10-01",
                       headers=AUTH).status_code == 400
     empty = client.get("/api/v1/threat-level", headers=AUTH)
@@ -166,10 +174,13 @@ def test_scanner_passes_gur_columns_and_preserves_expert_input(ias_db):
     assert stats["assessed"] == 1 and stats["errors"] == 0
     gur = store.get_assessment("ev1")["gur"]
     assert gur["direction"] == "m5" and gur["sphere"] == "military"
-    assert gur["source_reach"] == {"chan_a": "regional", "chan_b": "international"}
+    # поширеність із БД ІАС — атрибут реєстру, а не експертна оцінка (С9)
+    assert gur["registry_reach"] == {"chan_a": "regional", "chan_b": "international"}
+    assert "source_reach" not in gur
 
-    # аналітик додає ЦА через API-рівень сховища; нова публікація → повторна оцінка
-    store.set_gur("ev1", {**gur, "target_audience": ["резервісти"]})
+    # аналітик уточнює напрям і додає ЦА; нова публікація → повторна оцінка
+    store.set_gur("ev1", merge_gur(gur, {"direction": "m2", "target_audience": ["резервісти"]},
+                                   expert=True))
     con = sqlite3.connect(path)
     con.execute("INSERT INTO materials VALUES ('c','ev1','chan_c','2026-10-03T09:00:00',?, "
                 "NULL,'2026-10-03T10:00:00')", (_text(13),))
@@ -178,6 +189,7 @@ def test_scanner_passes_gur_columns_and_preserves_expert_input(ias_db):
     run_once(source, store, None, alert_policy=POLICY)
     gur2 = store.get_assessment("ev1")["gur"]
     assert gur2["target_audience"] == ["резервісти"]     # експертний ввід збережено
+    assert gur2["direction"] == "m2"                     # БД ІАС (m5) не перезаписує експерта
     assert store.get_assessment("ev1")["stats"]["n_sources"] == 3
 
 

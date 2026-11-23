@@ -36,7 +36,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 
-from core.gur_threat import normalise_gur_meta
+from core.gur_threat import merge_gur
 from core.ias_service import GRADE_RANK, AssessmentError, assess_event, parse_threshold
 from core.ias_store import IasStore
 
@@ -267,20 +267,21 @@ def assessment_params_from_env() -> dict:
 
 
 def _event_gur(ev: dict, materials: list[dict], previous: dict | None) -> dict:
-    """Метадані макрорівня для повторної оцінки: попередні (зокрема задані
-    аналітиком через API) зберігаються, а значення з БД ІАС їх оновлюють.
-    Поширеність джерел (K_д) збирається з колонки reach матеріалів."""
+    """Метадані макрорівня для повторної оцінки. Значення з БД ІАС оновлюють
+    попередні, але ключі, задані аналітиком через API (expert_keys), мають
+    пріоритет. Поширеність джерел із колонки reach матеріалів — атрибут
+    реєстру, тому йде в registry_reach, а не в експертне source_reach."""
     prev = dict((previous or {}).get("gur") or {})
-    gur = {**prev, **(ev.get("gur") or {})}
-    source_reach = dict(gur.get("source_reach") or {})
+    incoming = dict(ev.get("gur") or {})
+    registry = dict(prev.get("registry_reach") or {})
     for m in materials:
         if m.get("reach") and m.get("source"):
-            source_reach[m["source"]] = m["reach"]
-    if source_reach:
-        gur["source_reach"] = source_reach
+            registry[m["source"]] = m["reach"]
+    if registry:
+        incoming["registry_reach"] = registry
     # Невалідні метадані з БД ІАС не повинні блокувати саму DIMS-оцінку.
     try:
-        return normalise_gur_meta(gur)
+        return merge_gur(prev, incoming, expert=False)
     except ValueError as exc:
         log.warning("Подія %s: метадані gur відхилено (%s) — залишено попередні.",
                     ev.get("event_id"), exc)

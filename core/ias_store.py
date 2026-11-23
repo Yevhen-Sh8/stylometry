@@ -51,6 +51,12 @@ CREATE TABLE IF NOT EXISTS alerts (
     expert_grade  TEXT,
     comment       TEXT
 );
+CREATE TABLE IF NOT EXISTS threat_snapshots (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at  TEXT NOT NULL,
+    params      TEXT NOT NULL,
+    payload     TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS ix_alerts_event ON alerts(event_id);
 CREATE INDEX IF NOT EXISTS ix_alerts_status ON alerts(status);
 """
@@ -134,6 +140,24 @@ class IasStore:
         with self._conn() as c:
             rows = c.execute(sql, args + (int(limit),)).fetchall()
         return [json.loads(r["payload"]) for r in rows]
+
+    def save_snapshot(self, params: dict, result: dict) -> int:
+        """Фіксує макрооцінку (параметри + результат) з міткою часу."""
+        with self._conn() as c:
+            cur = c.execute(
+                "INSERT INTO threat_snapshots(created_at, params, payload) VALUES(?,?,?)",
+                (_now(), json.dumps(params, ensure_ascii=False),
+                 json.dumps(result, ensure_ascii=False)))
+            return int(cur.lastrowid)
+
+    def get_snapshot(self, snapshot_id: int) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM threat_snapshots WHERE id=?",
+                            (int(snapshot_id),)).fetchone()
+        if row is None:
+            return None
+        return {"snapshot_id": row["id"], "created_at": row["created_at"],
+                "params": json.loads(row["params"]), "result": json.loads(row["payload"])}
 
     def set_gur(self, event_id: str, gur: dict) -> dict | None:
         """Замінює блок метаданих ГУР (напрям, ЦА, поширеність…) уже оціненої

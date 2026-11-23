@@ -22,7 +22,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from datetime import date, datetime, timedelta, timezone
 
-from core.gur_threat import assess_threat, normalise_gur_meta
+from core.gur_threat import assess_threat, merge_gur
 from core.ias_service import GRADES, AssessmentError, assess_event, parse_threshold
 from core.ias_store import ALERT_STATUSES, IasStore
 
@@ -119,10 +119,9 @@ def set_event_gur(event_id: str):
     current = store.get_assessment(event_id)
     if current is None:
         return _error("Подію ще не оцінено.", 404)
-    merged = {**(current.get("gur") or {}), **data}
-    merged = {k: v for k, v in merged.items() if v is not None}
+    data.pop("expert_keys", None)          # позначки експерта ставить сервер, а не клієнт
     try:
-        gur = normalise_gur_meta(merged)
+        gur = merge_gur(current.get("gur"), data, expert=True)
     except ValueError as exc:
         return _error(str(exc), 422)
     store.set_gur(event_id, gur)
@@ -148,20 +147,44 @@ def threat_level():
     except ValueError:
         return _error("Некоректні параметри (from/to — YYYY-MM-DD, window_days — ціле, "
                       "delta — число).", 400)
-    if not 1 <= window_days <= 92 or not 0.0 <= delta <= 1.0:
-        return _error("window_days має бути 1–92, delta — 0–1.", 400)
+    if not 7 <= window_days <= 92 or not 0.0 <= delta <= 1.0:
+        return _error("window_days має бути 7–92 (мінімальний період прототипу — тиждень), "
+                      "delta — 0–1.", 400)
     if (end - start).days > 731:
         return _error("Період не довший за два роки.", 400)
     spheres = [s for s in (request.args.get("sphere") or "").split(",") if s.strip()] or None
-    # Історія для K_т (тривалість від першої появи напряму) — до двох років назад.
+    # Історія для K_т (епізод ІВ напряму) — до двох років назад.
     since = (start - timedelta(days=731)).isoformat()
+    store = get_store()
+    rows = store.list_assessments(since=since, limit=_THREAT_HISTORY_LIMIT + 1)
+    truncated = len(rows) > _THREAT_HISTORY_LIMIT
     try:
-        result = assess_threat(get_store().list_assessments(since=since),
-                               start=start, end=end, spheres=spheres,
-                               window_days=window_days, delta=delta)
+        result = assess_threat(rows[:_THREAT_HISTORY_LIMIT], start=start, end=end,
+                               spheres=spheres, window_days=window_days, delta=delta)
     except ValueError as exc:
         return _error(str(exc), 400)
+    if truncated:
+        result["warnings"].append(
+            f"Історію обрізано до {_THREAT_HISTORY_LIMIT} найновіших оцінок — K_т і результат "
+            "можуть відрізнятися від повного розрахунку; звузьте період.")
+    if request.args.get("snapshot") in ("1", "true"):
+        params = {"from": start.isoformat(), "to": end.isoformat(), "sphere": spheres,
+                  "window_days": window_days, "delta": delta}
+        result["snapshot_id"] = store.save_snapshot(params, result)
     return jsonify(result)
+
+
+@bp.get("/threat-level/snapshots/<int:snapshot_id>")
+def threat_snapshot(snapshot_id: int):
+    """Збережений знімок макрооцінки — для відтворюваності результатів за
+    минулий період (повторні оцінки подій їх не змінюють)."""
+    snap = get_store().get_snapshot(snapshot_id)
+    if snap is None:
+        return _error("Знімок не знайдено.", 404)
+    return jsonify({"ok": True, **snap})
+
+
+_THREAT_HISTORY_LIMIT = 5000
 
 
 # ── Сповіщення ──────────────────────────────────────────────────────────────

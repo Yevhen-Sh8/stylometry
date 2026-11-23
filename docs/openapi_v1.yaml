@@ -83,12 +83,22 @@ paths:
         - {name: from, in: query, schema: {type: string, format: date}, description: 'типово — to мінус 27 днів'}
         - {name: to, in: query, schema: {type: string, format: date}, description: 'типово — сьогодні (UTC)'}
         - {name: sphere, in: query, schema: {type: string}, description: 'коди сфер через кому'}
-        - {name: window_days, in: query, schema: {type: integer, minimum: 1, maximum: 92, default: 7}}
+        - {name: window_days, in: query, schema: {type: integer, minimum: 7, maximum: 92, default: 7}}
+        - {name: snapshot, in: query, schema: {type: boolean}, description: 'зберегти знімок результату (snapshot_id у відповіді)'}
         - {name: delta, in: query, schema: {type: number, minimum: 0, maximum: 1, default: 0.05}}
       responses:
-        '200': {description: Макрооцінка (period, spheres[], data_quality, warnings)}
+        '200': {description: 'Макрооцінка: period, spheres[] (prototype, improved, directions[]), data_quality, warnings'}
         '400': {$ref: '#/components/responses/Error'}
         '401': {$ref: '#/components/responses/Error'}
+  /api/v1/threat-level/snapshots/{snapshot_id}:
+    get:
+      summary: Збережений знімок макрооцінки (відтворюваність)
+      parameters:
+        - {name: snapshot_id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {description: 'snapshot_id, created_at, params, result'}
+        '401': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
   /api/v1/alerts:
     get:
       summary: Перелік сповіщень (новіші першими)
@@ -237,8 +247,9 @@ components:
         target_value: {type: number, minimum: 0.1, maximum: 1.0}
         target_audience: {type: array, items: {type: string}}
         reach: {type: string, enum: [local, regional, national, international]}
-        source_reach: {type: object, additionalProperties: {type: string}}
-        n_negative: {type: integer, minimum: 0}
+        source_reach: {type: object, additionalProperties: {type: string}, description: 'експертна поширеність за джерелами'}
+        registry_reach: {type: object, additionalProperties: {type: string}, description: 'поширеність із реєстру джерел (сканер, колонка reach)'}
+        n_negative: {type: integer, minimum: 0, description: 'потребує n_total'}
         n_total: {type: integer, minimum: 0}
         persons: {type: array, items: {type: string}}
     Assessment:

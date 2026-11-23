@@ -3,57 +3,50 @@
 """
 core/gur_threat.py
 ==================
-Макрорівень оцінювання: від DIMS-оцінок окремих подій до форми ведення
-інформаційної боротьби (ІБ) та рівня інформаційної загрози (ІЗ) за напрямами
-й сферами за період.
+Макрорівень оцінювання: від DIMS-оцінок окремих подій до форми реалізації
+інформаційної загрози (ІЗ) — вона ж форма ведення інформаційної боротьби (ІБ) —
+та рівня ІЗ за напрямами й сферами за період.
 
 Прототип — «Методика виявлення, аналізу та оцінювання інформаційних загроз
-державі у воєнній сфері» (ГУР МО України, 2016), блок аналізу ІЗ, етапи 1–4:
+державі у воєнній сфері» (ГУР МО України, 2016), блок аналізу ІЗ, етапи 1–4
+(позначення в тексті ↔ ключі в коді: K_i, K_т↔K_t, K_д↔K_d, K_о↔K_o, K_j^н↔K_n):
 
-    K_i   — рівень інтенсивності негативного ІВ: частка негативних повідомлень
-            від загальної кількості за період;
+    K_i   — рівень інтенсивності: частка негативних повідомлень за період (с. 24);
     K_т   — тривалість, K_т = x / (x + a); a = 40,56 для x ≤ 365 дн., інакше 19,21
             (формули 1–3, табл. 4);
-    K_д   — поширеність джерел: місцевий 0,25; + регіональний 0,5;
-            + загальнодержавний 0,75; + міжнародний 1,0;
-    K_о   — масштабність об'єктів ІВ: одиночний 0,1–0,3; груповий 0,31–0,7;
-            масовий 0,71–1,0 (експертна оцінка);
+    K_д   — поширеність джерел: 0,25 / 0,5 / 0,75 / 1,0 (с. 26);
+    K_о   — масштабність об'єктів: 0,1–0,3 / 0,31–0,7 / 0,71–1,0 (с. 25–26);
     K_j^н = (K_i + K_т + K_д + K_о) / 4                       (формула 4);
-    форма реалізації ІЗ (атака / акція / операція / кампанія) — табл. 5;
-    Z_k^c = Σ K_j^н / N за напрямами сфери k                  (формула 5);
-    рівень ІЗ — табл. 6.
+    форма реалізації ІЗ — табл. 5 (с. 27);
+    Z_k^c = Σ K_j^н / N                                       (формула 5);
+    рівень ІЗ — табл. 6 (с. 28).
 
-Чотири доповнення автора дисертації повертаються ОКРЕМИМИ полями, щоб
-порівняння «прототип ↔ удосконалена методика» було видно в результаті:
+Результат містить ДВА шари:
 
-    instruments      — інструменти впливу: залучені джерела й особи (зокрема
-                       зі стилометричних пар і кластерів технічних копій DIMS), ЗМІ;
-    target_audience  — цільова аудиторія (ЦА) поряд із K_о;
-    facts            — факти, на яких ґрунтується висновок про форму;
-    trend            — прогноз: зменшення / збільшення / продовження на тому ж рівні.
+    prototype — те, що дає прототип без правил реалізації: форми напрямів, чий
+                діапазон K_j^н за табл. 5 містить значення, Z_k^c і рівень;
+    improved  — удосконалення автора дисертації:
+                * розв'язання неоднозначностей табл. 5 (перекриття й розрив);
+                * узагальнена форма сфери з правилом с. 28;
+                * instruments — інструменти впливу: джерела, скоординовані джерела
+                  (стилометричні пари з вердиктом strong і кластери технічних копій),
+                  залучені особи;
+                * target_audience — цільова аудиторія (ЦА) поряд із K_о;
+                * facts — факти, на яких ґрунтується висновок про форму;
+                * trend — оцінка тенденції: зменшення / збільшення / продовження
+                  на тому ж рівні.
 
-Відповідь на зауваження «немає можливості» отримати кількісні значення базових
-показників: кожен показник має позначку джерела —
-    auto      обчислено з даних моніторингу;
-    expert    введено аналітиком;
-    proxy     провізорний замінник (наприклад, K_i з грейдів DIMS);
-    fallback  обчислено з неповних даних (наприклад, дата оцінки замість дат публікацій).
+Позначки походження кожного базового показника показують, що обчислено з даних,
+а що введено людиною: auto, fallback, expert, expert_subset, expert_midpoint,
+registry, proxy. З даних моніторингу автоматично обчислюється лише K_т; K_i, K_д,
+K_о у відповідному прототипу режимі вводить аналітик або реєстр джерел.
 
-Відступи від прототипу (правила реалізації, НЕ положення ГУР-2016):
-    * табл. 5 має перекриття (акція 0,37–0,69 / операція 0,62–0,88 /
-      кампанія 0,69–1,0) і розрив 0,34–0,37 — форма визначається за мінімальною
-      інтервальною відстанню до профілю табл. 5, а неоднозначність явно
-      позначається (ambiguous + candidates);
-    * межі табл. 6 і рівнів інтенсивності (0–0,25 / 0,26–0,5 …) трактуються
-      як напіввідкриті інтервали (lo; hi];
-    * «змістовні взаємозв'язки» між напрямами / сферами (с. 28) апроксимуються
-      спільними джерелами — це організаційна, а не змістова ознака (proxy);
-    * Z_k^c — точно за формулою 5 (середнє); додатково повертається
-      попереджувальна ознака critical_direction, бо середнє «розчиняє»
-      окремий критичний напрям.
+Відповідність прототипу (conformant) — лише коли всі чотири показники наявні,
+K_i — expert, K_т — auto. Інакше значення провізорні й не можуть слугувати
+підтвердженням методики (у режимі proxy K_i макрорівень залежить від R_DIMS).
 
-Формула R_DIMS і шкала грейдів F…SSS (Наказ МО № 46) тут не змінюються.
-Модуль — чисті функції без I/O.
+Формула R_DIMS і шкала грейдів F…SSS тут не змінюються. Модуль — чисті функції
+без I/O. Правила реалізації описано в docs/gur2016_macro_level_ua.md (розд. 5).
 """
 
 from __future__ import annotations
@@ -65,8 +58,8 @@ from datetime import date, datetime, timedelta
 #  Довідники прототипу
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Сфери життєдіяльності — табл. 1 методики (8 сфер). У табл. 3 перелік інший
-# (зокрема є «інформаційна»), тому невідомі коди сфер приймаються як є.
+# Сфери — табл. 1 прототипу (8 сфер). У табл. 3 перелік інший (є «інформаційна»),
+# тому власні коди сфер також приймаються (нормалізуються до нижнього регістру).
 SPHERES = {
     "foreign_policy": "Зовнішньополітична",
     "state_security": "Державної безпеки",
@@ -88,7 +81,6 @@ _SPHERE_ALIASES = {
 DEFAULT_SPHERE = "military"
 
 # Напрями реалізації ІЗ у воєнній сфері — табл. 2 (стислі формулювання).
-# Дозволено й власні коди напрямів (рядок до 64 символів).
 MILITARY_DIRECTIONS = {
     "m1": "Дискредитація військового керівництва та збройних сил",
     "m2": "Дискредитація операції заявами посадових осіб іноземних держав",
@@ -100,20 +92,18 @@ MILITARY_DIRECTIONS = {
 }
 UNASSIGNED_DIRECTION = "unassigned"
 
-# Рівень інтенсивності K_i (с. 24): верхні межі напіввідкритих інтервалів.
+# Рівень інтенсивності K_i (с. 24): (lo; hi].
 INTENSITY_LEVELS = [
-    (0.20, "low", "низький"),
-    (0.40, "medium", "середній"),
-    (0.60, "elevated", "підвищений"),
-    (0.80, "high", "високий"),
-    (1.00, "critical", "критичний"),
+    (0.20, "low", "низька"),
+    (0.40, "medium", "середня"),
+    (0.60, "elevated", "підвищена"),
+    (0.80, "high", "висока"),
+    (1.00, "critical", "критична"),
 ]
 
-# Тривалість K_т (формули 1–3).
 DURATION_A_UP_TO_YEAR = 40.56
 DURATION_A_OVER_YEAR = 19.21
 
-# Поширеність джерел K_д (с. 26) — береться найширший досягнутий рівень.
 REACH_VALUES = {"local": 0.25, "regional": 0.50, "national": 0.75, "international": 1.00}
 _REACH_ALIASES = {
     "місцевий": "local", "регіональний": "regional",
@@ -121,22 +111,25 @@ _REACH_ALIASES = {
     "міжнародний": "international",
 }
 
-# Масштабність об'єктів K_о (с. 25–26) — експертні межі.
 OBJECT_SCALES = {"single": (0.10, 0.30), "group": (0.31, 0.70), "mass": (0.71, 1.00)}
 _OBJECT_ALIASES = {"одиночний": "single", "груповий": "group", "масовий": "mass"}
 OBJECT_SCALE_LABELS = {"single": "одиночний об'єкт", "group": "груповий об'єкт",
                        "mass": "масовий об'єкт"}
 
-# Рівень ІЗ — табл. 6 (верхні межі напіввідкритих інтервалів).
+# Області значень показників — для інтервалу K_j^н, коли показника бракує.
+INDICATOR_DOMAINS = {"K_i": (0.0, 1.0), "K_t": (0.0, 1.0), "K_d": (0.25, 1.0),
+                     "K_o": (0.10, 1.0)}
+
+# Рівень ІЗ — табл. 6: (lo; hi], 0 належить «низькому».
 THREAT_LEVELS = [
     (0.25, "low", "низький"),
     (0.50, "elevated", "підвищений"),
     (0.75, "high", "високий"),
     (1.00, "critical", "критичний"),
 ]
-CRITICAL_DIRECTION_THRESHOLD = 0.76
 
-# Форми ведення ІБ — табл. 5 (числові межі показників і K_j^н).
+# Форми — табл. 5 (с. 27): межі базових показників і K_j^н (замкнені інтервали).
+# Розриви покомпонентних діапазонів (напр. K_т між 0,15 і 0,26) — властивість прототипу.
 FORMS = ["attack", "action", "operation", "campaign"]
 FORM_RANK = {f: i for i, f in enumerate(FORMS)}
 FORM_PROFILES = {
@@ -162,17 +155,17 @@ FORM_PROFILES = {
     },
 }
 
-# Грейди DIMS (Наказ МО № 46) — без імпорту core.analysis (модуль має бути легким).
 _GRADE_ORDER = ["F", "B", "S", "SS", "SSS"]
 _GRADE_RANK = {g: i for i, g in enumerate(_GRADE_ORDER)}
-# Провізорний замінник K_i: матеріали події з грейдом ≥ S вважаються негативними.
-PROXY_NEGATIVE_MIN_GRADE = "S"
 
-# Провізорні параметри реалізації (калібруються апробацією).
-DEFAULT_WINDOW_DAYS = 7          # мінімальний період узагальнення за ГУР-2016 (с. 5)
-DEFAULT_TREND_DELTA = 0.05       # поріг зміни Z для тренду
-DEFAULT_FORM_TIE_TOL = 0.05      # допуск рівновіддаленості профілів форм
-_TREND_POINTS = 4                # вікон для нахилу тренду
+# ── Провізорні параметри реалізації (рішення автора; калібруються апробацією) ──
+PROXY_NEGATIVE_MIN_GRADE = "S"   # proxy K_i: матеріали події з грейдом ≥ S — «негативні»
+EPISODE_GAP_DAYS = 30            # розрив активності напряму, що починає новий епізод ІВ (K_т)
+DEFAULT_WINDOW_DAYS = 7          # мінімальний період узагальнення за прототипом (с. 5)
+DEFAULT_TREND_DELTA = 0.05       # поріг нахилу Z для тенденції
+DEFAULT_FORM_TIE_TOL = 0.05      # допуск рівновіддаленості профілів у зонах перекриття
+CRITICAL_DIRECTION_LEVEL = "critical"
+_TREND_POINTS = 4
 _MAX_LIST = 50
 
 TREND_LABELS = {
@@ -181,6 +174,9 @@ TREND_LABELS = {
     "stable": "продовження на тому ж рівні",
     "insufficient": "недостатньо даних",
 }
+GUR_KEYS = ("direction", "direction_label", "sphere", "target_scale", "target_value",
+            "target_audience", "reach", "source_reach", "registry_reach",
+            "n_negative", "n_total", "persons")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -188,10 +184,9 @@ TREND_LABELS = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 def duration_coefficient(days: float) -> float:
-    """K_т = x / (x + a) — формули 1–3 прототипу (x — дні негативного ІВ).
-
-    Дві константи a (до року й понад рік) відтворено точно; через це на межі
-    року функція має стрибок — властивість прототипу, а не реалізації."""
+    """K_т = x / (x + a) — формули 1–3 прототипу. Дві константи a відтворено
+    як є; через це на межі року функція має стрибок (властивість прототипу).
+    Значення табл. 4 відтворюються з точністю до округлення прототипу."""
     x = max(0.0, float(days))
     if x == 0:
         return 0.0
@@ -204,12 +199,11 @@ def _level(value: float, table: list[tuple[float, str, str]]) -> dict:
     for upper, key, label in table:
         if v <= upper + 1e-12:
             return {"key": key, "label": label}
-    key, label = table[-1][1], table[-1][2]
-    return {"key": key, "label": label}
+    return {"key": table[-1][1], "label": table[-1][2]}
 
 
 def intensity_level(k_i: float) -> dict:
-    """Рівень інтенсивності K_i: напіввідкриті інтервали (lo; hi]."""
+    """Рівень інтенсивності K_i (с. 24): (lo; hi]."""
     return _level(k_i, INTENSITY_LEVELS)
 
 
@@ -225,7 +219,7 @@ def reach_value(level: str) -> float:
 
 def object_scale_value(scale: str, value: float | None = None) -> tuple[float, str]:
     """K_о: явне експертне значення або (якщо його немає) середина діапазону
-    категорії — останнє є припущенням реалізації і позначається expert_midpoint."""
+    категорії — останнє є припущенням реалізації (expert_midpoint)."""
     key = _canon(scale, OBJECT_SCALES, _OBJECT_ALIASES, "масштабність об'єктів")
     lo, hi = OBJECT_SCALES[key]
     if value is not None:
@@ -233,16 +227,17 @@ def object_scale_value(scale: str, value: float | None = None) -> tuple[float, s
     return round((lo + hi) / 2, 4), "expert_midpoint"
 
 
-def normalized_indicator(k_i, k_t, k_d, k_o) -> tuple[float | None, list[str]]:
-    """K_j^н за формулою 4. Відсутні показники повертаються в списку missing;
-    тоді K_j^н рахується з наявних і позначається як неповний (partial) —
-    таке значення НЕ відповідає прототипу й слугує лише орієнтиром."""
+def normalized_indicator(k_i, k_t, k_d, k_o) -> tuple[float | None, list[str], tuple]:
+    """K_j^н за формулою 4. Якщо показника бракує, K_j^н не визначається
+    (None), а повертається інтервал можливих значень за областями відсутніх
+    показників: прототип вимагає всіх чотирьох."""
     parts = {"K_i": k_i, "K_t": k_t, "K_d": k_d, "K_o": k_o}
-    present = [v for v in parts.values() if v is not None]
     missing = [k for k, v in parts.items() if v is None]
-    if not present:
-        return None, missing
-    return sum(present) / (4 if not missing else len(present)), missing
+    lo = sum(v if v is not None else INDICATOR_DOMAINS[k][0] for k, v in parts.items()) / 4
+    hi = sum(v if v is not None else INDICATOR_DOMAINS[k][1] for k, v in parts.items()) / 4
+    if missing:
+        return None, missing, (round(lo, 4), round(hi, 4))
+    return lo, [], (round(lo, 4), round(lo, 4))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -260,17 +255,16 @@ def _canon(value, valid: dict, aliases: dict, what: str) -> str:
 
 
 def canon_sphere(value) -> str:
-    v = str(value or "").strip()
+    v = str(value or "").strip().lower()
     if not v:
         return DEFAULT_SPHERE
-    low = v.lower()
-    if low in SPHERES:
-        return low
-    if low in _SPHERE_ALIASES:
-        return _SPHERE_ALIASES[low]
+    if v in SPHERES:
+        return v
+    if v in _SPHERE_ALIASES:
+        return _SPHERE_ALIASES[v]
     if len(v) > 64:
         raise ValueError("sphere: не довше 64 символів.")
-    return v  # власний код сфери (див. розбіжність табл. 1 і табл. 3)
+    return v
 
 
 def _str_list(value, what: str, limit: int = _MAX_LIST) -> list[str]:
@@ -286,6 +280,13 @@ def _str_list(value, what: str, limit: int = _MAX_LIST) -> list[str]:
     return out
 
 
+def _reach_map(value, what: str) -> dict:
+    if not isinstance(value, dict):
+        raise ValueError(f"{what} має бути об'єктом {{джерело: рівень}}.")
+    return {str(k)[:200]: _canon(v, REACH_VALUES, _REACH_ALIASES, what)
+            for k, v in list(value.items())[:500]}
+
+
 def normalise_gur_meta(meta) -> dict:
     """Валідує й нормалізує метадані події для макрорівня. Повертає {} для
     порожнього вводу. Невідомі ключі ігноруються. Помилки — ValueError."""
@@ -294,7 +295,7 @@ def normalise_gur_meta(meta) -> dict:
     if not isinstance(meta, dict):
         raise ValueError("gur має бути об'єктом.")
     out: dict = {}
-    direction = str(meta.get("direction") or "").strip()
+    direction = str(meta.get("direction") or "").strip().lower()
     if direction:
         if len(direction) > 64:
             raise ValueError("gur.direction: не довше 64 символів.")
@@ -324,13 +325,9 @@ def normalise_gur_meta(meta) -> dict:
         out["target_audience"] = ta
     if meta.get("reach"):
         out["reach"] = _canon(meta["reach"], REACH_VALUES, _REACH_ALIASES, "gur.reach")
-    sr = meta.get("source_reach")
-    if sr:
-        if not isinstance(sr, dict):
-            raise ValueError("gur.source_reach має бути об'єктом {джерело: рівень}.")
-        out["source_reach"] = {str(k)[:200]: _canon(v, REACH_VALUES, _REACH_ALIASES,
-                                                     "gur.source_reach")
-                               for k, v in list(sr.items())[:500]}
+    for key in ("source_reach", "registry_reach"):
+        if meta.get(key):
+            out[key] = _reach_map(meta[key], f"gur.{key}")
     for key in ("n_negative", "n_total"):
         if meta.get(key) is not None and meta.get(key) != "":
             try:
@@ -340,12 +337,42 @@ def normalise_gur_meta(meta) -> dict:
             if n < 0:
                 raise ValueError(f"gur.{key} має бути цілим ≥ 0.")
             out[key] = n
-    if "n_negative" in out and "n_total" in out and out["n_negative"] > out["n_total"]:
+    if "n_negative" in out and "n_total" not in out:
+        raise ValueError("gur.n_negative потребує gur.n_total — загальної кількості "
+                         "повідомлень (з копіями) за період, від якої рахується частка.")
+    if "n_negative" in out and out["n_negative"] > out["n_total"]:
         raise ValueError("gur.n_negative не може перевищувати gur.n_total.")
     persons = _str_list(meta.get("persons"), "gur.persons")
     if persons:
         out["persons"] = persons
+    ek = meta.get("expert_keys")
+    if ek:
+        if not isinstance(ek, list):
+            raise ValueError("gur.expert_keys має бути списком.")
+        out["expert_keys"] = sorted({k for k in ek if k in GUR_KEYS and k in out})
+        if not out["expert_keys"]:
+            out.pop("expert_keys")
     return out
+
+
+def merge_gur(previous: dict | None, incoming: dict | None, *, expert: bool) -> dict:
+    """Злиття метаданих. Значення, введені аналітиком (expert_keys), мають
+    пріоритет над даними БД ІАС; ввід аналітика (expert=True) позначає свої
+    ключі як експертні. Ключ зі значенням None видаляється."""
+    prev = dict(previous or {})
+    inc = dict(incoming or {})
+    expert_keys = set(prev.get("expert_keys") or [])
+    merged = {**prev, **inc}
+    if expert:
+        expert_keys |= {k for k, v in inc.items() if v is not None and k in GUR_KEYS}
+        expert_keys -= {k for k, v in inc.items() if v is None}
+    else:
+        for k in expert_keys:
+            if k in prev:
+                merged[k] = prev[k]
+    merged = {k: v for k, v in merged.items() if v is not None}
+    merged["expert_keys"] = sorted(expert_keys)
+    return normalise_gur_meta(merged)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -389,19 +416,19 @@ def _event_from_assessment(a: dict) -> dict | None:
     stats = a.get("stats") or {}
     coord = a.get("coordination") or {}
     grade = (a.get("grade") or {}).get("grade") if isinstance(a.get("grade"), dict) else a.get("grade")
-    n_unique = int(stats.get("n_unique_materials") or stats.get("n_materials") or 0)
+    n_mat = int(stats.get("n_materials") or stats.get("n_unique_materials") or 0)
+    direction = str(gur.get("direction") or "").strip().lower() or UNASSIGNED_DIRECTION
     return {
         "event_id": str(a["event_id"]),
         "sphere": canon_sphere(gur.get("sphere")),
         "sphere_assumed": not gur.get("sphere"),
-        "direction": gur.get("direction") or UNASSIGNED_DIRECTION,
+        "direction": direction,
         "direction_label": gur.get("direction_label"),
         "first": min(first, last),
         "last": max(first, last),
         "dates_source": dates_source,
         "grade": grade,
-        "r_dims": a.get("r_dims"),
-        "n_unique": n_unique,
+        "n_materials": n_mat,
         "sources": dict(stats.get("sources") or {}),
         "flagged_pairs": list(coord.get("flagged_pairs") or []),
         "copy_clusters": list(coord.get("copy_clusters") or []),
@@ -409,17 +436,25 @@ def _event_from_assessment(a: dict) -> dict | None:
     }
 
 
+def _overlaps(e: dict, start: date, end: date) -> bool:
+    return e["first"] <= end and e["last"] >= start
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  Базові показники напряму (етап 2)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _coordinated_sources(events: list[dict]) -> Counter:
+    """Скоординовані джерела: стилометричні пари з вердиктом strong (надійні за
+    похибкою й обсягом тексту) і кластери технічних копій щонайменше з двох
+    джерел. Пари possible до координації не зараховуються."""
     c: Counter = Counter()
     for e in events:
         for p in e["flagged_pairs"]:
-            for s in (p.get("a"), p.get("b")):
-                if s:
-                    c[s] += 1
+            if p.get("verdict") == "strong":
+                for s in (p.get("a"), p.get("b")):
+                    if s:
+                        c[s] += 1
         for cl in e["copy_clusters"]:
             if int(cl.get("n_sources") or len(cl.get("sources") or [])) >= 2:
                 for s in cl.get("sources") or []:
@@ -427,53 +462,66 @@ def _coordinated_sources(events: list[dict]) -> Counter:
     return c
 
 
-def _direction_indicators(events: list[dict], first_seen: date) -> dict:
-    """Етап 2 прототипу для одного напряму: K_i, K_т, K_д, K_о з позначками джерел."""
-    # K_i — частка негативних повідомлень
-    neg = tot = 0
-    n_expert = n_proxy = 0
-    for e in events:
-        g = e["gur"]
-        total = g.get("n_total") if g.get("n_total") is not None else e["n_unique"]
-        total = max(int(total or 0), 0)
-        if g.get("n_negative") is not None:
-            n_expert += 1
-            neg += min(int(g["n_negative"]), total) if total else int(g["n_negative"])
-            tot += max(total, int(g["n_negative"]))
+def _episode_days(intervals: list[tuple[date, date]], end: date, gap: int) -> tuple[int, date]:
+    """Тривалість поточного епізоду ІВ на дату end: інтервали активності
+    напряму зливаються, якщо розрив між ними не більший за gap днів; береться
+    останній епізод, що почався не пізніше end. x — календарні дні включно."""
+    ivs = sorted((a, min(b, end)) for a, b in intervals if a <= end)
+    ep_start, ep_end = ivs[0]
+    for a, b in ivs[1:]:
+        if (a - ep_end).days > gap:
+            ep_start, ep_end = a, b
         else:
-            n_proxy += 1
+            ep_end = max(ep_end, b)
+    return (ep_end - ep_start).days + 1, ep_start
+
+
+def _direction_indicators(events: list[dict], history: list[dict], end: date,
+                          gap: int, k_t_override: float | None = None) -> dict:
+    # K_i — частка негативних повідомлень: лише лічильники аналітика; інакше proxy
+    expert = [e for e in events if e["gur"].get("n_negative") is not None]
+    if expert:
+        neg = sum(e["gur"]["n_negative"] for e in expert)
+        tot = sum(e["gur"]["n_total"] for e in expert)
+        k_i_src = "expert" if len(expert) == len(events) else "expert_subset"
+    else:
+        neg = tot = 0
+        for e in events:
             is_neg = _GRADE_RANK.get(e["grade"] or "", -1) >= _GRADE_RANK[PROXY_NEGATIVE_MIN_GRADE]
-            neg += total if is_neg else 0
-            tot += total
+            tot += e["n_materials"]
+            neg += e["n_materials"] if is_neg else 0
+        k_i_src = "proxy"
     k_i = (neg / tot) if tot else None
-    k_i_src = "expert" if n_proxy == 0 else ("proxy" if n_expert == 0 else "mixed")
 
-    # K_т — тривалість від першої появи напряму до останньої, календарні дні включно
-    last = max(e["last"] for e in events)
-    days = (last - first_seen).days + 1
-    k_t = duration_coefficient(days)
-    k_t_src = "fallback" if any(e["dates_source"] == "fallback" for e in events) else "auto"
+    # K_т — тривалість поточного епізоду ІВ напряму (з урахуванням історії)
+    days, ep_start = _episode_days([(e["first"], e["last"]) for e in history], end, gap)
+    k_t = duration_coefficient(days) if k_t_override is None else k_t_override
+    k_t_src = "fallback" if any(e["dates_source"] == "fallback" for e in history) else "auto"
 
-    # K_д — найширший досягнутий рівень поширеності
-    reach_levels = []
+    # K_д — найширший досягнутий рівень (тлумачення реалізації: максимум)
+    expert_levels, registry_levels = [], []
     for e in events:
         g = e["gur"]
         if g.get("reach"):
-            reach_levels.append(g["reach"])
-        reach_levels.extend((g.get("source_reach") or {}).values())
-    k_d = max((REACH_VALUES[r] for r in reach_levels), default=None)
-    widest = max(reach_levels, key=lambda r: REACH_VALUES[r]) if reach_levels else None
+            expert_levels.append(g["reach"])
+        expert_levels.extend((g.get("source_reach") or {}).values())
+        registry_levels.extend((g.get("registry_reach") or {}).values())
+    levels = expert_levels + registry_levels
+    k_d = max((REACH_VALUES[r] for r in levels), default=None)
+    widest = max(levels, key=lambda r: REACH_VALUES[r]) if levels else None
+    k_d_src = None if k_d is None else ("expert" if expert_levels else "registry")
 
-    # K_о — найбільша масштабність об'єктів серед подій напряму
-    scales = [e["gur"]["target_scale"] for e in events if e["gur"].get("target_scale")]
-    values = [e["gur"]["target_value"] for e in events if e["gur"].get("target_value") is not None]
-    k_o, k_o_src, scale = None, None, None
-    if values:
-        k_o, k_o_src = max(values), "expert"
-        scale = next((s for s, (lo, hi) in OBJECT_SCALES.items() if lo - 1e-9 <= k_o <= hi + 1e-9), None)
-    elif scales:
-        scale = max(scales, key=lambda s: OBJECT_SCALES[s][1])
-        k_o, k_o_src = object_scale_value(scale)
+    # K_о — найбільша масштабність серед подій (явні значення й середини категорій)
+    cand = []
+    for e in events:
+        g = e["gur"]
+        if g.get("target_value") is not None:
+            cand.append((g["target_value"], "expert"))
+        elif g.get("target_scale"):
+            cand.append(object_scale_value(g["target_scale"]))
+    k_o, k_o_src = max(cand, key=lambda t: t[0]) if cand else (None, None)
+    scale = None if k_o is None else next(
+        (s for s, (lo, hi) in OBJECT_SCALES.items() if lo - 1e-9 <= k_o <= hi + 1e-9), None)
 
     return {
         "K_i": None if k_i is None else round(k_i, 4),
@@ -481,14 +529,13 @@ def _direction_indicators(events: list[dict], first_seen: date) -> dict:
         "K_d": k_d,
         "K_o": None if k_o is None else round(k_o, 4),
         "sources": {"K_i": k_i_src if k_i is not None else None, "K_t": k_t_src,
-                    "K_d": "expert" if k_d is not None else None, "K_o": k_o_src},
+                    "K_d": k_d_src, "K_o": k_o_src},
         "details": {
             "negative_messages": neg, "total_messages": tot,
             "intensity_level": intensity_level(k_i)["label"] if k_i is not None else None,
-            "duration_days": days, "first_seen": first_seen.isoformat(),
-            "last_seen": last.isoformat(),
-            "widest_reach": widest,
-            "target_scale": scale,
+            "episode_days": days, "episode_start": ep_start.isoformat(),
+            "episode_gap_days": gap,
+            "widest_reach": widest, "target_scale": scale,
         },
     }
 
@@ -505,61 +552,61 @@ def _gap(v: float, lo: float, hi: float) -> float:
     return 0.0
 
 
-def classify_form(indicators: dict, k_n: float, tie_tol: float = DEFAULT_FORM_TIE_TOL) -> dict:
-    """Форма за табл. 5 для одного напряму.
+def profile_distance(indicators: dict, form: str) -> float:
+    """Сума інтервальних відстаней базових показників до профілю форми (табл. 5)."""
+    prof = FORM_PROFILES[form]
+    return round(sum(_gap(float(indicators[k]), *prof[k])
+                     for k in ("K_i", "K_t", "K_d", "K_o") if indicators.get(k) is not None), 4)
 
-    Правило реалізації (не прототипу): сума інтервальних відстаней наявних
-    показників і K_j^н до профілю форми; найближча форма — основна, а всі
-    форми в межах tie_tol від неї, а також усі, чий діапазон K_j^н містить
-    значення, — кандидати. Більше одного кандидата → ambiguous."""
+
+def classify_form(indicators: dict, k_n: float, tie_tol: float = DEFAULT_FORM_TIE_TOL) -> dict:
+    """Форма напряму за табл. 5.
+
+    Прототип: форма — та, чий діапазон K_j^н містить значення (prototype_forms).
+    Якщо така форма одна — вона і є результатом. Правило реалізації діє лише
+    там, де прототип неоднозначний: у перекриттях (0,62–0,69; 0,69–0,88) і в
+    розриві 0,34–0,37 обирається форма з найменшою відстанню базових показників
+    до профілю; форми в межах tie_tol від неї лишаються кандидатами."""
     by_kn = [f for f in FORMS
              if FORM_PROFILES[f]["K_n"][0] - 1e-9 <= k_n <= FORM_PROFILES[f]["K_n"][1] + 1e-9]
-    distance = {}
-    for f in FORMS:
-        prof = FORM_PROFILES[f]
-        d = _gap(k_n, *prof["K_n"])
-        for key in ("K_i", "K_t", "K_d", "K_o"):
-            v = indicators.get(key)
-            if v is not None:
-                d += _gap(float(v), *prof[key])
-        distance[f] = round(d, 4)
-    best = min(FORMS, key=lambda f: (distance[f], FORM_RANK[f]))
-    near = [f for f in FORMS if distance[f] - distance[best] <= tie_tol + 1e-12]
-    candidates = sorted(set(near) | set(by_kn), key=FORM_RANK.get)
+    distance = {f: profile_distance(indicators, f) for f in FORMS}
+    if len(by_kn) == 1:
+        form, cands, rule = by_kn[0], by_kn, "prototype_K_n"
+    else:
+        pool = by_kn or ["attack", "action"]          # розрив 0,34–0,37 між атакою й акцією
+        form = min(pool, key=lambda f: (distance[f], FORM_RANK[f]))
+        cands = sorted((f for f in pool if distance[f] - distance[form] <= tie_tol + 1e-12),
+                       key=FORM_RANK.get)
+        rule = "profile_distance_in_overlap" if by_kn else "profile_distance_in_gap"
     return {
-        "form": best,
-        "form_label": FORM_PROFILES[best]["label"],
-        "candidates": candidates,
-        "ambiguous": len(candidates) > 1,
-        "by_K_n": by_kn,
+        "form": form,
+        "form_label": FORM_PROFILES[form]["label"],
+        "prototype_forms": by_kn,
+        "candidates": cands,
+        "ambiguous": len(cands) > 1,
         "in_K_n_gap": not by_kn,
+        "rule": rule,
         "distance": distance,
     }
 
 
-def _linked(sources_a: set[str], coord_a: set[str], sources_b: set[str], coord_b: set[str]) -> bool:
-    """Зв'язок між напрямами/сферами (proxy «змістовних взаємозв'язків», с. 28):
-    спільне скоординоване джерело (стилометрична пара чи кластер копій) або
-    щонайменше два спільні джерела."""
-    return bool(coord_a & coord_b) or len(sources_a & sources_b) >= 2
+def _linked(coord_a: set[str], coord_b: set[str]) -> bool:
+    """Зв'язок між напрямами/сферами — proxy «змістовних взаємозв'язків» (с. 28):
+    спільне СКООРДИНОВАНЕ джерело (пара strong або кластер копій). Звичайні
+    спільні джерела не враховуються: великі ЗМІ присутні в усіх тематиках."""
+    return bool(coord_a & coord_b)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Оцінка сфери (етапи 1–4 + доповнення автора)
+#  Оцінка напряму і сфери
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _first_seen_map(history: list[dict]) -> dict[tuple[str, str], date]:
-    out: dict[tuple[str, str], date] = {}
-    for e in history:
-        key = (e["sphere"], e["direction"])
-        if key not in out or e["first"] < out[key]:
-            out[key] = e["first"]
-    return out
-
-
-def _direction_result(sphere: str, direction: str, events: list[dict], first_seen: date) -> dict:
-    ind = _direction_indicators(events, first_seen)
-    k_n, missing = normalized_indicator(ind["K_i"], ind["K_t"], ind["K_d"], ind["K_o"])
+def _direction_result(sphere: str, direction: str, events: list[dict], history: list[dict],
+                      end: date, gap: int, k_t_override: float | None = None) -> dict:
+    ind = _direction_indicators(events, history, end, gap, k_t_override)
+    k_n, missing, k_n_range = normalized_indicator(ind["K_i"], ind["K_t"], ind["K_d"], ind["K_o"])
+    conformant = (not missing and ind["sources"]["K_i"] == "expert"
+                  and ind["sources"]["K_t"] == "auto")
     form = classify_form(ind, k_n) if k_n is not None else None
 
     src_counter: Counter = Counter()
@@ -573,42 +620,39 @@ def _direction_result(sphere: str, direction: str, events: list[dict], first_see
     for e in events:
         persons.update(e["gur"].get("persons") or [])
         audiences.update(e["gur"].get("target_audience") or [])
-
-    pairs = []
-    clusters = []
+    pairs, clusters = [], []
     for e in events:
         for p in e["flagged_pairs"]:
             pairs.append({"event_id": e["event_id"], "a": p.get("a"), "b": p.get("b"),
-                          "delta": p.get("delta")})
+                          "delta": p.get("delta"), "verdict": p.get("verdict")})
         for c in e["copy_clusters"]:
             clusters.append({"event_id": e["event_id"], "sources": c.get("sources"),
                              "n_sources": c.get("n_sources"),
                              "first_source": c.get("first_source"),
                              "first_published_at": c.get("first_published_at")})
-    pairs.sort(key=lambda p: (p["delta"] if p["delta"] is not None else 9e9))
+    pairs.sort(key=lambda p: (p["verdict"] != "strong",
+                              p["delta"] if p["delta"] is not None else 9e9))
     clusters.sort(key=lambda c: -(c["n_sources"] or 0))
     grades = [e["grade"] for e in events if e["grade"] in _GRADE_RANK]
-
-    label = labels[0] if labels else (
-        MILITARY_DIRECTIONS.get(direction) if sphere == "military" else None)
+    label = labels[0] if labels else (MILITARY_DIRECTIONS.get(direction) if sphere == "military" else None)
     if direction == UNASSIGNED_DIRECTION:
         label = "Напрям не визначено (потрібне тегування аналітиком)"
 
     return {
         "direction": direction,
         "direction_label": label,
+        "tagged": direction != UNASSIGNED_DIRECTION,
         "indicators": {k: ind[k] for k in ("K_i", "K_t", "K_d", "K_o")},
         "indicator_sources": ind["sources"],
         "indicator_details": ind["details"],
         "K_n": None if k_n is None else round(k_n, 4),
-        "K_n_partial": bool(missing),
+        "K_n_range": k_n_range,
         "missing_indicators": missing,
+        "conformant": conformant,
         "form": form,
-        # ── доповнення автора ──────────────────────────────────────────────
         "instruments": {
             "sources": [{"source": s, "materials": n} for s, n in src_counter.most_common(_MAX_LIST)],
-            "coordinated_sources": [{"source": s, "links": n}
-                                    for s, n in coord.most_common(_MAX_LIST)],
+            "coordinated_sources": [{"source": s, "links": n} for s, n in coord.most_common(_MAX_LIST)],
             "persons": [{"person": p, "events": n} for p, n in persons.most_common(_MAX_LIST)],
         },
         "target_audience": {
@@ -619,176 +663,164 @@ def _direction_result(sphere: str, direction: str, events: list[dict], first_see
         "facts": {
             "n_events": len(events),
             "event_ids": [e["event_id"] for e in events][:_MAX_LIST],
-            "first_seen": ind["details"]["first_seen"],
-            "last_seen": ind["details"]["last_seen"],
-            "n_materials": sum(e["n_unique"] for e in events),
+            "first_seen": min(e["first"] for e in events).isoformat(),
+            "last_seen": max(e["last"] for e in events).isoformat(),
+            "n_materials": sum(e["n_materials"] for e in events),
             "n_flagged_pairs": len(pairs),
+            "n_strong_pairs": sum(1 for p in pairs if p["verdict"] == "strong"),
             "n_copy_clusters": len(clusters),
             "max_grade": max(grades, key=_GRADE_RANK.get) if grades else None,
             "closest_pairs": pairs[:5],
             "largest_copy_clusters": clusters[:5],
         },
-        "_sources": set(src_counter),
         "_coord": set(coord),
     }
 
 
 def _sphere_form(directions: list[dict], cross_sphere_linked: bool) -> dict:
-    """Узагальнена форма для сфери: табл. 5 («кількість напрямів») + с. 28.
+    """Узагальнена форма сфери — об'єкт удосконаленої методики (у прототипі
+    форма належить напряму, рівень — сфері).
 
-    Правила реалізації:
-      * кандидатом є операція / кампанія і сфера пов'язана з іншою сферою →
-        кампанія (с. 28: є змістовні взаємозв'язки з іншими сферами);
-      * кілька пов'язаних між собою напрямів в одній сфері → не нижче операції;
-      * кампанія без зв'язків з іншими сферами → операція (кампанія вимагає
-        декількох сфер)."""
-    scored = [d for d in directions if d["form"]]
+    Правила:
+      * за основу береться найвища форма серед тегованих напрямів;
+      * с. 28 прототипу застосовується лише до неоднозначності «операція/
+        кампанія» (основна форма — операція чи кампанія або обидві серед
+        кандидатів): кампанія — якщо є зв'язок з іншою сферою І базові
+        показники напряму відповідають профілю кампанії; інакше — операція;
+      * кількість напрямів форму не підвищує (табл. 5 називає її необхідною,
+        але не достатньою ознакою операції) — зв'язки напрямів лише звітуються."""
+    scored = [d for d in directions if d["form"] and d["tagged"]]
     if not scored:
-        return {"form": None, "form_label": None, "basis": "недостатньо даних для K_j^н",
-                "ambiguous": False, "candidates": []}
-    top = max(scored, key=lambda d: FORM_RANK[d["form"]["form"]])
+        return {"form": None, "form_label": None, "ambiguous": False,
+                "basis": "немає тегованих напрямів з повним набором базових показників"}
+    top = max(scored, key=lambda d: (FORM_RANK[d["form"]["form"]], d["K_n"]))
     form = top["form"]["form"]
-    candidates = set()
-    for d in scored:
-        candidates.update(d["form"]["candidates"])
     basis = [f"найвища форма серед напрямів — «{FORM_PROFILES[form]['label']}» "
              f"(напрям {top['direction']})"]
-
-    linked_dirs = False
-    for i, a in enumerate(scored):
-        for b in scored[i + 1:]:
-            if _linked(a["_sources"], a["_coord"], b["_sources"], b["_coord"]):
-                linked_dirs = True
-    heavy = bool(candidates & {"operation", "campaign"})
-    if heavy and cross_sphere_linked:
-        form = "campaign"
-        basis.append("наявні взаємозв'язки з напрямами інших сфер (с. 28; proxy — спільні джерела)")
-    else:
-        if len(scored) > 1 and linked_dirs and FORM_RANK[form] < FORM_RANK["operation"]:
+    heavy = [d for d in scored if d["form"]["form"] in ("operation", "campaign")
+             or {"operation", "campaign"} <= set(d["form"]["candidates"])]
+    if heavy:
+        campaign_fit = [d for d in heavy
+                        if profile_distance(d["indicators"], "campaign") <= DEFAULT_FORM_TIE_TOL]
+        if cross_sphere_linked and campaign_fit:
+            form = "campaign"
+            basis.append("с. 28: є зв'язок з іншою сферою (спільні скоординовані джерела) "
+                         "і показники відповідають профілю кампанії")
+        else:
             form = "operation"
-            basis.append("декілька пов'язаних напрямів в одній сфері (табл. 5)")
-        if form == "campaign" and not cross_sphere_linked:
-            form = "operation"
-            basis.append("кампанія потребує декількох сфер; взаємозв'язків з іншими "
-                         "сферами не виявлено (с. 28) → операція")
-    candidates.add(form)
-    cands = sorted(candidates, key=FORM_RANK.get)
+            why = ("немає зв'язку з іншими сферами" if not cross_sphere_linked
+                   else "показники не відповідають профілю кампанії")
+            basis.append(f"с. 28: {why} → операція")
+    linked_dirs = any(_linked(a["_coord"], b["_coord"])
+                      for i, a in enumerate(scored) for b in scored[i + 1:])
     return {
         "form": form,
         "form_label": FORM_PROFILES[form]["label"],
         "basis": "; ".join(basis),
         "ambiguous": any(d["form"]["ambiguous"] for d in scored),
-        "candidates": cands,
         "linked_directions": linked_dirs,
         "linked_other_spheres": cross_sphere_linked,
     }
 
 
-def _evaluate_sphere(sphere: str, events: list[dict], first_seen: dict,
-                     cross_linked: bool) -> dict:
-    by_dir: dict[str, list[dict]] = defaultdict(list)
-    for e in events:
-        by_dir[e["direction"]].append(e)
-    directions = [_direction_result(sphere, d, evs, first_seen[(sphere, d)])
-                  for d, evs in sorted(by_dir.items())]
-    scored = [d for d in directions if d["K_n"] is not None]
-    z = sum(d["K_n"] for d in scored) / len(scored) if scored else None
-    partial = any(d["K_n_partial"] for d in scored)
-    crit = [d["direction"] for d in scored if d["K_n"] >= CRITICAL_DIRECTION_THRESHOLD]
-    level = threat_level(z) if z is not None else None
-    return {
-        "sphere": sphere,
-        "sphere_label": SPHERES.get(sphere, sphere),
-        "n_directions": len(directions),
-        "Z": None if z is None else round(z, 4),
-        "Z_partial": partial,
-        "level": level,
-        "form": _sphere_form(directions, cross_linked),
-        "critical_direction": {
-            "flag": bool(crit) and (level or {}).get("key") != "critical",
-            "directions": crit,
-            "note": ("середнє за формулою 5 «розчиняє» критичний напрям — "
-                     "попереджувальна ознака, значення Z не змінює"),
-        },
-        "directions": directions,
-    }
+def _sphere_z(directions: list[dict]) -> dict:
+    """Z_k^c за формулою 5. N — кількість тегованих напрямів сфери з повним
+    набором базових показників за період (тлумачення реалізації)."""
+    usable = [d for d in directions if d["tagged"] and d["K_n"] is not None]
+    excluded = [d["direction"] for d in directions if d not in usable]
+    if not usable:
+        return {"Z": None, "N": 0, "level": None, "conformant": False, "excluded": excluded}
+    z = sum(d["K_n"] for d in usable) / len(usable)
+    return {"Z": round(z, 4), "N": len(usable), "level": threat_level(z),
+            "conformant": all(d["conformant"] for d in usable) and not excluded,
+            "excluded": excluded}
 
 
-def _strip_private(obj):
-    if isinstance(obj, dict):
-        return {k: _strip_private(v) for k, v in obj.items() if not k.startswith("_")}
-    if isinstance(obj, list):
-        return [_strip_private(x) for x in obj]
-    return obj
-
-
-def _sphere_sets(events: list[dict]) -> tuple[set[str], set[str]]:
-    srcs, coord = set(), set(_coordinated_sources(events))
-    for e in events:
-        srcs.update(e["sources"])
-    return srcs, coord
-
-
-def _cross_links(by_sphere: dict[str, list[dict]]) -> dict[str, list[str]]:
-    sets = {s: _sphere_sets(evs) for s, evs in by_sphere.items()}
-    links: dict[str, list[str]] = {s: [] for s in by_sphere}
-    keys = sorted(by_sphere)
-    for i, a in enumerate(keys):
-        for b in keys[i + 1:]:
-            if _linked(sets[a][0], sets[a][1], sets[b][0], sets[b][1]):
-                links[a].append(b)
-                links[b].append(a)
-    return links
-
-
-def _evaluate_period(events: list[dict], history: list[dict], spheres: list[str] | None) -> dict:
-    first_seen = _first_seen_map(history)
+def _evaluate_period(events: list[dict], history: list[dict], start: date, end: date,
+                     spheres: list[str] | None, gap: int,
+                     k_t_override: dict | None = None) -> dict:
     by_sphere: dict[str, list[dict]] = defaultdict(list)
     for e in events:
         by_sphere[e["sphere"]].append(e)
-    links = _cross_links(by_sphere)
+    coord_by_sphere = {s: set(_coordinated_sources(evs)) for s, evs in by_sphere.items()}
     out = {}
     for s, evs in sorted(by_sphere.items()):
         if spheres and s not in spheres:
             continue
-        out[s] = _evaluate_sphere(s, evs, first_seen, bool(links.get(s)))
-        out[s]["linked_spheres"] = links.get(s, [])
+        linked = sorted(o for o in by_sphere if o != s and _linked(coord_by_sphere[s], coord_by_sphere[o]))
+        by_dir: dict[str, list[dict]] = defaultdict(list)
+        for e in evs:
+            by_dir[e["direction"]].append(e)
+        directions = []
+        for d, devs in sorted(by_dir.items()):
+            hist = [e for e in history if e["sphere"] == s and e["direction"] == d]
+            override = (k_t_override or {}).get((s, d))
+            directions.append(_direction_result(s, d, devs, hist, end, gap, override))
+        zinfo = _sphere_z(directions)
+        crit = [d["direction"] for d in directions
+                if d["tagged"] and d["K_n"] is not None
+                and threat_level(d["K_n"])["key"] == CRITICAL_DIRECTION_LEVEL]
+        out[s] = {
+            "sphere": s,
+            "sphere_label": SPHERES.get(s, s),
+            "n_directions": len(directions),
+            "prototype": {
+                "Z": zinfo["Z"], "N": zinfo["N"], "level": zinfo["level"],
+                "conformant": zinfo["conformant"],
+                "excluded_directions": zinfo["excluded"],
+                "direction_forms": {d["direction"]: (d["form"] or {}).get("prototype_forms")
+                                    for d in directions},
+            },
+            "improved": {
+                "form": _sphere_form(directions, bool(linked)),
+                "critical_direction": {
+                    "flag": bool(crit) and (zinfo["level"] or {}).get("key") != "critical",
+                    "directions": crit,
+                    "note": ("K_j^н напряму в критичній зоні табл. 6 (перенесення шкали Z на "
+                             "напрям); середнє за формулою 5 його «розчиняє» — ознака "
+                             "попереджувальна, Z не змінює"),
+                },
+            },
+            "linked_spheres": linked,
+            "directions": directions,
+        }
     return out
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  Тренд і прогноз (доповнення автора)
+#  Оцінка тенденції (доповнення автора)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _slope(points: list[float]) -> float:
-    n = len(points)
+def _slope(xs: list[float], ys: list[float]) -> float:
+    n = len(xs)
     if n < 2:
         return 0.0
-    xs = range(n)
-    mx = (n - 1) / 2
-    my = sum(points) / n
+    mx, my = sum(xs) / n, sum(ys) / n
     den = sum((x - mx) ** 2 for x in xs)
-    return sum((x - mx) * (y - my) for x, y in zip(xs, points)) / den if den else 0.0
+    return sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / den if den else 0.0
 
 
-def trend_forecast(z_series: list[float | None], delta: float = DEFAULT_TREND_DELTA) -> dict:
-    """Прогноз на наступний період за рядом Z по вікнах (без пропусків даних).
+def trend_forecast(points: list[tuple[int, float]], delta: float = DEFAULT_TREND_DELTA) -> dict:
+    """Оцінка тенденції за рядом (індекс вікна, Z) — лише повні вікна.
 
-    Нахил МНК за останніми (до 4) вікнами: > δ — збільшення, < −δ — зменшення,
-    інакше — продовження на тому ж рівні. δ провізорний."""
-    pts = [z for z in z_series if z is not None][-_TREND_POINTS:]
+    Нахил МНК за останніми (до 4) вікнами з реальними індексами: > δ —
+    збільшення, < −δ — зменшення, інакше — продовження на тому ж рівні.
+    Лінійна екстраполяція на одне вікно без довірчого інтервалу; δ провізорний."""
+    pts = points[-_TREND_POINTS:]
     if len(pts) < 2:
         return {"key": "insufficient", "label": TREND_LABELS["insufficient"],
                 "n_windows": len(pts), "delta": delta}
-    slope = _slope(pts)
+    xs = [float(i) for i, _ in pts]
+    ys = [z for _, z in pts]
+    slope = _slope(xs, ys)
     key = "increase" if slope > delta else ("decrease" if slope < -delta else "stable")
-    projected = min(1.0, max(0.0, pts[-1] + slope))
+    projected = min(1.0, max(0.0, ys[-1] + slope))
     return {
         "key": key, "label": TREND_LABELS[key],
         "slope_per_window": round(slope, 4),
-        "last_change": round(pts[-1] - pts[-2], 4),
-        "projected_Z": round(projected, 4),
-        "projected_level": threat_level(projected),
+        "projected_window_Z": round(projected, 4),
+        "projected_window_level": threat_level(projected),
+        "scale_note": "прогнозоване Z стосується наступного вікна, а не всього періоду",
         "n_windows": len(pts), "delta": delta,
     }
 
@@ -800,70 +832,87 @@ def trend_forecast(z_series: list[float | None], delta: float = DEFAULT_TREND_DE
 def assess_threat(assessments: list[dict], *, start=None, end=None,
                   spheres: list[str] | None = None,
                   window_days: int = DEFAULT_WINDOW_DAYS,
-                  delta: float = DEFAULT_TREND_DELTA) -> dict:
+                  delta: float = DEFAULT_TREND_DELTA,
+                  episode_gap_days: int = EPISODE_GAP_DAYS) -> dict:
     """Макрооцінка за період [start; end] на основі збережених DIMS-оцінок.
 
-    Події, раніші за start, використовуються лише як історія — для першої
-    появи напряму (K_т рахується від неї, бо тривалість — властивість ІВ,
-    а не вікна спостереження). Подія належить періоду за датою останньої
-    публікації. Тренд — за послідовними вікнами по window_days днів; для
-    кожного вікна оцінка повторюється на подіях цього вікна з тією ж історією.
+    * Подія належить періоду (і вікну), якщо інтервал її публікацій перетинається
+      з ним; тривала подія потрапляє в усі вікна, які охоплює.
+    * Події, раніші за start, — історія для K_т (епізод ІВ напряму).
+    * Тенденція: для кожного повного вікна оцінка повторюється на подіях вікна
+      з K_т, зафіксованим на рівні основного періоду (щоб «старіння» напряму
+      не давало штучного зростання Z). Вікно без подій має Z = 0 («ІВ не
+      виявлено»); неповне останнє вікно в тенденцію не входить.
     """
     if window_days < 1:
         raise ValueError("window_days має бути ≥ 1.")
-    events_all = [e for e in (_event_from_assessment(a) for a in assessments or []) if e]
-    warnings: list[str] = []
-    if not events_all:
-        return {"ok": True, "period": None, "spheres": [], "warnings": ["Немає оцінених подій."],
-                "methodology": _METHODOLOGY}
-    start_d = _parse_date(start) or min(e["last"] for e in events_all)
-    end_d = _parse_date(end) or max(e["last"] for e in events_all)
-    if end_d < start_d:
+    req_start, req_end = _parse_date(start), _parse_date(end)
+    if req_start and req_end and req_end < req_start:
         raise ValueError("Кінець періоду раніший за початок.")
     spheres = [canon_sphere(s) for s in spheres] if spheres else None
+    events_all = [e for e in (_event_from_assessment(a) for a in assessments or []) if e]
+    if not events_all:
+        return {"ok": True, "period": None, "spheres": [], "warnings": ["Немає оцінених подій."],
+                "params": _params(delta, episode_gap_days, window_days),
+                "methodology": _METHODOLOGY}
+    start_d = req_start or min(e["first"] for e in events_all)
+    end_d = req_end or max(e["last"] for e in events_all)
 
     history = [e for e in events_all if e["first"] <= end_d]
-    events = [e for e in history if start_d <= e["last"] <= end_d]
+    events = [e for e in history if _overlaps(e, start_d, end_d)]
     days = (end_d - start_d).days + 1
+    warnings: list[str] = []
     if days < DEFAULT_WINDOW_DAYS:
         warnings.append(f"Період {days} дн. коротший за тиждень — за прототипом за менший "
-                        "період неможливо виявити системність ІВ і визначити форму ІБ (с. 5).")
+                        "період неможливо виявити системність ІВ і визначити форму (с. 5).")
+    if window_days < DEFAULT_WINDOW_DAYS:
+        warnings.append(f"Вікно тенденції {window_days} дн. коротше за мінімальний період "
+                        "прототипу (7 дн.).")
     if any(e["direction"] == UNASSIGNED_DIRECTION for e in events):
-        warnings.append("Частина подій без напряму ІВ (gur.direction) — згруповані як "
-                        "«unassigned»; потрібне тегування аналітиком.")
+        warnings.append("Частина подій без напряму ІВ — показані як «unassigned», але не "
+                        "входять у Z і правила форми; потрібне тегування аналітиком.")
     if any(e["sphere_assumed"] for e in events):
         warnings.append("Для частини подій сферу не вказано — прийнято воєнну (типова "
                         "сфера прототипу).")
+    if any(e["dates_source"] == "fallback" for e in events):
+        warnings.append("Для частини подій немає дат публікацій — використано дату оцінки; "
+                        "K_т може бути завищений, результат не відповідає прототипу.")
 
-    result = _evaluate_period(events, history, spheres)
+    result = _evaluate_period(events, history, start_d, end_d, spheres, episode_gap_days)
+    k_t_main = {(s, d["direction"]): d["indicators"]["K_t"]
+                for s, r in result.items() for d in r["directions"]}
 
-    # Тренд: ряд Z по вікнах для кожної сфери.
+    # Тенденція за вікнами
     windows = []
     ws = start_d
     while ws <= end_d:
-        we = min(ws + timedelta(days=window_days - 1), end_d)
-        windows.append((ws, we))
+        we = ws + timedelta(days=window_days - 1)
+        windows.append((ws, min(we, end_d), we <= end_d))
         ws = we + timedelta(days=1)
     series: dict[str, list[dict]] = defaultdict(list)
-    for ws, we in windows:
-        win_events = [e for e in history if ws <= e["last"] <= we]
+    for idx, (ws, we, full) in enumerate(windows):
+        win_events = [e for e in events if _overlaps(e, ws, we)]
         win_hist = [e for e in history if e["first"] <= we]
-        win_res = _evaluate_period(win_events, win_hist, spheres) if win_events else {}
+        win_res = (_evaluate_period(win_events, win_hist, ws, we, spheres, episode_gap_days,
+                                    k_t_main) if win_events else {})
         for s in result:
             r = win_res.get(s)
-            series[s].append({"start": ws.isoformat(), "end": we.isoformat(),
-                              "Z": r["Z"] if r else None,
-                              "level": (r["level"] or {}).get("label") if r else None,
-                              "n_events": sum(d["facts"]["n_events"] for d in r["directions"]) if r else 0})
+            z = r["prototype"]["Z"] if r else None
+            no_events = r is None
+            series[s].append({"index": idx, "start": ws.isoformat(), "end": we.isoformat(),
+                              "full": full, "no_events": no_events,
+                              "Z": 0.0 if no_events else z,
+                              "level": (r["prototype"]["level"] or {}).get("label") if r else None})
 
     spheres_out = []
     for s, r in result.items():
-        r["trend"] = trend_forecast([p["Z"] for p in series[s]], delta=delta)
-        r["series"] = series[s]
+        pts = [(p["index"], p["Z"]) for p in series[s] if p["full"] and p["Z"] is not None]
+        r["improved"]["trend"] = trend_forecast(pts, delta=delta)
+        r["improved"]["series"] = series[s]
+        if not r["prototype"]["conformant"]:
+            warnings.append(f"Сфера {r['sphere_label']}: результат не відповідає прототипу "
+                            "(неповні показники, proxy K_i або нетеговані напрями) — провізорний.")
         spheres_out.append(_strip_private(r))
-        if r["Z_partial"]:
-            warnings.append(f"Сфера {r['sphere_label']}: Z обчислено з неповних базових "
-                            "показників — значення не відповідає прототипу.")
 
     src_counts: Counter = Counter()
     for r in spheres_out:
@@ -879,14 +928,28 @@ def assess_threat(assessments: list[dict], *, start=None, end=None,
         "spheres": spheres_out,
         "data_quality": dict(sorted(src_counts.items())),
         "warnings": warnings,
-        "params": {"trend_delta": delta, "form_tie_tol": DEFAULT_FORM_TIE_TOL,
-                   "proxy_negative_min_grade": PROXY_NEGATIVE_MIN_GRADE,
-                   "provisional": True},
+        "params": _params(delta, episode_gap_days, window_days),
         "methodology": _METHODOLOGY,
     }
 
 
-_METHODOLOGY = ("Макрорівень: прототип — Методика виявлення, аналізу та оцінювання "
-                "інформаційних загроз державі у воєнній сфері (ГУР МО України, 2016); "
-                "доповнення (інструменти впливу, ЦА, факти, прогноз) і автоматизація "
-                "базових показників — Шерстюк Є.І., НУОУ. Параметри реалізації провізорні.")
+def _params(delta, gap, window_days) -> dict:
+    return {"trend_delta": delta, "form_tie_tol": DEFAULT_FORM_TIE_TOL,
+            "episode_gap_days": gap, "window_days": window_days,
+            "proxy_negative_min_grade": PROXY_NEGATIVE_MIN_GRADE, "provisional": True}
+
+
+def _strip_private(obj):
+    if isinstance(obj, dict):
+        return {k: _strip_private(v) for k, v in obj.items() if not k.startswith("_")}
+    if isinstance(obj, list):
+        return [_strip_private(x) for x in obj]
+    return obj
+
+
+_METHODOLOGY = ("Прототип: Методика виявлення, аналізу та оцінювання інформаційних загроз "
+                "державі у воєнній сфері (ГУР МО України, 2016). Удосконалення (Шерстюк Є.І., "
+                "НУОУ): формалізований алгоритм агрегації, позначки походження показників, "
+                "автоматичне обчислення K_т, розв'язання неоднозначностей табл. 5, "
+                "ідентифікація інструментів впливу стилометрією, ЦА, факти, оцінка тенденції. "
+                "Параметри реалізації провізорні.")
