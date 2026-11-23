@@ -1,1 +1,0 @@
-# Stylometric Analysis — core package

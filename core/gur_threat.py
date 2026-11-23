@@ -811,7 +811,10 @@ def assess_threat(assessments: list[dict], *, start=None, end=None,
     """
     if window_days < 1:
         raise ValueError("window_days має бути ≥ 1.")
-    events_all = [e for e in (_event_from_assessment(a) for a in assessments or []) if e]
+    req_start, req_end = _parse_date(start), _parse_date(end)
+    if req_start and req_end and req_end < req_start:
+        raise ValueError("Кінець періоду раніший за початок.")
+    events_all =[e for e in (_event_from_assessment(a) for a in assessments or []) if e]
     warnings: list[str] = []
     if not events_all:
         return {"ok": True, "period": None, "spheres": [], "warnings": ["Немає оцінених подій."],
