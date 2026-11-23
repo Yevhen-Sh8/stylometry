@@ -36,6 +36,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 
+from core.gur_threat import merge_gur
 from core.ias_service import GRADE_RANK, AssessmentError, assess_event, parse_threshold
 from core.ias_store import IasStore
 
@@ -113,7 +114,12 @@ class SqlEventSource:
             raise ValueError(
                 f"Запит змінених подій має повертати колонки {sorted(CHANGED_EVENTS_COLUMNS)}."
             )
-        return [{"event_id": str(r["event_id"]), "updated_at": _iso(r["updated_at"])}
+        # Необов'язкові колонки gur_* (gur_direction, gur_sphere, gur_target_scale,
+        # gur_target_value, gur_target_audience, gur_reach, gur_n_negative,
+        # gur_n_total, gur_persons) — метадані макрорівня (core.gur_threat).
+        return [{"event_id": str(r["event_id"]), "updated_at": _iso(r["updated_at"]),
+                 "gur": {k[4:]: v for k, v in r.items()
+                         if k.startswith("gur_") and v not in (None, "")}}
                 for r in rows]
 
     def event_materials(self, event_id: str) -> list[dict]:
@@ -131,6 +137,8 @@ class SqlEventSource:
                 "url": str(r.get("url") or ""),
                 "published_at": _iso(r.get("published_at")),
                 "text": r.get("text") or "",
+                # необов'язково: поширеність джерела (місцевий…міжнародний) для K_д
+                "reach": str(r.get("reach") or "").strip(),
             })
         return out
 
@@ -258,6 +266,28 @@ def assessment_params_from_env() -> dict:
     }
 
 
+def _event_gur(ev: dict, materials: list[dict], previous: dict | None) -> dict:
+    """Метадані макрорівня для повторної оцінки. Значення з БД ІАС оновлюють
+    попередні, але ключі, задані аналітиком через API (expert_keys), мають
+    пріоритет. Поширеність джерел із колонки reach матеріалів — атрибут
+    реєстру, тому йде в registry_reach, а не в експертне source_reach."""
+    prev = dict((previous or {}).get("gur") or {})
+    incoming = dict(ev.get("gur") or {})
+    registry = dict(prev.get("registry_reach") or {})
+    for m in materials:
+        if m.get("reach") and m.get("source"):
+            registry[m["source"]] = m["reach"]
+    if registry:
+        incoming["registry_reach"] = registry
+    # Невалідні метадані з БД ІАС не повинні блокувати саму DIMS-оцінку.
+    try:
+        return merge_gur(prev, incoming, expert=False)
+    except ValueError as exc:
+        log.warning("Подія %s: метадані gur відхилено (%s) — залишено попередні.",
+                    ev.get("event_id"), exc)
+        return prev
+
+
 def run_once(source, store: IasStore, notifier: WebhookNotifier | None = None,
              *, lookback_hours: int = 24, max_events: int = 200,
              params: dict | None = None, alert_policy: dict | None = None) -> dict:
@@ -272,7 +302,8 @@ def run_once(source, store: IasStore, notifier: WebhookNotifier | None = None,
     events = events[:max_events]
 
     stats = {"since": since, "changed_events": len(events), "assessed": 0,
-             "unchanged": 0, "skipped": 0, "alerts": 0, "notified": 0, "errors": 0}
+             "unchanged": 0, "gur_updated": 0, "skipped": 0, "alerts": 0, "notified": 0,
+             "errors": 0}
     watermark = since
     for ev in events:
         event_id = ev["event_id"]
@@ -281,10 +312,21 @@ def run_once(source, store: IasStore, notifier: WebhookNotifier | None = None,
             fp = materials_fingerprint(materials)
             if store.get_fingerprint(event_id) == fp:
                 stats["unchanged"] += 1
+                # Тексти не змінились, але метадані ГУР (gur_*, reach) могли —
+                # оновлюємо їх без переоцінки DIMS, інакше макрорівень бачив би
+                # застарілі напрям, сферу, лічильники чи поширеність.
+                previous = store.get_assessment(event_id)
+                new_gur = _event_gur(ev, materials, previous)
+                if previous is not None and new_gur != (previous.get("gur") or {}):
+                    store.set_gur(event_id, new_gur)
+                    stats["gur_updated"] += 1
             else:
                 try:
                     result = assess_event(materials, event_id=event_id,
-                                          alert_policy=alert_policy, **params)
+                                          alert_policy=alert_policy,
+                                          gur=_event_gur(ev, materials,
+                                                         store.get_assessment(event_id)),
+                                          **params)
                 except AssessmentError as exc:
                     log.info("Подію %s пропущено: %s", event_id, exc)
                     stats["skipped"] += 1

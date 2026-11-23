@@ -51,6 +51,12 @@ CREATE TABLE IF NOT EXISTS alerts (
     expert_grade  TEXT,
     comment       TEXT
 );
+CREATE TABLE IF NOT EXISTS threat_snapshots (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at  TEXT NOT NULL,
+    params      TEXT NOT NULL,
+    payload     TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS ix_alerts_event ON alerts(event_id);
 CREATE INDEX IF NOT EXISTS ix_alerts_status ON alerts(status);
 """
@@ -121,6 +127,52 @@ class IasStore:
             row = c.execute("SELECT payload FROM assessments WHERE event_id=?",
                             (event_id,)).fetchone()
         return json.loads(row["payload"]) if row else None
+
+    def list_assessments(self, since: str | None = None, limit: int = 5000) -> list[dict]:
+        """Збережені оцінки (повні payload) — для макрорівня (core.gur_threat).
+        since фільтрує за часом оцінки; дати публікацій фільтрує вже агрегатор."""
+        sql = "SELECT payload FROM assessments"
+        args: tuple = ()
+        if since:
+            sql += " WHERE assessed_at >= ?"
+            args = (since,)
+        sql += " ORDER BY assessed_at DESC LIMIT ?"
+        with self._conn() as c:
+            rows = c.execute(sql, args + (int(limit),)).fetchall()
+        return [json.loads(r["payload"]) for r in rows]
+
+    def save_snapshot(self, params: dict, result: dict) -> int:
+        """Фіксує макрооцінку (параметри + результат) з міткою часу."""
+        with self._conn() as c:
+            cur = c.execute(
+                "INSERT INTO threat_snapshots(created_at, params, payload) VALUES(?,?,?)",
+                (_now(), json.dumps(params, ensure_ascii=False),
+                 json.dumps(result, ensure_ascii=False)))
+            return int(cur.lastrowid)
+
+    def get_snapshot(self, snapshot_id: int) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM threat_snapshots WHERE id=?",
+                            (int(snapshot_id),)).fetchone()
+        if row is None:
+            return None
+        return {"snapshot_id": row["id"], "created_at": row["created_at"],
+                "params": json.loads(row["params"]), "result": json.loads(row["payload"])}
+
+    def set_gur(self, event_id: str, gur: dict) -> dict | None:
+        """Замінює блок метаданих ГУР (напрям, ЦА, поширеність…) уже оціненої
+        події на переданий — злиття й валідацію виконує викликач (API).
+        R_DIMS і грейд не змінюються. None — подію не знайдено."""
+        with self._conn() as c:
+            row = c.execute("SELECT payload FROM assessments WHERE event_id=?",
+                            (event_id,)).fetchone()
+            if row is None:
+                return None
+            payload = json.loads(row["payload"])
+            payload["gur"] = gur
+            c.execute("UPDATE assessments SET payload=? WHERE event_id=?",
+                      (json.dumps(payload, ensure_ascii=False), event_id))
+        return payload
 
     # ── сповіщення ───────────────────────────────────────────────────────
     def last_alert_for_event(self, event_id: str) -> dict | None:

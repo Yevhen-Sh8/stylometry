@@ -52,6 +52,53 @@ paths:
                   ok: {type: boolean}
                   assessment: {$ref: '#/components/schemas/Assessment'}
         '404': {$ref: '#/components/responses/Error'}
+  /api/v1/events/{event_id}/gur:
+    post:
+      summary: Експертне задання метаданих макрорівня (ГУР-2016) для оціненої події
+      description: >
+        Напрям ІВ, сфера, масштабність об'єктів і ЦА, поширеність джерел,
+        лічильники негативних повідомлень, залучені особи. Поля зливаються з
+        наявними; значення null видаляє ключ. R_DIMS не змінюється.
+        Див. docs/gur2016_macro_level_ua.md.
+      parameters:
+        - {name: event_id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GurMeta'}
+      responses:
+        '200': {description: Оновлені метадані gur}
+        '401': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+        '422': {$ref: '#/components/responses/Error'}
+  /api/v1/threat-level:
+    get:
+      summary: Форма ІБ і рівень інформаційної загрози за напрямами й сферами за період
+      description: >
+        Агрегація збережених оцінок подій за прототипом ГУР-2016 (K_i, K_т, K_д,
+        K_о → K_j^н → форма ІБ → Z_k^c → рівень) з доповненнями автора:
+        instruments, target_audience, facts, trend. Параметри провізорні.
+      parameters:
+        - {name: from, in: query, schema: {type: string, format: date}, description: 'типово — to мінус 27 днів'}
+        - {name: to, in: query, schema: {type: string, format: date}, description: 'типово — сьогодні (UTC)'}
+        - {name: sphere, in: query, schema: {type: string}, description: 'коди сфер через кому'}
+        - {name: window_days, in: query, schema: {type: integer, minimum: 7, maximum: 92, default: 7}}
+        - {name: snapshot, in: query, schema: {type: boolean}, description: 'зберегти знімок результату (snapshot_id у відповіді)'}
+        - {name: delta, in: query, schema: {type: number, minimum: 0, maximum: 1, default: 0.05}}
+      responses:
+        '200': {description: 'Макрооцінка: period, spheres[] (prototype, improved, directions[]), data_quality, warnings'}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/v1/threat-level/snapshots/{snapshot_id}:
+    get:
+      summary: Збережений знімок макрооцінки (відтворюваність)
+      parameters:
+        - {name: snapshot_id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {description: 'snapshot_id, created_at, params, result'}
+        '401': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
   /api/v1/alerts:
     get:
       summary: Перелік сповіщень (новіші першими)
@@ -189,6 +236,22 @@ components:
             metric: {type: string, enum: [burrows, cosine], default: burrows, description: 'Burrows Delta або Cosine Delta (Smith & Aldridge 2011)'}
             feature_type: {type: string, enum: [word, function, char], default: word}
             confidence: {type: boolean, default: true, description: 'Bootstrap-інтервал R_DIMS'}
+        gur: {$ref: '#/components/schemas/GurMeta'}
+    GurMeta:
+      type: object
+      description: Метадані макрорівня (ГУР-2016); на R_DIMS не впливають
+      properties:
+        direction: {type: string, maxLength: 64, description: 'm1…m7 (табл. 2) або власний код'}
+        sphere: {type: string, description: 'military, foreign_policy, … (табл. 1)'}
+        target_scale: {type: string, enum: [single, group, mass]}
+        target_value: {type: number, minimum: 0.1, maximum: 1.0}
+        target_audience: {type: array, items: {type: string}}
+        reach: {type: string, enum: [local, regional, national, international]}
+        source_reach: {type: object, additionalProperties: {type: string}, description: 'експертна поширеність за джерелами'}
+        registry_reach: {type: object, additionalProperties: {type: string}, description: 'поширеність із реєстру джерел (сканер, колонка reach)'}
+        n_negative: {type: integer, minimum: 0, description: 'потребує n_total'}
+        n_total: {type: integer, minimum: 0}
+        persons: {type: array, items: {type: string}}
     Assessment:
       type: object
       properties:
