@@ -85,7 +85,9 @@ def assess():
             feature_type=str(params.get("feature_type", "word")).lower(),
             metric=str(params.get("metric", "burrows")).lower(),
             with_confidence=params.get("confidence", True) not in (False, "false", 0, "0"),
-            gur=data.get("gur"),
+            # позначки експерта (expert_keys) від клієнта не приймаються
+            gur=({k: v for k, v in data["gur"].items() if k != "expert_keys"}
+                 if isinstance(data.get("gur"), dict) else data.get("gur")),
         )
     except AssessmentError as exc:
         return _error(str(exc), 422)

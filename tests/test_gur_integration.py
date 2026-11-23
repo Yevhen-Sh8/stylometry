@@ -202,3 +202,55 @@ def test_scanner_invalid_gur_does_not_block_assessment(ias_db):
     stats = run_once(source, store, None, alert_policy=POLICY)
     assert stats["assessed"] == 1 and stats["skipped"] == 0
     assert store.get_assessment("ev1")["gur"] == {}       # відхилено, попередніх немає
+
+
+def _add_material(path, mid, day, seed):
+    con = sqlite3.connect(path)
+    con.execute("INSERT INTO materials VALUES (?,'ev1',?,?,?,NULL,?)",
+                (mid, f"chan_{mid}", f"2026-10-{day:02d}T09:00:00", _text(seed),
+                 f"2026-10-{day:02d}T10:00:00"))
+    con.commit()
+    con.close()
+
+
+def test_expert_keys_survive_repeated_reassessments(ias_db):
+    """Codex P1: позначки експерта мають пережити не одну, а кожну переоцінку."""
+    path, source, store = ias_db
+    run_once(source, store, None, alert_policy=POLICY)
+    store.set_gur("ev1", merge_gur(store.get_assessment("ev1")["gur"],
+                                   {"direction": "m2"}, expert=True))
+    for mid, day, seed in (("c", 3, 13), ("d", 4, 14)):
+        _add_material(path, mid, day, seed)
+        stats = run_once(source, store, None, alert_policy=POLICY)
+        assert stats["assessed"] == 1
+        gur = store.get_assessment("ev1")["gur"]
+        assert gur["direction"] == "m2" and gur["expert_keys"] == ["direction"]
+
+
+def test_gur_metadata_change_without_text_change_is_applied(ias_db):
+    """Codex P2: зміна лише gur_* / reach без зміни текстів — без переоцінки DIMS."""
+    path, source, store = ias_db
+    run_once(source, store, None, alert_policy=POLICY)
+    before = store.get_assessment("ev1")
+    con = sqlite3.connect(path)
+    con.execute("UPDATE events SET direction = 'm7'")
+    con.execute("UPDATE materials SET reach = 'national', updated_at = '2026-10-05T10:00:00' "
+                "WHERE id = 'a'")
+    con.commit()
+    con.close()
+    stats = run_once(source, store, None, alert_policy=POLICY)
+    assert stats["assessed"] == 0 and stats["unchanged"] == 1 and stats["gur_updated"] == 1
+    after = store.get_assessment("ev1")
+    assert after["gur"]["direction"] == "m7"
+    assert after["gur"]["registry_reach"]["chan_a"] == "national"
+    assert after["r_dims"] == before["r_dims"]             # DIMS не переоцінювалась
+    # повторний прохід без змін нічого не оновлює
+    assert run_once(source, store, None, alert_policy=POLICY)["gur_updated"] == 0
+
+
+def test_api_assess_ignores_client_expert_keys(api):
+    client, _ = api
+    r = client.post("/api/v1/assess", headers=AUTH,
+                    json={"materials": _mats(), "gur": {"direction": "m1",
+                                                       "expert_keys": ["direction"]}})
+    assert r.status_code == 200 and "expert_keys" not in r.get_json()["assessment"]["gur"]

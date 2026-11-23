@@ -302,7 +302,8 @@ def run_once(source, store: IasStore, notifier: WebhookNotifier | None = None,
     events = events[:max_events]
 
     stats = {"since": since, "changed_events": len(events), "assessed": 0,
-             "unchanged": 0, "skipped": 0, "alerts": 0, "notified": 0, "errors": 0}
+             "unchanged": 0, "gur_updated": 0, "skipped": 0, "alerts": 0, "notified": 0,
+             "errors": 0}
     watermark = since
     for ev in events:
         event_id = ev["event_id"]
@@ -311,6 +312,14 @@ def run_once(source, store: IasStore, notifier: WebhookNotifier | None = None,
             fp = materials_fingerprint(materials)
             if store.get_fingerprint(event_id) == fp:
                 stats["unchanged"] += 1
+                # Тексти не змінились, але метадані ГУР (gur_*, reach) могли —
+                # оновлюємо їх без переоцінки DIMS, інакше макрорівень бачив би
+                # застарілі напрям, сферу, лічильники чи поширеність.
+                previous = store.get_assessment(event_id)
+                new_gur = _event_gur(ev, materials, previous)
+                if previous is not None and new_gur != (previous.get("gur") or {}):
+                    store.set_gur(event_id, new_gur)
+                    stats["gur_updated"] += 1
             else:
                 try:
                     result = assess_event(materials, event_id=event_id,

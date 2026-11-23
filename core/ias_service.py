@@ -308,8 +308,8 @@ def assess_event(
     # Метадані макрорівня (ГУР-2016): напрям, сфера, ЦА, поширеність тощо.
     # На R_DIMS не впливають — лише зберігаються для агрегації (core.gur_threat).
     try:
-        if isinstance(gur, dict):        # позначки експерта ставить лише API аналітика
-            gur = {k: v for k, v in gur.items() if k != "expert_keys"}
+        # expert_keys — довірене походження (ставить API аналітика, передає сканер);
+        # від зовнішніх клієнтів його відкидає REST-шар (/api/v1/assess).
         gur_meta = normalise_gur_meta(gur)
     except ValueError as exc:
         raise AssessmentError(str(exc)) from exc
